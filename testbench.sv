@@ -263,8 +263,7 @@ always @(negedge clk) begin
     if (~reset) begin
         uinstr_count++;
 
-        if (cpu.w_pc) $fdisplay(tracefd, "--- set PC=0x%h", cpu.alu.alu_r);
-        if (cpu.w_sp) $fdisplay(tracefd, "--- set SP=0x%h", cpu.alu.alu_r);
+        if (cpu.w_rm) $fdisplay(tracefd, "--- set M[%0d]=0x%h", cpu.op_ir, cpu.alu.alu_r);
         if (cpu.w_acc) $fdisplay(tracefd, "--- set A=0x%h", cpu.alu.alu_r);
         if (cpu.w_acc_mem) $fdisplay(tracefd, "--- set A=0x%h (from MEM)", cpu.dbus_input);
         if (cpu.w_lsb) $fdisplay(tracefd, "--- set B=0x%h", cpu.alu.alu_r);
@@ -276,10 +275,10 @@ always @(negedge clk) begin
 
 // ---- microcode trace ----
         if (~cpu.busy) begin
-            $fdisplay(tracefd, "--- uop[%d]=0b%b", cpu.upc, cpu.uop);
-            if (cpu.branch)      $fdisplay(tracefd, "--- microcode: branch=%d", cpu.u_goto);
-            if (cpu.cond_branch) $fdisplay(tracefd, "--- microcode: CONDITION branch=%d", cpu.u_goto);
-            if (cpu.decode)      $fdisplay(tracefd, "--- decoding opcode=0x%h (0b%b) : branch to=%d ", cpu.opcode, cpu.opcode, cpu.u_entry);
+            $fdisplay(tracefd, "--- uop[%d]=%o", cpu.upc, cpu.uop);
+            if (cpu.branch)      $fdisplay(tracefd, "--- microcode: branch=%d", cpu.uop_addr);
+            if (cpu.cond_branch) $fdisplay(tracefd, "--- microcode: CONDITION branch=%d", cpu.uop_addr);
+            if (cpu.decode)      $fdisplay(tracefd, "--- decoding opcode=%o : branch to=%d ", cpu.opcode, cpu.opcode, cpu.op_entry);
         end else
             $fdisplay(tracefd, "--- busy");
     end
@@ -289,10 +288,7 @@ end
 always @(negedge clk) begin
     if (~cpu.busy)
         case (cpu.upc)
-        0 : begin
-            $fdisplay(tracefd, "--- ------  breakpoint ------");
-            $finish;
-        end
+        0 : $fdisplay(tracefd, "--- ------  reset ------");
         4 : $fdisplay(tracefd, "--- ------  shiftleft ------");
         8 : $fdisplay(tracefd, "--- ------  pushsp ------");
         12 : $fdisplay(tracefd, "--- ------  popint ------");
@@ -309,9 +305,6 @@ always @(negedge clk) begin
         56 : $fdisplay(tracefd, "--- ------  ipsum ------");
         60 : $fdisplay(tracefd, "--- ------  sncpy ------");
 
-        `UADDR_STORESP   : $fdisplay(tracefd, "--- ------  storesp 0x%h ------", { ~cpu.opcode[4], cpu.opcode[3:0], 2'b0 } );
-        `UADDR_LOADSP    : $fdisplay(tracefd, "--- ------  loadsp 0x%h ------", { ~cpu.opcode[4], cpu.opcode[3:0], 2'b0 } );
-        `UADDR_ADDSP     : $fdisplay(tracefd, "--- ------  addsp 0x%h ------", { ~cpu.opcode[4], cpu.opcode[3:0], 2'b0 } );
         `UADDR_EMULATE   : $fdisplay(tracefd, "--- ------  emulate 0x%h ------", cpu.lsb[2:0]); // opcode[5:0] );
 
         128 : $fdisplay(tracefd, "--- ------  mcpy ------");
@@ -346,7 +339,7 @@ always @(negedge clk) begin
         244 : $fdisplay(tracefd, "--- ------  pushspadd ------");
         248 : $fdisplay(tracefd, "--- ------  halfmult ------");
         252 : $fdisplay(tracefd, "--- ------  callpcrel ------");
-      //default : $fdisplay(tracefd, "--- upc=0x%h", decode_mcpc);
+        default : $fdisplay(tracefd, "--- upc=%0d", cpu.upc);
         endcase
 end
 
@@ -411,7 +404,7 @@ task print_uop(
     logic [1:0] sel_addr;
     logic [3:0] alu_op;
     logic       w_sp;
-    logic       w_pc;
+    logic       w_rm;
     logic       w_acc;
     logic       w_acc_mem;
     logic       w_lsb;
@@ -433,8 +426,7 @@ task print_uop(
     assign sel_alu            = uop[`P_SEL_ALU+1:`P_SEL_ALU];
     assign sel_addr           = uop[`P_SEL_ADDR+1:`P_SEL_ADDR];
     assign alu_op             = uop[`P_ALU+3:`P_ALU];
-    assign w_sp               = uop[`P_W_SP];
-    assign w_pc               = uop[`P_W_PC];
+    assign w_rm               = uop[`P_W_RM];
     assign w_acc              = uop[`P_W_A];
     assign w_acc_mem          = uop[`P_W_A_MEM];
     //assign w_lsb              = uop[`P_W_B];
@@ -449,7 +441,7 @@ task print_uop(
     assign cond_a_neg         = uop[`P_A_NEG];
     assign decode             = uop[`P_DECODE];
     assign branch             = uop[`P_BRANCH];
-    assign goto               = { uop[`P_ADDR+6:`P_ADDR], 2'b00 };
+    assign goto               = uop[`P_ADDR+`UPC_BITS-1:`P_ADDR];
 
     $fwrite(tracefd, "(%0d) %0d:", ctime, upc);
 
@@ -458,8 +450,7 @@ task print_uop(
     if (sel_addr != 0) $fwrite(tracefd, " sel_addr=%0s", addr_name[sel_addr]);
     if (alu_op   != 0) $fwrite(tracefd, " alu_op=%0s", op_name[alu_op]);
 
-    if (w_sp               != 0) $fwrite(tracefd, " w_sp");
-    if (w_pc               != 0) $fwrite(tracefd, " w_pc");
+    if (w_rm               != 0) $fwrite(tracefd, " w_rm");
     if (w_acc              != 0) $fwrite(tracefd, " w_acc");
     if (w_acc_mem          != 0) $fwrite(tracefd, " w_acc_mem");
     //if (w_lsb              != 0) $fwrite(tracefd, " w_lsb");

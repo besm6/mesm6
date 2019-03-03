@@ -39,35 +39,33 @@
 
 // ------- microcode labels for opcode execution -------
 // based on microcode program
-`define UADDR_STORESP           493
-`define UADDR_LOADSP            496
-`define UADDR_ADDSP             500
+`define UADDR_RESET             0
+`define UADDR_FETCH             3
+`define UADDR_FETCH_NEXT        5
+`define UADDR_INTERRUPT         7
+
 `define UADDR_EMULATE           504
-`define UADDR_INTERRUPT         484
-`define UADDR_FETCH_NEXT        480
-`define UADDR_FETCH             476
-`define UADDR_RESET             474
 
 // ---------- microcode settings --------------------
-`define P_SEL_READ              0   // alu-A multiplexor between data-in and addr-out (1 bit)
-`define P_SEL_ALU               1   // alu-B multiplexor between a, b, mc_const or opcode (2 bits)
-`define P_SEL_ADDR              3   // addr-out multiplexor between sp, pc, a, b (2 bits)
-`define P_ALU                   5   // alu operation (4 bits)
-`define P_W_SP                  9   // write sp (from alu-out)
-`define P_W_PC                  10  // write pc (from alu-out)
-`define P_W_A                   11  // write a (from alu-out)
-`define P_FETCH                 12  // request instruction fetch
-`define P_SET_IDIM              13  // unused
-`define P_CLEAR_IDIM            14  // unused
-`define P_W_OPCODE              15  // write opcode  (from alu-out) : check if can be written directly from data-in
-`define P_DECODE                16  // jump to microcode entry point based on current opcode
-`define P_MEM_R                 17  // request memory read
-`define P_MEM_W                 18  // request memory write
-`define P_ADDR                  19  // microcode address (7 bits (granularity is 4 words)) or constant to be used at microcode level
-`define P_BRANCH                26  // microcode inconditional branch to address
-`define P_OP_NOT_CACHED         27  // microcode branch if byte[pc] is not cached at opcode
-`define P_A_ZERO                28  // microcode branch if a is zero
-`define P_A_NEG                 29  // microcode branch if a is negative a[31]=1
-`define P_W_A_MEM               30  // write a directly from data-in (alu datapath is free to perform any other operation in parallel)
+`define P_ADDR                  0  // microcode address (9 bits) or constant to be used at microcode level
+`define P_SEL_READ              9   // alu-A multiplexor between data-in and addr-out (1 bit)
+`define P_SEL_ALU               10   // alu-B multiplexor between a, b, mc_const or opcode (2 bits)
+`define P_SEL_ADDR              12   // addr-out multiplexor between sp, pc, a, b (2 bits)
+`define P_ALU                   14   // alu operation (4 bits)
+`define P_W_RM                  18   // write M[i] (from alu-out)
+`define P_W_PC                  19  // write pc (from alu-out)
+`define P_W_A                   20  // write a (from alu-out)
+`define P_FETCH                 21  // request instruction fetch
+`define P_SET_IDIM              22  // unused
+`define P_CLEAR_IDIM            23  // unused
+`define P_W_OPCODE              24  // write opcode  (from alu-out) : check if can be written directly from data-in
+`define P_DECODE                25  // jump to microcode entry point based on current opcode
+`define P_MEM_R                 26  // request memory read
+`define P_MEM_W                 27  // request memory write
+`define P_BRANCH                28  // microcode inconditional branch to address
+`define P_OP_NOT_CACHED         29  // microcode branch if byte[pc] is not cached at opcode
+`define P_A_ZERO                30  // microcode branch if a is zero
+`define P_A_NEG                 31  // microcode branch if a is negative a[31]=1
+`define P_W_A_MEM               32  // write a directly from data-in (alu datapath is free to perform any other operation in parallel)
 `define P_EXIT_INT              34  // clear interrupt flag (exit from interrupt)
 `define P_ENTER_INT             35  // set interrupt flag (enter interrupt)
