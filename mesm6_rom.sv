@@ -26,11 +26,12 @@
 `define W_PC                    (1 << `P_W_PC)
 `define W_A                     (1 << `P_W_A)
 `define W_A_MEM                 (1 << `P_W_A_MEM)
-`define W_B                     (1 << `P_W_B)
+`define W_B                     0 // unused
 `define W_OPCODE                (1 << `P_W_OPCODE)
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
 
+`define MEM_FETCH               (1 << `P_FETCH)
 `define MEM_R                   (1 << `P_MEM_R)
 `define MEM_W                   (1 << `P_MEM_W)
 
@@ -84,8 +85,7 @@ for(n = 0; n < (1<<`UPC_BITS); n = n + 1) memory[n] = 0;
 // ----- OPCODES WITHOUT CONSTANT ------
 
 // 0000_0000 (00) breakpoint -------------------------------------
-memory[0] = `NOP_B | `ALU_CONST(4) | `W_B;                          // b = 4 (#1 in emulate table)
-memory[1] = `BRANCH(`UADDR_EMULATE);                                // emulate #1 (exception)
+memory[0] = `BRANCH(`UADDR_EMULATE);                                // emulate #1 (exception)
 
 // 0000_0001 (01) shiftleft  -------------------------------------
 memory[4] = `GO_BREAKPOINT;
@@ -105,7 +105,7 @@ memory[10] = `ADDR_SP | `MEM_W | `GO_NEXT;                          // mem[sp]=a
 // opcode of mainstream program before reentry to interrupt handler
 memory[12] = `ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `W_PC |       // pc = mem[sp]-1
              `ALU_CONST(-1 & 127);
-memory[13] = `ADDR_PC | `READ_DATA | `MEM_R | `W_OPCODE;            // opcode_cache = mem[pc]
+memory[13] = `ADDR_PC | `READ_DATA | `MEM_FETCH | `W_OPCODE;        // opcode_cache = mem[pc]
 memory[14] = `SP_PLUS_4 | `DECODE | `EXIT_INTERRUPT;                // sp=sp+1, decode opcode, exit_interrupt
 
 // 0000_0100 (04) poppc  -------------------------------------
@@ -358,7 +358,7 @@ memory[203] = `ADDR_A | `READ_ADDR | `NOT | `W_B | `BRANCH(428);    // b = ~a ||
 // fetch
 memory[204] = `ADDR_PC | `READ_ADDR | `W_B;                         // b = pc
 memory[205] = `ADDR_SP | `READ_DATA | `MEM_R | `W_PC;               // pc = mem[sp]
-memory[206] = `ADDR_PC | `READ_DATA | `MEM_R | `W_OPCODE;           // opcode_cache = mem[pc]
+memory[206] = `ADDR_PC | `READ_DATA | `MEM_FETCH | `W_OPCODE;       // opcode_cache = mem[pc]
 memory[207] = `ALU_OPCODE | `NOP_B | `W_A | `BRANCH(396);           // a = opcode -> byte(pc, mem[pc]) || goto @loadb_continued
 
 // 001_10100 (34) storeb   -------------------------------------
@@ -440,7 +440,7 @@ memory[255] = `ADDR_PC | `READ_ADDR | `ALU_B | `PLUS | `W_PC |      // pc = pc +
 // mem[sp]=a || pc=b
 // opcode_cache=mem[pc] || go next
 memory[396] = `ADDR_SP | `MEM_W | `ALU_B | `NOP_B | `W_PC;          // mem[sp] = a || pc=b
-memory[397] = `ADDR_PC | `MEM_R | `W_OPCODE | `GO_NEXT;             // opcode_cache = mem[pc] || go next
+memory[397] = `ADDR_PC | `MEM_FETCH | `W_OPCODE | `GO_NEXT;         // opcode_cache = mem[pc] || go next
 
 // sub/pushspadd continued microcode ----------------
 memory[400] = `ADDR_SP | `MEM_W | `GO_NEXT;                         // mem[sp] = a
@@ -516,7 +516,7 @@ memory[475] = `ALU_CONST(`RESET_VECTOR) | `NOP_B | `W_PC |          // pc = @RES
 // FETCH / DECODE   -------------------------------------
 //    opcode=mem[pc]
 //    decode (goto microcode entry point for opcode)
-memory[476] = `ADDR_PC | `READ_DATA | `MEM_R | `W_OPCODE;           // opcode_cache = mem[pc]
+memory[476] = `ADDR_PC | `READ_DATA | `MEM_FETCH | `W_OPCODE;       // opcode_cache = mem[pc]
 memory[477] = `DECODE;                                              // decode jump to microcode
 
 // NEXT OPCODE   -------------------------------------

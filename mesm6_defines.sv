@@ -56,7 +56,7 @@
 `define P_W_SP                  9   // write sp (from alu-out)
 `define P_W_PC                  10  // write pc (from alu-out)
 `define P_W_A                   11  // write a (from alu-out)
-`define P_W_B                   12  // write b (from alu-out)
+`define P_FETCH                 12  // request instruction fetch
 `define P_SET_IDIM              13  // unused
 `define P_CLEAR_IDIM            14  // unused
 `define P_W_OPCODE              15  // write opcode  (from alu-out) : check if can be written directly from data-in

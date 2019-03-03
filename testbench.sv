@@ -1,7 +1,7 @@
 //
 // Run the processor with memory attached.
 //
-// Copyright (c) 2018 Serge Vakulenko
+// Copyright (c) 2019 Serge Vakulenko
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,39 +30,62 @@ module testbench();
 timeunit 1ns / 1ps;
 
 // Inputs.
-logic        clk, reset;
-logic        i_interrupt;   // interrupt request
-logic        i_done;        // memory operation completed
-logic [47:0] i_data_read;   // data from memory
+// Clock, reset, interrupt rquest
+logic        clk, reset, irq;
 
-// Outputs.
-logic        o_read;        // read op
-logic        o_write;       // write op
-logic [14:0] o_addr;        // address output
-logic [47:0] o_data_write;  // data to memory
+// Instruction memory signals.
+logic        ibus_rd;       // fetch request
+logic [14:0] ibus_addr;     // address
+logic [47:0] ibus_input;    // instruction word from memory
+logic        ibus_done;     // operation completed
+
+// Data memory signals.
+logic        dbus_rd;       // read request
+logic        dbus_wr;       // write request
+logic [14:0] dbus_addr;     // address
+logic [47:0] dbus_output;   // data to memory
+logic [47:0] dbus_input;    // data from memory
+logic        dbus_done;     // operation completed
 
 // Instantiate CPU.
 mesm6_core cpu(
     clk,                    // clock on rising edge
     reset,                  // reset on rising edge
-    i_interrupt,            // interrupt request
-    o_read,                 // request memory read
-    o_write,
-    i_done,                 // memory operation completed
-    o_addr,                 // memory address
-    i_data_read,            // data read
-    o_data_write            // data written
+    irq,                    // interrupt request
+
+    // Instruction memory bus.
+    ibus_rd,                // request instruction fetch
+    ibus_addr,              // memory address
+    ibus_input,             // instruction word read
+    ibus_done,              // memory operation completed
+
+    // Data memory bus.
+    dbus_rd,                // request data read
+    dbus_wr,                // request data write
+    dbus_addr,              // memory address
+    dbus_output,            // data written
+    dbus_input,             // data read
+    dbus_done               // memory operation completed
 );
 
-// 1Mword x 32bit of RAM.
-memory ram(
+// Instruction memory.
+imemory prom(
     clk,                    // clock on rising edge
-    o_addr,                 // input address
-    o_read,                 // input read request
-    o_write,                // input write request
-    o_data_write,           // input data to memory
-    i_data_read,            // output data from memory
-    i_done                  // output r/w operation completed
+    ibus_addr,              // memory address
+    ibus_rd,                // read request
+    ibus_input,             // data from memory
+    ibus_done               // operation completed
+);
+
+// Data memory.
+dmemory ram(
+    clk,                    // clock on rising edge
+    dbus_addr,              // memory address
+    dbus_rd,                // read request
+    dbus_wr,                // write request
+    dbus_output,            // data to memory
+    dbus_input,             // data from memory
+    dbus_done               // operation completed
 );
 
 string tracefile = "output.trace";
@@ -121,7 +144,7 @@ initial begin
     // Start with reset active
     clk = 1;
     reset = 1;
-    i_interrupt = 0;
+    irq = 0;
 
     // Hold reset for a while.
     #2 reset = 0;
@@ -215,10 +238,17 @@ always @(negedge clk) begin
     end
 `endif
 
-    if ((cpu.mem_read | cpu.mem_write) && $isunknown(cpu.mem_addr)) begin
-        $display("(%0d) Unknown address: cpu.mem_addr=%h", ctime, cpu.mem_addr);
+    if ((cpu.dbus_read | cpu.dbus_write) && $isunknown(cpu.dbus_addr)) begin
+        $display("(%0d) Unknown address: dbus_addr=%h", ctime, cpu.dbus_addr);
         if (tracefd)
-            $fdisplay(tracefd, "(%0d) *** Unknown address: cpu.mem_addr=%h", ctime, cpu.mem_addr);
+            $fdisplay(tracefd, "(%0d) *** Unknown address: dbus_addr=%h", ctime, cpu.dbus_addr);
+        terminate("Fatal Error!");
+    end
+
+    if (cpu.ibus_fetch && $isunknown(cpu.ibus_addr)) begin
+        $display("(%0d) Unknown address: ibus_addr=%h", ctime, cpu.ibus_addr);
+        if (tracefd)
+            $fdisplay(tracefd, "(%0d) *** Unknown address: ibus_addr=%h", ctime, cpu.ibus_addr);
         terminate("Fatal Error!");
     end
 
@@ -235,10 +265,10 @@ always @(negedge clk) begin
 
         if (cpu.w_pc) $fdisplay(tracefd, "--- set PC=0x%h", cpu.alu.alu_r);
         if (cpu.w_sp) $fdisplay(tracefd, "--- set SP=0x%h", cpu.alu.alu_r);
-        if (cpu.w_a) $fdisplay(tracefd, "--- set A=0x%h", cpu.alu.alu_r);
-        if (cpu.w_a_mem) $fdisplay(tracefd, "--- set A=0x%h (from MEM)", cpu.mem_data_read);
-        if (cpu.w_b) $fdisplay(tracefd, "--- set B=0x%h", cpu.alu.alu_r);
-        if (cpu.w_op & ~cpu.is_op_cached) $fdisplay(tracefd, "--- set opcode_cache=0x%h, pc_cached=0x%h", cpu.alu.alu_r, {cpu.pc[31:2], 2'b0});
+        if (cpu.w_acc) $fdisplay(tracefd, "--- set A=0x%h", cpu.alu.alu_r);
+        if (cpu.w_acc_mem) $fdisplay(tracefd, "--- set A=0x%h (from MEM)", cpu.dbus_input);
+        if (cpu.w_lsb) $fdisplay(tracefd, "--- set B=0x%h", cpu.alu.alu_r);
+        if (cpu.w_opcode & ~cpu.is_op_cached) $fdisplay(tracefd, "--- set opcode_cache=0x%h, pc_cached=0x%h", cpu.alu.alu_r, {cpu.pc[31:2], 2'b0});
 
         if (~cpu.busy & cpu.upc == `UADDR_INTERRUPT) $fdisplay(tracefd, "--- ***** ENTERING INTERRUPT MICROCODE ******");
         if (~cpu.busy & cpu.exit_interrupt) $fdisplay(tracefd, "--- ***** INTERRUPT FLAG CLEARED *****");
@@ -282,7 +312,7 @@ always @(negedge clk) begin
         `UADDR_STORESP   : $fdisplay(tracefd, "--- ------  storesp 0x%h ------", { ~cpu.opcode[4], cpu.opcode[3:0], 2'b0 } );
         `UADDR_LOADSP    : $fdisplay(tracefd, "--- ------  loadsp 0x%h ------", { ~cpu.opcode[4], cpu.opcode[3:0], 2'b0 } );
         `UADDR_ADDSP     : $fdisplay(tracefd, "--- ------  addsp 0x%h ------", { ~cpu.opcode[4], cpu.opcode[3:0], 2'b0 } );
-        `UADDR_EMULATE   : $fdisplay(tracefd, "--- ------  emulate 0x%h ------", cpu.b[2:0]); // opcode[5:0] );
+        `UADDR_EMULATE   : $fdisplay(tracefd, "--- ------  emulate 0x%h ------", cpu.lsb[2:0]); // opcode[5:0] );
 
         128 : $fdisplay(tracefd, "--- ------  mcpy ------");
         132 : $fdisplay(tracefd, "--- ------  mset ------");
@@ -382,12 +412,13 @@ task print_uop(
     logic [3:0] alu_op;
     logic       w_sp;
     logic       w_pc;
-    logic       w_a;
-    logic       w_a_mem;
-    logic       w_b;
-    logic       w_op;
+    logic       w_acc;
+    logic       w_acc_mem;
+    logic       w_lsb;
+    logic       w_opcode;
     logic       mem_read;
     logic       mem_write;
+    logic       mem_fetch;
     logic       w_pc_increment;
     logic       exit_interrupt;
     logic       enter_interrupt;
@@ -404,12 +435,13 @@ task print_uop(
     assign alu_op             = uop[`P_ALU+3:`P_ALU];
     assign w_sp               = uop[`P_W_SP];
     assign w_pc               = uop[`P_W_PC];
-    assign w_a                = uop[`P_W_A];
-    assign w_a_mem            = uop[`P_W_A_MEM];
-    assign w_b                = uop[`P_W_B];
-    assign w_op               = uop[`P_W_OPCODE];
+    assign w_acc              = uop[`P_W_A];
+    assign w_acc_mem          = uop[`P_W_A_MEM];
+    //assign w_lsb              = uop[`P_W_B];
+    assign w_opcode           = uop[`P_W_OPCODE];
     assign mem_read           = uop[`P_MEM_R];
     assign mem_write          = uop[`P_MEM_W];
+    assign mem_fetch          = uop[`P_FETCH];
     assign exit_interrupt     = uop[`P_EXIT_INT];
     assign enter_interrupt    = uop[`P_ENTER_INT];
     assign cond_op_not_cached = uop[`P_OP_NOT_CACHED];
@@ -428,12 +460,13 @@ task print_uop(
 
     if (w_sp               != 0) $fwrite(tracefd, " w_sp");
     if (w_pc               != 0) $fwrite(tracefd, " w_pc");
-    if (w_a                != 0) $fwrite(tracefd, " w_a");
-    if (w_a_mem            != 0) $fwrite(tracefd, " w_a_mem");
-    if (w_b                != 0) $fwrite(tracefd, " w_b");
-    if (w_op               != 0) $fwrite(tracefd, " w_op");
-    if (mem_read           != 0) $fwrite(tracefd, " mem_read");
-    if (mem_write          != 0) $fwrite(tracefd, " mem_write");
+    if (w_acc              != 0) $fwrite(tracefd, " w_acc");
+    if (w_acc_mem          != 0) $fwrite(tracefd, " w_acc_mem");
+    //if (w_lsb              != 0) $fwrite(tracefd, " w_lsb");
+    if (w_opcode           != 0) $fwrite(tracefd, " w_opcode");
+    if (mem_read           != 0) $fwrite(tracefd, " mem_r");
+    if (mem_write          != 0) $fwrite(tracefd, " mem_w");
+    if (mem_fetch          != 0) $fwrite(tracefd, " mem_fetch");
     if (w_pc_increment     != 0) $fwrite(tracefd, " w_pc_increment");
     if (exit_interrupt     != 0) $fwrite(tracefd, " exit_interrupt");
     if (enter_interrupt    != 0) $fwrite(tracefd, " enter_interrupt");

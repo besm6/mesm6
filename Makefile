@@ -6,7 +6,8 @@ SOURCES         = mesm6_alu.sv \
                   mesm6_core.sv \
                   mesm6_rom.sv \
                   testbench.sv \
-                  memory.sv
+                  imemory.sv \
+                  dmemory.sv
 
 all:            work
 

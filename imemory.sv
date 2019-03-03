@@ -1,7 +1,7 @@
 //
-// 1Mword of 32-bit RAM.
+// Instruction memory: 32k of 48-bit words.
 //
-// Copyright (c) 2018 Serge Vakulenko
+// Copyright (c) 2019 Serge Vakulenko
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,12 +23,10 @@
 //
 `default_nettype none
 
-module memory(
+module imemory(
     input  wire         clk,            // clock
     input  wire  [14:0] i_addr,         // address input
     input  wire         i_read,         // read op
-    input  wire         i_write,        // write op
-    input  wire  [47:0] i_data,         // data to memory
     output logic [47:0] o_data,         // data from memory
     output logic        o_done          // write op
 );
@@ -41,15 +39,10 @@ logic [47:0] mem[32*1024];              // main RAM 32k words
 always @(posedge clk) begin
     if (i_read) begin
         o_data <= mem[i_addr];          // memory load
-        $display("read %h -> %h", i_addr, mem[i_addr]);
+        $display("fetch %h -> %h", i_addr, mem[i_addr]);
     end
 
-    if (i_write) begin
-        mem[i_addr] <= i_data;          // memory store
-        $display("write %h := %h", i_addr, i_data);
-    end
-
-    o_done <= i_read | i_write;
+    o_done <= i_read;
 end
 
 initial begin
