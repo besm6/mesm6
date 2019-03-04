@@ -170,7 +170,9 @@ end
 //
 always @(posedge clk)
 begin
-    if (w_rm)
+    if (reset)
+        rm[0] <= 0;
+    else if (w_rm)
         rm[op_ir] <= (op_ir == 0) ? 0 : alu_r;
 end
 

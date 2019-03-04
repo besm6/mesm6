@@ -43,8 +43,7 @@
 `define UADDR_FETCH             3
 `define UADDR_FETCH_NEXT        5
 `define UADDR_INTERRUPT         7
-
-`define UADDR_EMULATE           504
+`define UADDR_EMULATE           9
 
 // ---------- microcode settings --------------------
 `define P_ADDR                  0  // microcode address (9 bits) or constant to be used at microcode level

@@ -129,6 +129,25 @@ op(`NOP_B | `ALU_CONST(0) | `W_B | `ENTER_INTERRUPT);     // b = 0 (#0 in emulat
 op(`GO_EMULATE);                                          // emulate #0 (interrupt)
 
 //--------------------------------------------------------------
+// Emulate opcode.
+//
+//  <expects b = offset into table for emulated opcode>
+//    sp = sp - 1
+//    mem[sp] = pc + 1          emulated opcode microcode must set b to
+//  a = @EMULATION_TABLE        offset inside emulated_table prior to
+//  pc = mem[a + b]             calling the emulate microcode
+//  fetch
+//
+$display("`define UADDR_EMULATE %0d", c);
+op(`ADDR_PC | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A); // a = pc + 1
+op(`SP_MINUS_4);                                          // sp = sp - 1
+op(`ADDR_SP | `MEM_W);                                    // mem[sp] = a
+op(`NOP_B | `ALU_CONST(`EMULATION_VECTOR) | `W_A);        // a = @vector_emulated
+op(`ADDR_A | `READ_ADDR | `PLUS | `ALU_B | `W_A);         // a = a + b
+op(`ADDR_A | `MEM_R | `READ_DATA | `NOP | `W_PC);         // pc = mem[a]
+op(`FETCH);
+
+//--------------------------------------------------------------
 // Opcodes 000-077.
 //
 opcode('o000);  // ATX
@@ -818,21 +837,6 @@ op(`ADDR_SP | `READ_ADDR | `PLUS_OFFSET | `ALU_OPCODE | `W_A); // a = sp + offse
 op(`ADDR_A | `READ_DATA | `MEM_R | `W_A);                     // a = mem[a]
 op(`ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `ALU_A | `W_A);   // a = a + mem[sp]
 op(`ADDR_SP | `MEM_W | `GO_NEXT);                             // mem[sp] = a
-
-// 001_xxxxx emulate x       -------------------------------------
-//  <expects b = offset into table for emulated opcode>
-//    sp = sp - 1
-//    mem[sp] = pc + 1          emulated opcode microcode must set b to
-//  a = @EMULATION_TABLE        offset inside emulated_table prior to
-//  pc = mem[a + b]             calling the emulate microcode
-//  fetch
-op(`ADDR_PC | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A); // a = pc + 1
-op(`SP_MINUS_4);                                          // sp = sp - 1
-op(`ADDR_SP | `MEM_W);                                    // mem[sp] = a
-op(`NOP_B | `ALU_CONST(`EMULATION_VECTOR) | `W_A);        // a = @vector_emulated
-op(`ADDR_A | `READ_ADDR | `PLUS | `ALU_B | `W_A);         // a = a + b
-op(`ADDR_A | `MEM_R | `READ_DATA | `NOP | `W_PC);         // pc = mem[a]
-op(`FETCH);
 `endif
 
 // --------------------- END OF MICROCODE PROGRAM --------------------------
