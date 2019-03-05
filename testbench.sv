@@ -93,19 +93,24 @@ int limit;
 int tracelevel;             // Trace level
 int tracefd;                // Trace file descriptor
 time ctime;                 // Current time
+longint uinstr_count;
+longint instr_count;                    // Instruction and micro-instruction counters
+bit old_reset = 0;                      // Previous state of reset
 
 //
 // Last fetch address
 //
-logic [`UPC_BITS-1:0] upc_f;    // PC at fetch stage
+logic [`UPC_BITS-1:0] upc_prev;  // delayed PC
+logic                 busy_prev; // delayed busy signal
 
-// Time routines imported from C library.
+//
+// Import standard C function gettimeofday().
+//
 `ifdef XILINX_SIMULATOR
 typedef struct { longint sec, usec; } timeval_t;
 `else
 typedef struct { int sec, usec; } timeval_t;
 `endif
-
 import "DPI-C" function void gettimeofday(inout timeval_t tv, input chandle tz);
 
 timeval_t t0;               // Start time of simulation
@@ -168,18 +173,15 @@ endtask
 // Get time at the rising edge of the clock.
 always @(posedge clk) begin
     ctime = $time;
-    upc_f = cpu.upc;
+    upc_prev = cpu.upc_next;
+    busy_prev = cpu.busy;
+    if (~reset & ~cpu.busy)
+        uinstr_count++;
 end
 
 //
 // Tracer
 //
-//
-// Import standard C function gettimeofday().
-//
-longint instr_count;                    // Instruction and micro-instruction counters
-longint uinstr_count;
-bit old_reset = 0;                      // Previous state of reset
 
 // At negative clock edge, when all the signals are quiet,
 // print the state of the processor.
@@ -190,43 +192,40 @@ always @(negedge clk) begin
                 $fdisplay(tracefd, "(%0d) *** Reset", ctime);
                 old_reset = 1;
             end
+        end else if (old_reset) begin                // Clear reset
+            $fdisplay(tracefd, "(%0d) *** Clear reset", ctime);
+            old_reset = 0;
         end else begin
-            if (old_reset) begin                // Clear reset
-                $fdisplay(tracefd, "(%0d) *** Clear reset", ctime);
-                old_reset = 0;
+            if (tracelevel > 1) begin
+                // Print last executed micro-instruction
+                print_uop(cpu.uop);
+
+                // Print changed micro state
+                //print_changed_cpu(opcode_x);
+            end else begin
+                // Print changed architectural state
+                //print_changed_regs(opcode_x);
             end
-        end
-
-        if (tracelevel > 1) begin
-            // Print last executed micro-instruction
-            if (!reset)
-                print_uop(upc_f, cpu.uop);
-
-            // Print changed micro state
-            //print_changed_cpu(opcode_x);
-        end else begin
-            // Print changed architectural state
-            //print_changed_regs(opcode_x);
-        end
 
 `ifdef notdef
-        // Print transactions on external bus
-        print_ext_bus();
+            // Print transactions on external bus
+            print_ext_bus();
 
-        // Print BESM instruction
-        if (!reset)
-            print_insn();
+            // Print BESM instruction
+            if (!reset)
+                print_insn();
 
-        if (int_flag_x)
-            $fdisplay(tracefd, "(%0d) *** Interrupt #%0d", ctime, cpu.int_vect);
+            if (int_flag_x)
+                $fdisplay(tracefd, "(%0d) *** Interrupt #%0d", ctime, cpu.int_vect);
 `endif
 
-        // Get data from fetch stage
-        //int_flag_x = cpu.int_flag;
-        //tkk_x = cpu.tkk;
-        //cb_x = cpu.cb;
+            // Get data from fetch stage
+            //int_flag_x = cpu.int_flag;
+            //tkk_x = cpu.tkk;
+            //cb_x = cpu.cb;
 
-        //->instruction_retired;
+            //->instruction_retired;
+        end
     end
 
 `ifdef notdef
@@ -256,91 +255,6 @@ always @(negedge clk) begin
     //if (!cpu.run) begin
     //    cpu_halted();
     //end
-end
-
-// ---- register operation dump ----
-always @(negedge clk) begin
-    if (~reset) begin
-        uinstr_count++;
-
-        if (cpu.w_rm) $fdisplay(tracefd, "--- set M[%0d]=0x%h", cpu.op_ir, cpu.alu.alu_r);
-        if (cpu.w_acc) $fdisplay(tracefd, "--- set A=0x%h", cpu.alu.alu_r);
-        if (cpu.w_acc_mem) $fdisplay(tracefd, "--- set A=0x%h (from MEM)", cpu.dbus_input);
-        if (cpu.w_lsb) $fdisplay(tracefd, "--- set B=0x%h", cpu.alu.alu_r);
-        if (cpu.w_opcode & ~cpu.is_op_cached) $fdisplay(tracefd, "--- set opcode_cache=0x%h, pc_cached=0x%h", cpu.alu.alu_r, {cpu.pc[31:2], 2'b0});
-
-        if (~cpu.busy & cpu.upc == `UADDR_INTERRUPT) $fdisplay(tracefd, "--- ***** ENTERING INTERRUPT MICROCODE ******");
-        if (~cpu.busy & cpu.exit_interrupt) $fdisplay(tracefd, "--- ***** INTERRUPT FLAG CLEARED *****");
-        if (~cpu.busy & cpu.enter_interrupt) $fdisplay(tracefd, "--- ***** INTERRUPT FLAG SET *****");
-
-// ---- microcode trace ----
-        if (~cpu.busy) begin
-            $fdisplay(tracefd, "--- uop[%d]=%o", cpu.upc, cpu.uop);
-            if (cpu.branch)      $fdisplay(tracefd, "--- microcode: branch=%d", cpu.uop_addr);
-            if (cpu.cond_branch) $fdisplay(tracefd, "--- microcode: CONDITION branch=%d", cpu.uop_addr);
-            if (cpu.decode)      $fdisplay(tracefd, "--- decoding opcode=%o : branch to=%d ", cpu.opcode, cpu.opcode, cpu.op_entry);
-        end else
-            $fdisplay(tracefd, "--- busy");
-    end
-end
-
-// ----- opcode dissasembler ------
-always @(negedge clk) begin
-    if (~cpu.busy)
-        case (cpu.upc)
-        0 : $fdisplay(tracefd, "--- ------  reset ------");
-        4 : $fdisplay(tracefd, "--- ------  shiftleft ------");
-        8 : $fdisplay(tracefd, "--- ------  pushsp ------");
-        12 : $fdisplay(tracefd, "--- ------  popint ------");
-        16 : $fdisplay(tracefd, "--- ------  poppc ------");
-        20 : $fdisplay(tracefd, "--- ------  add ------");
-        24 : $fdisplay(tracefd, "--- ------  and ------");
-        28 : $fdisplay(tracefd, "--- ------  or ------");
-        32 : $fdisplay(tracefd, "--- ------  load ------");
-        36 : $fdisplay(tracefd, "--- ------  not ------");
-        40 : $fdisplay(tracefd, "--- ------  flip ------");
-        44 : $fdisplay(tracefd, "--- ------  nop ------");
-        48 : $fdisplay(tracefd, "--- ------  store ------");
-        52 : $fdisplay(tracefd, "--- ------  popsp ------");
-        56 : $fdisplay(tracefd, "--- ------  ipsum ------");
-        60 : $fdisplay(tracefd, "--- ------  sncpy ------");
-
-        `UADDR_EMULATE   : $fdisplay(tracefd, "--- ------  emulate 0x%h ------", cpu.lsb[2:0]); // opcode[5:0] );
-
-        128 : $fdisplay(tracefd, "--- ------  mcpy ------");
-        132 : $fdisplay(tracefd, "--- ------  mset ------");
-        136 : $fdisplay(tracefd, "--- ------  loadh ------");
-        140 : $fdisplay(tracefd, "--- ------  storeh ------");
-        144 : $fdisplay(tracefd, "--- ------  lessthan ------");
-        148 : $fdisplay(tracefd, "--- ------  lessthanorequal ------");
-        152 : $fdisplay(tracefd, "--- ------  ulessthan ------");
-        156 : $fdisplay(tracefd, "--- ------  ulessthanorequal ------");
-        160 : $fdisplay(tracefd, "--- ------  swap ------");
-        164 : $fdisplay(tracefd, "--- ------  mult ------");
-        168 : $fdisplay(tracefd, "--- ------  lshiftright ------");
-        172 : $fdisplay(tracefd, "--- ------  ashiftleft ------");
-        176 : $fdisplay(tracefd, "--- ------  ashiftright ------");
-        180 : $fdisplay(tracefd, "--- ------  call ------");
-        184 : $fdisplay(tracefd, "--- ------  eq ------");
-        188 : $fdisplay(tracefd, "--- ------  neq ------");
-        192 : $fdisplay(tracefd, "--- ------  neg ------");
-        196 : $fdisplay(tracefd, "--- ------  sub ------");
-        200 : $fdisplay(tracefd, "--- ------  xor ------");
-        204 : $fdisplay(tracefd, "--- ------  loadb ------");
-        208 : $fdisplay(tracefd, "--- ------  storeb ------");
-        212 : $fdisplay(tracefd, "--- ------  div ------");
-        216 : $fdisplay(tracefd, "--- ------  mod ------");
-        220 : $fdisplay(tracefd, "--- ------  eqbranch ------");
-        224 : $fdisplay(tracefd, "--- ------  neqbranch ------");
-        228 : $fdisplay(tracefd, "--- ------  poppcrel ------");
-        232 : $fdisplay(tracefd, "--- ------  config ------");
-        236 : $fdisplay(tracefd, "--- ------  pushpc ------");
-        240 : $fdisplay(tracefd, "--- ------  syscall_emulate ------");
-        244 : $fdisplay(tracefd, "--- ------  pushspadd ------");
-        248 : $fdisplay(tracefd, "--- ------  halfmult ------");
-        252 : $fdisplay(tracefd, "--- ------  callpcrel ------");
-        default : $fdisplay(tracefd, "--- upc=%0d", cpu.upc);
-        endcase
 end
 
 //
@@ -383,7 +297,6 @@ endtask
 // Print micro-instruction.
 //
 task print_uop(
-    input logic [`UPC_BITS-1:0] upc,    // microcode PC
     input logic [`UOP_BITS-1:0] uop     // microcode operation
 );
     static string alu_name[4] = '{
@@ -420,7 +333,7 @@ task print_uop(
     logic       cond_a_neg;
     logic       decode;
     logic       branch;
-    logic [`UPC_BITS-1:0] goto;
+    logic [`UPC_BITS-1:0] imm;
 
     assign sel_read           = uop[`P_SEL_READ];
     assign sel_alu            = uop[`P_SEL_ALU+1:`P_SEL_ALU];
@@ -441,34 +354,53 @@ task print_uop(
     assign cond_a_neg         = uop[`P_A_NEG];
     assign decode             = uop[`P_DECODE];
     assign branch             = uop[`P_BRANCH];
-    assign goto               = uop[`P_ADDR+`UPC_BITS-1:`P_ADDR];
+    assign imm                = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
 
-    $fwrite(tracefd, "(%0d) %0d:", ctime, upc);
+    $fwrite(tracefd, "(%0d) %0d:", ctime, upc_prev);
 
-    if (sel_read != 0) $fwrite(tracefd, " sel_read");
-    if (sel_alu  != 0) $fwrite(tracefd, " sel_alu=%0s", alu_name[sel_alu]);
-    if (sel_addr != 0) $fwrite(tracefd, " sel_addr=%0s", addr_name[sel_addr]);
-    if (alu_op   != 0) $fwrite(tracefd, " alu_op=%0s", op_name[alu_op]);
+    if (~busy_prev) begin
+        $fwrite(tracefd, " %o", uop);
 
-    if (w_rm               != 0) $fwrite(tracefd, " w_rm");
-    if (w_acc              != 0) $fwrite(tracefd, " w_acc");
-    if (w_acc_mem          != 0) $fwrite(tracefd, " w_acc_mem");
-    //if (w_lsb              != 0) $fwrite(tracefd, " w_lsb");
-    if (w_opcode           != 0) $fwrite(tracefd, " w_opcode");
-    if (mem_read           != 0) $fwrite(tracefd, " mem_r");
-    if (mem_write          != 0) $fwrite(tracefd, " mem_w");
-    if (mem_fetch          != 0) $fwrite(tracefd, " mem_fetch");
-    if (w_pc_increment     != 0) $fwrite(tracefd, " w_pc_increment");
-    if (exit_interrupt     != 0) $fwrite(tracefd, " exit_interrupt");
-    if (enter_interrupt    != 0) $fwrite(tracefd, " enter_interrupt");
-    if (cond_op_not_cached != 0) $fwrite(tracefd, " cond_op_not_cached");
-    if (cond_a_zero        != 0) $fwrite(tracefd, " cond_a_zero");
-    if (cond_a_neg         != 0) $fwrite(tracefd, " cond_a_neg");
-    if (decode             != 0) $fwrite(tracefd, " decode");
-    if (branch             != 0) $fwrite(tracefd, " branch");
+        if (sel_read != 0) $fwrite(tracefd, " sel_read");
+        if (sel_alu  != 0) $fwrite(tracefd, " sel_alu=%0s", alu_name[sel_alu]);
+        if (sel_addr != 0) $fwrite(tracefd, " sel_addr=%0s", addr_name[sel_addr]);
+        if (alu_op   != 0) $fwrite(tracefd, " alu_op=%0s", op_name[alu_op]);
 
-    if (goto  != 0)    $fwrite(tracefd, " goto=%0d", goto);
-    $fdisplay(tracefd, "");
+        if (w_rm               != 0) $fwrite(tracefd, " w_rm");
+        if (w_acc              != 0) $fwrite(tracefd, " w_acc");
+        if (w_acc_mem          != 0) $fwrite(tracefd, " w_acc_mem");
+        //if (w_lsb              != 0) $fwrite(tracefd, " w_lsb");
+        if (w_opcode           != 0) $fwrite(tracefd, " w_opcode");
+        if (mem_read           != 0) $fwrite(tracefd, " mem_r");
+        if (mem_write          != 0) $fwrite(tracefd, " mem_w");
+        if (mem_fetch          != 0) $fwrite(tracefd, " mem_fetch");
+        if (w_pc_increment     != 0) $fwrite(tracefd, " w_pc_increment");
+        if (exit_interrupt     != 0) $fwrite(tracefd, " exit_interrupt");
+        if (enter_interrupt    != 0) $fwrite(tracefd, " enter_interrupt");
+        if (cond_op_not_cached != 0) $fwrite(tracefd, " cond_op_not_cached");
+        if (cond_a_zero        != 0) $fwrite(tracefd, " cond_a_zero");
+        if (cond_a_neg         != 0) $fwrite(tracefd, " cond_a_neg");
+        if (decode             != 0) $fwrite(tracefd, " decode");
+        if (branch             != 0) $fwrite(tracefd, " branch");
+
+        if (imm != 0) $fwrite(tracefd, " imm=%0o", imm);
+        if (uop == 0) $fwrite(tracefd, " nop");
+        $fdisplay(tracefd, "");
+
+    end else
+        $fdisplay(tracefd, " --- busy");
+
+    // ---- register operation dump ----
+    if (cpu.w_rm) $fdisplay(tracefd, "--- set M[%0d]=0x%h", cpu.op_ir, cpu.alu.alu_r);
+    if (cpu.w_acc) $fdisplay(tracefd, "--- set A=0x%h", cpu.alu.alu_r);
+    if (cpu.w_acc_mem) $fdisplay(tracefd, "--- set A=0x%h (from MEM)", cpu.dbus_input);
+    if (cpu.w_lsb) $fdisplay(tracefd, "--- set B=0x%h", cpu.alu.alu_r);
+    if (cpu.w_opcode & ~cpu.is_op_cached) $fdisplay(tracefd, "--- set opcode_cache=0x%h, pc_cached=0x%h", cpu.alu.alu_r, {cpu.pc[31:2], 2'b0});
+
+    if (~cpu.busy & upc_prev == `UADDR_INTERRUPT) $fdisplay(tracefd, "--- ***** ENTERING INTERRUPT MICROCODE ******");
+    if (~cpu.busy & cpu.exit_interrupt) $fdisplay(tracefd, "--- ***** INTERRUPT FLAG CLEARED *****");
+    if (~cpu.busy & cpu.enter_interrupt) $fdisplay(tracefd, "--- ***** INTERRUPT FLAG SET *****");
+
 endtask
 
 endmodule

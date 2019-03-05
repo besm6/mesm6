@@ -1,0 +1,116 @@
+[*]
+[*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
+[*] Tue Mar  5 00:40:18 2019
+[*]
+[dumpfile] "/home/vak/Stuff/Besm-6/mesm6/output.vcd"
+[dumpfile_mtime] "Tue Mar  5 00:38:31 2019"
+[dumpfile_size] 34280
+[savefile] "/home/vak/Stuff/Besm-6/mesm6/cpu.gtkw"
+[timestart] 0
+[size] 1761 874
+[pos] 0 57
+*-11.572612 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] testbench.
+[treeopen] testbench.cpu.
+[sst_width] 235
+[signals_width] 174
+[sst_expanded] 1
+[sst_vpaned_height] 255
+@200
+-Data Bus
+@22
+testbench.dbus_addr[14:0]
+@28
+testbench.dbus_rd
+testbench.dbus_wr
+@22
+testbench.dbus_input[47:0]
+testbench.dbus_output[47:0]
+@28
+testbench.dbus_done
+@200
+-Instruction Bus
+@22
+testbench.ibus_addr[14:0]
+@28
+testbench.ibus_rd
+@22
+testbench.ibus_input[47:0]
+@28
+testbench.ibus_done
+testbench.reset
+testbench.clk
+testbench.irq
+@23
+testbench.ctime[63:0]
+@200
+-Processor
+@22
+testbench.cpu.uop[35:0]
+@28
+testbench.cpu.busy
+@22
+testbench.cpu.acc[47:0]
+@28
+testbench.cpu.acc_is_neg
+testbench.cpu.acc_is_zero
+@22
+#{testbench.cpu.alu_a[47:0]} testbench.cpu.alu_a[47] testbench.cpu.alu_a[46] testbench.cpu.alu_a[45] testbench.cpu.alu_a[44] testbench.cpu.alu_a[43] testbench.cpu.alu_a[42] testbench.cpu.alu_a[41] testbench.cpu.alu_a[40] testbench.cpu.alu_a[39] testbench.cpu.alu_a[38] testbench.cpu.alu_a[37] testbench.cpu.alu_a[36] testbench.cpu.alu_a[35] testbench.cpu.alu_a[34] testbench.cpu.alu_a[33] testbench.cpu.alu_a[32] testbench.cpu.alu_a[31] testbench.cpu.alu_a[30] testbench.cpu.alu_a[29] testbench.cpu.alu_a[28] testbench.cpu.alu_a[27] testbench.cpu.alu_a[26] testbench.cpu.alu_a[25] testbench.cpu.alu_a[24] testbench.cpu.alu_a[23] testbench.cpu.alu_a[22] testbench.cpu.alu_a[21] testbench.cpu.alu_a[20] testbench.cpu.alu_a[19] testbench.cpu.alu_a[18] testbench.cpu.alu_a[17] testbench.cpu.alu_a[16] testbench.cpu.alu_a[15] testbench.cpu.alu_a[14] testbench.cpu.alu_a[13] testbench.cpu.alu_a[12] testbench.cpu.alu_a[11] testbench.cpu.alu_a[10] testbench.cpu.alu_a[9] testbench.cpu.alu_a[8] testbench.cpu.alu_a[7] testbench.cpu.alu_a[6] testbench.cpu.alu_a[5] testbench.cpu.alu_a[4] testbench.cpu.alu_a[3] testbench.cpu.alu_a[2] testbench.cpu.alu_a[1] testbench.cpu.alu_a[0]
+#{testbench.cpu.alu_b[47:0]} testbench.cpu.alu_b[47] testbench.cpu.alu_b[46] testbench.cpu.alu_b[45] testbench.cpu.alu_b[44] testbench.cpu.alu_b[43] testbench.cpu.alu_b[42] testbench.cpu.alu_b[41] testbench.cpu.alu_b[40] testbench.cpu.alu_b[39] testbench.cpu.alu_b[38] testbench.cpu.alu_b[37] testbench.cpu.alu_b[36] testbench.cpu.alu_b[35] testbench.cpu.alu_b[34] testbench.cpu.alu_b[33] testbench.cpu.alu_b[32] testbench.cpu.alu_b[31] testbench.cpu.alu_b[30] testbench.cpu.alu_b[29] testbench.cpu.alu_b[28] testbench.cpu.alu_b[27] testbench.cpu.alu_b[26] testbench.cpu.alu_b[25] testbench.cpu.alu_b[24] testbench.cpu.alu_b[23] testbench.cpu.alu_b[22] testbench.cpu.alu_b[21] testbench.cpu.alu_b[20] testbench.cpu.alu_b[19] testbench.cpu.alu_b[18] testbench.cpu.alu_b[17] testbench.cpu.alu_b[16] testbench.cpu.alu_b[15] testbench.cpu.alu_b[14] testbench.cpu.alu_b[13] testbench.cpu.alu_b[12] testbench.cpu.alu_b[11] testbench.cpu.alu_b[10] testbench.cpu.alu_b[9] testbench.cpu.alu_b[8] testbench.cpu.alu_b[7] testbench.cpu.alu_b[6] testbench.cpu.alu_b[5] testbench.cpu.alu_b[4] testbench.cpu.alu_b[3] testbench.cpu.alu_b[2] testbench.cpu.alu_b[1] testbench.cpu.alu_b[0]
+@28
+testbench.cpu.alu_done
+@22
+#{testbench.cpu.alu_op[3:0]} testbench.cpu.alu_op[3] testbench.cpu.alu_op[2] testbench.cpu.alu_op[1] testbench.cpu.alu_op[0]
+#{testbench.cpu.alu_r[47:0]} testbench.cpu.alu_r[47] testbench.cpu.alu_r[46] testbench.cpu.alu_r[45] testbench.cpu.alu_r[44] testbench.cpu.alu_r[43] testbench.cpu.alu_r[42] testbench.cpu.alu_r[41] testbench.cpu.alu_r[40] testbench.cpu.alu_r[39] testbench.cpu.alu_r[38] testbench.cpu.alu_r[37] testbench.cpu.alu_r[36] testbench.cpu.alu_r[35] testbench.cpu.alu_r[34] testbench.cpu.alu_r[33] testbench.cpu.alu_r[32] testbench.cpu.alu_r[31] testbench.cpu.alu_r[30] testbench.cpu.alu_r[29] testbench.cpu.alu_r[28] testbench.cpu.alu_r[27] testbench.cpu.alu_r[26] testbench.cpu.alu_r[25] testbench.cpu.alu_r[24] testbench.cpu.alu_r[23] testbench.cpu.alu_r[22] testbench.cpu.alu_r[21] testbench.cpu.alu_r[20] testbench.cpu.alu_r[19] testbench.cpu.alu_r[18] testbench.cpu.alu_r[17] testbench.cpu.alu_r[16] testbench.cpu.alu_r[15] testbench.cpu.alu_r[14] testbench.cpu.alu_r[13] testbench.cpu.alu_r[12] testbench.cpu.alu_r[11] testbench.cpu.alu_r[10] testbench.cpu.alu_r[9] testbench.cpu.alu_r[8] testbench.cpu.alu_r[7] testbench.cpu.alu_r[6] testbench.cpu.alu_r[5] testbench.cpu.alu_r[4] testbench.cpu.alu_r[3] testbench.cpu.alu_r[2] testbench.cpu.alu_r[1] testbench.cpu.alu_r[0]
+testbench.cpu.amod[14:0]
+@28
+testbench.cpu.branch
+testbench.cpu.cond_acc_neg
+testbench.cpu.cond_acc_zero
+testbench.cpu.cond_branch
+testbench.cpu.cond_op_not_cached
+testbench.cpu.decode
+testbench.cpu.enter_interrupt
+@22
+#{testbench.cpu.exaddr[14:0]} testbench.cpu.exaddr[14] testbench.cpu.exaddr[13] testbench.cpu.exaddr[12] testbench.cpu.exaddr[11] testbench.cpu.exaddr[10] testbench.cpu.exaddr[9] testbench.cpu.exaddr[8] testbench.cpu.exaddr[7] testbench.cpu.exaddr[6] testbench.cpu.exaddr[5] testbench.cpu.exaddr[4] testbench.cpu.exaddr[3] testbench.cpu.exaddr[2] testbench.cpu.exaddr[1] testbench.cpu.exaddr[0]
+@28
+testbench.cpu.exit_interrupt
+testbench.cpu.int_requested
+testbench.cpu.interrupt
+testbench.cpu.is_op_cached
+@22
+testbench.cpu.lsb[47:0]
+@28
+testbench.cpu.on_interrupt
+@22
+#{testbench.cpu.op_addr[14:0]} testbench.cpu.op_addr[14] testbench.cpu.op_addr[13] testbench.cpu.op_addr[12] testbench.cpu.op_addr[11] testbench.cpu.op_addr[10] testbench.cpu.op_addr[9] testbench.cpu.op_addr[8] testbench.cpu.op_addr[7] testbench.cpu.op_addr[6] testbench.cpu.op_addr[5] testbench.cpu.op_addr[4] testbench.cpu.op_addr[3] testbench.cpu.op_addr[2] testbench.cpu.op_addr[1] testbench.cpu.op_addr[0]
+@28
+testbench.cpu.op_entry
+@22
+#{testbench.cpu.op_ir[3:0]} testbench.cpu.op_ir[3] testbench.cpu.op_ir[2] testbench.cpu.op_ir[1] testbench.cpu.op_ir[0]
+#{testbench.cpu.op_lcmd[3:0]} testbench.cpu.op_lcmd[3] testbench.cpu.op_lcmd[2] testbench.cpu.op_lcmd[1] testbench.cpu.op_lcmd[0]
+@28
+testbench.cpu.op_lflag
+@22
+#{testbench.cpu.op_scmd[5:0]} testbench.cpu.op_scmd[5] testbench.cpu.op_scmd[4] testbench.cpu.op_scmd[3] testbench.cpu.op_scmd[2] testbench.cpu.op_scmd[1] testbench.cpu.op_scmd[0]
+#{testbench.cpu.opcode[23:0]} testbench.cpu.opcode[23] testbench.cpu.opcode[22] testbench.cpu.opcode[21] testbench.cpu.opcode[20] testbench.cpu.opcode[19] testbench.cpu.opcode[18] testbench.cpu.opcode[17] testbench.cpu.opcode[16] testbench.cpu.opcode[15] testbench.cpu.opcode[14] testbench.cpu.opcode[13] testbench.cpu.opcode[12] testbench.cpu.opcode[11] testbench.cpu.opcode[10] testbench.cpu.opcode[9] testbench.cpu.opcode[8] testbench.cpu.opcode[7] testbench.cpu.opcode[6] testbench.cpu.opcode[5] testbench.cpu.opcode[4] testbench.cpu.opcode[3] testbench.cpu.opcode[2] testbench.cpu.opcode[1] testbench.cpu.opcode[0]
+testbench.cpu.opcode_cache[47:0]
+testbench.cpu.pc[15:0]
+testbench.cpu.pc_cached[15:1]
+testbench.cpu.rr[5:0]
+@28
+#{testbench.cpu.sel_addr[1:0]} testbench.cpu.sel_addr[1] testbench.cpu.sel_addr[0]
+#{testbench.cpu.sel_alu[1:0]} testbench.cpu.sel_alu[1] testbench.cpu.sel_alu[0]
+testbench.cpu.sel_read
+@22
+#{testbench.cpu.sp[14:0]} testbench.cpu.sp[14] testbench.cpu.sp[13] testbench.cpu.sp[12] testbench.cpu.sp[11] testbench.cpu.sp[10] testbench.cpu.sp[9] testbench.cpu.sp[8] testbench.cpu.sp[7] testbench.cpu.sp[6] testbench.cpu.sp[5] testbench.cpu.sp[4] testbench.cpu.sp[3] testbench.cpu.sp[2] testbench.cpu.sp[1] testbench.cpu.sp[0]
+#{testbench.cpu.uop_addr[8:0]} testbench.cpu.uop_addr[8] testbench.cpu.uop_addr[7] testbench.cpu.uop_addr[6] testbench.cpu.uop_addr[5] testbench.cpu.uop_addr[4] testbench.cpu.uop_addr[3] testbench.cpu.uop_addr[2] testbench.cpu.uop_addr[1] testbench.cpu.uop_addr[0]
+@28
+testbench.cpu.w_acc
+testbench.cpu.w_acc_mem
+testbench.cpu.w_lsb
+testbench.cpu.w_opcode
+testbench.cpu.w_pc
+testbench.cpu.w_rm
+[pattern_trace] 1
+[pattern_trace] 0

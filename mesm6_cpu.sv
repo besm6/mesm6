@@ -81,9 +81,9 @@ wire        acc_is_zero;            // A == 0
 wire        acc_is_neg;             // A[41] == 1
 wire        busy;                   // busy signal to microcode sequencer (stalls cpu)
 
-reg  [`UPC_BITS-1:0] upc;           // microcode PC
+reg  [`UPC_BITS-1:0] upc_next;      // microcode PC
 reg  [`UOP_BITS-1:0] uop;           // current microcode operation
-wire [`UPC_BITS-1:0] uop_addr;      // address field of microinstruction
+wire [`UPC_BITS-1:0] uop_imm;       // immediate field of microinstruction
 
 // Opcode fields.
 wire [3:0]  op_ir    = opcode[23:20];   // index register
@@ -118,7 +118,7 @@ wire        alu_done;
 // alu inputs multiplexors
 // constant in microcode is sign extended (in order to implement substractions like adds)
 assign alu_a = (sel_read == `SEL_READ_DATA) ? dbus_input : dbus_addr;
-assign alu_b = (sel_alu == `SEL_ALU_CONST)  ? { {39{uop_addr[`UPC_BITS-1]}}, uop_addr } : // most priority
+assign alu_b = (sel_alu == `SEL_ALU_CONST)  ? { {39{uop_imm[`UPC_BITS-1]}}, uop_imm } : // most priority
                (sel_alu == `SEL_ALU_A)      ? acc :
                (sel_alu == `SEL_ALU_B)      ? lsb : { {24{1'b0}} , opcode };    // `SEL_ALU_OPCODE is less priority
 
@@ -208,7 +208,7 @@ logic [`UOP_BITS-1:0] uop_rom[(1<<`UPC_BITS)-1:0] = '{
 };
 
 always @(posedge clk)
-    uop <= uop_rom[upc];
+    uop <= uop_rom[upc_next];
 
 //--------------------------------------------------------------
 // Tables of microcode routines.
@@ -244,7 +244,7 @@ assign w_opcode   = uop[`P_W_OPCODE] & ~busy;
 assign ibus_fetch = uop[`P_FETCH];
 assign dbus_read  = uop[`P_MEM_R];
 assign dbus_write = uop[`P_MEM_W];
-assign uop_addr   = uop[`P_ADDR+`UPC_BITS-1:`P_ADDR];
+assign uop_imm   = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
 
 assign exit_interrupt  = uop[`P_EXIT_INT]  & ~busy;
 assign enter_interrupt = uop[`P_ENTER_INT] & ~busy;
@@ -279,22 +279,22 @@ end
 // Update microcode PC address
 always @(posedge clk) begin
     if (reset) begin
-        upc <= `UADDR_RESET;                // reset vector
+        upc_next <= `UADDR_RESET;           // reset vector
 
     end else if (~busy) begin
         // get next microcode instruction
         if (branch | cond_branch) begin     // jump to mucrocode address
-            upc <= uop_addr;
+            upc_next <= uop_imm;
 
         end else if (decode) begin
             // decode: entry point of a new besm6 opcode
             if (int_requested)
-                upc <= `UADDR_INTERRUPT;    // enter interrupt mode
+                upc_next <= `UADDR_INTERRUPT; // enter interrupt mode
             else
-                upc <= op_entry;            // jump to routine to emulate a given besm6 opcode
+                upc_next <= op_entry;       // jump to routine to emulate a given besm6 opcode
 
         end else begin
-            upc <= upc + 1;                 // default, next microcode instruction
+            upc_next <= upc_next + 1;       // default, next microcode instruction
         end
     end
 end

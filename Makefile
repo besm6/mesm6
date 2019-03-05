@@ -32,4 +32,4 @@ run:            work
 		vsim -c -l run.log -do 'run 0.1us; quit' testbench +dump +nowarn3116 | tee run.log
 
 view:
-		gtkwave output.vcd databus.gtkw
+		gtkwave output.vcd cpu.gtkw &

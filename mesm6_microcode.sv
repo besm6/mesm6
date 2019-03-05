@@ -6,7 +6,7 @@
 
 `define ALU_A                   (`SEL_ALU_A << `P_SEL_ALU)          // 2 bit
 `define ALU_OPCODE              (`SEL_ALU_OPCODE << `P_SEL_ALU)
-`define ALU_CONST(addr)         (`SEL_ALU_CONST << `P_SEL_ALU | (addr) << `P_ADDR)
+`define ALU_CONST(addr)         (`SEL_ALU_CONST << `P_SEL_ALU | (addr) << `P_IMM)
 `define ALU_B                   (`SEL_ALU_B << `P_SEL_ALU)
 
 `define ADDR_PC                 (`SEL_ADDR_PC << `P_SEL_ADDR)       // 2 bits
@@ -36,10 +36,10 @@
 `define MEM_W                   (1 << `P_MEM_W)
 
 `define DECODE                      (1 << `P_DECODE)
-`define BRANCH(addr)                (1 << `P_BRANCH | (addr) << `P_ADDR)
-`define BRANCHIF_OP_NOT_CACHED(a)   (1 << `P_OP_NOT_CACHED | (a) << `P_ADDR)
-`define BRANCHIF_A_ZERO(addr)       (1 << `P_A_ZERO | (addr) << `P_ADDR)
-`define BRANCHIF_A_NEG(addr)        (1 << `P_A_NEG | (addr) << `P_ADDR)
+`define BRANCH(addr)                (1 << `P_BRANCH | (addr) << `P_IMM)
+`define BRANCHIF_OP_NOT_CACHED(a)   (1 << `P_OP_NOT_CACHED | (a) << `P_IMM)
+`define BRANCHIF_A_ZERO(addr)       (1 << `P_A_ZERO | (addr) << `P_IMM)
+`define BRANCHIF_A_NEG(addr)        (1 << `P_A_NEG | (addr) << `P_IMM)
 
 // microcode common operations
 
@@ -86,14 +86,14 @@ c = 0;
 // Microcode entry point after reset.
 //
 // initialize cpu registers
-//    sp = @SP_START
+//    sp = 0
 //    pc = @RESET_VECTOR
 //
 $display("`define UADDR_RESET %0d", c);
-op(0);                                                    // reserved and empty for correct cpu startup
-op(`ALU_CONST(`SP_START) | `NOP_B | `W_RM);               // sp = @SP_START
-op(`ALU_CONST(`RESET_VECTOR) | `NOP_B | `W_PC |          // pc = @RESET
-              `EXIT_INTERRUPT);                                      // enable interrupts on reset
+op(0);                                                  // reserved and empty for correct cpu startup
+op(`ALU_CONST(0) | `NOP_B | `W_RM);                     // sp = 0
+op(`ALU_CONST(`RESET_VECTOR) | `NOP_B | `W_PC |         // pc = @RESET
+              `EXIT_INTERRUPT);                         // enable interrupts on reset
 // fall throught fetch/decode
 
 //--------------------------------------------------------------

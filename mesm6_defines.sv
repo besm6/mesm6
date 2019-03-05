@@ -1,4 +1,3 @@
-`define SP_START            15'o77777   // after reset change in startup code TODO: remove
 `define EMULATION_VECTOR    15'o10      // table of emulated opcodes (interrupt & exception vectors plus up to 5 emulated opcodes) TODO: remove
 `define RESET_VECTOR        15'o1       // reset entry point (can be moved up to 0x3c as per emulation table needs)
 
@@ -46,12 +45,12 @@
 `define UADDR_EMULATE           9
 
 // ---------- microcode settings --------------------
-`define P_ADDR                  0  // microcode address (9 bits) or constant to be used at microcode level
+`define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level
 `define P_SEL_READ              9   // alu-A multiplexor between data-in and addr-out (1 bit)
-`define P_SEL_ALU               10   // alu-B multiplexor between a, b, mc_const or opcode (2 bits)
-`define P_SEL_ADDR              12   // addr-out multiplexor between sp, pc, a, b (2 bits)
-`define P_ALU                   14   // alu operation (4 bits)
-`define P_W_RM                  18   // write M[i] (from alu-out)
+`define P_SEL_ALU               10  // alu-B multiplexor between a, b, mc_const or opcode (2 bits)
+`define P_SEL_ADDR              12  // addr-out multiplexor between sp, pc, a, b (2 bits)
+`define P_ALU                   14  // alu operation (4 bits)
+`define P_W_RM                  18  // write M[i] (from alu-out)
 `define P_W_PC                  19  // write pc (from alu-out)
 `define P_W_A                   20  // write a (from alu-out)
 `define P_FETCH                 21  // request instruction fetch
