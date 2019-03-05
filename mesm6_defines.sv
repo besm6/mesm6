@@ -50,7 +50,7 @@
 `define P_SEL_ALU               10  // alu-B multiplexor between a, b, mc_const or opcode (2 bits)
 `define P_SEL_ADDR              12  // addr-out multiplexor between sp, pc, a, b (2 bits)
 `define P_ALU                   14  // alu operation (4 bits)
-`define P_W_RM                  18  // write M[i] (from alu-out)
+`define P_W_M                   18  // write M[i] (from alu-out)
 `define P_W_PC                  19  // write pc (from alu-out)
 `define P_W_A                   20  // write a (from alu-out)
 `define P_FETCH                 21  // request instruction fetch

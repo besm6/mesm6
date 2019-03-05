@@ -22,7 +22,7 @@
 `define NOT                     (`ALU_NOT << `P_ALU)
 `define PLUS_OFFSET             (`ALU_PLUS_OFFSET << `P_ALU)
 
-`define W_RM                    (1 << `P_W_RM)
+`define W_M                     (1 << `P_W_M)
 `define W_PC                    (1 << `P_W_PC)
 `define W_A                     (1 << `P_W_A)
 `define W_A_MEM                 (1 << `P_W_A_MEM)
@@ -44,8 +44,8 @@
 // microcode common operations
 
 `define PC_PLUS_1               (`ADDR_PC | `READ_ADDR | `ALU_CONST(1) | `PLUS  | `W_PC)
-`define SP_MINUS_4              (`ADDR_SP | `READ_ADDR | `ALU_CONST(-4 & 127) | `PLUS | `W_RM)
-`define SP_PLUS_4               (`ADDR_SP | `READ_ADDR | `ALU_CONST(4) | `PLUS  | `W_RM)
+`define SP_MINUS_4              (`ADDR_SP | `READ_ADDR | `ALU_CONST(-4 & 127) | `PLUS | `W_M)
+`define SP_PLUS_4               (`ADDR_SP | `READ_ADDR | `ALU_CONST(4) | `PLUS  | `W_M)
 
 `define FETCH                   (`BRANCHIF_OP_NOT_CACHED(`UADDR_FETCH) | `DECODE) // fetch and decode current PC opcode
 `define GO_NEXT                 `BRANCH(`UADDR_FETCH_NEXT)  // go to next opcode (PC=PC+1, fetch, decode)
@@ -89,9 +89,9 @@ c = 0;
 //    sp = 0
 //    pc = @RESET_VECTOR
 //
-$display("`define UADDR_RESET %0d", c);
 op(0);                                                  // reserved and empty for correct cpu startup
-op(`ALU_CONST(0) | `NOP_B | `W_RM);                     // sp = 0
+$display("`define UADDR_RESET %0d", c);
+op(`ALU_CONST(0) | `NOP_B | `W_M);                      // sp = 0
 op(`ALU_CONST(`RESET_VECTOR) | `NOP_B | `W_PC |         // pc = @RESET
               `EXIT_INTERRUPT);                         // enable interrupts on reset
 // fall throught fetch/decode
@@ -470,7 +470,7 @@ op(`ADDR_B | `MEM_W | `GO_NEXT);                           // mem[b] = a
 
 // 0000_1101 (0d) popsp   -------------------------------------
 //    sp = mem[sp]
-op(`ADDR_SP | `MEM_R | `W_RM | `GO_NEXT);                  // sp = mem[sp]
+op(`ADDR_SP | `MEM_R | `W_M | `GO_NEXT);                    // sp = mem[sp]
 
 
 // 0000_1110 (0e) ipsum    ------------------------------------
@@ -487,7 +487,7 @@ op(`ADDR_SP | `MEM_R | `READ_DATA | `W_PC);                // pc = mem[sp] (data
 op(`SP_PLUS_4);                                            // sp = sp+4
 op(`ADDR_SP | `MEM_R | `READ_DATA | `W_B);                 // b = mem[sp] (count)
 op(`SP_PLUS_4);                                            // sp = sp+4
-op(`ADDR_SP | `MEM_R | `READ_DATA | `W_RM);                // sp = mem[sp] (destination @)
+op(`ADDR_SP | `MEM_R | `READ_DATA | `W_M);                  // sp = mem[sp] (destination @)
 op(`ADDR_B | `READ_ADDR | `W_A);                           // a = b (count)
 // wset_loop:
 op(`BRANCHIF_A_ZERO(80));                                  // if (a==0) goto @wset_end
@@ -499,7 +499,7 @@ op(`ADDR_B | `READ_ADDR | `W_A | `BRANCH(72));             // a = b (count) || g
 // wset_end: wcpy_end: sncpy_end:
 op(`ADDR_A | `MEM_R | `READ_DATA | `W_PC);                 // pc = mem[a] (a is 0)
 op(`NOP_B | `ALU_CONST(4) | `W_B);                         // b = 4
-op(`ADDR_B | `MEM_R | `READ_DATA | `W_RM | `FETCH);        // sp=mem[b] || goto @fetch
+op(`ADDR_B | `MEM_R | `READ_DATA | `W_M | `FETCH);          // sp=mem[b] || goto @fetch
 
 // wcpy_continue1: ------------------------
 op(`ADDR_A | `READ_ADDR | `PLUS | `ALU_CONST(12) | `W_A);  // a = a+12    save clear stack on mem[4]
@@ -508,7 +508,7 @@ op(`ADDR_SP | `MEM_R | `READ_DATA | `W_B);                 // b = mem[sp] (count
 op(`SP_PLUS_4);                                            // sp = sp+4
 op(`ADDR_SP | `MEM_R | `READ_DATA | `W_PC);                // pc = mem[sp] (destination @)
 op(`SP_PLUS_4);                                            // sp = sp+4
-op(`ADDR_SP | `MEM_R | `READ_DATA | `W_RM);                // sp = mem[sp] (source @)
+op(`ADDR_SP | `MEM_R | `READ_DATA | `W_M);                  // sp = mem[sp] (source @)
 op(`ADDR_B | `READ_ADDR | `W_A);                           // a = b (count)
 // wcpy_loop:
 op(`BRANCHIF_A_ZERO(80));                                  // if (a==0) goto @wcpy_end
@@ -787,14 +787,14 @@ op(`ADDR_SP | `MEM_W | `GO_NEXT);                         // mem[sp] = a
 // neqbranch / eqbranch --- continued microcode   -------------------------------------
 //    sp = sp + 2
 //    pc = pc + a
-op(`ADDR_SP | `READ_ADDR | `PLUS | `ALU_CONST(8) | `W_RM); // sp = sp + 2
+op(`ADDR_SP | `READ_ADDR | `PLUS | `ALU_CONST(8) | `W_M);   // sp = sp + 2
 op(`ADDR_PC | `READ_ADDR | `ALU_A | `PLUS | `W_PC);       // pc = pc + a
 op(`FETCH);                                               // op_cached ? decode : goto fetch
 
 // neqbranch / eqbranch  --- continued microcode   -------------------------------------
 //    sp = sp + 2
 //  pc = pc + 1
-op(`ADDR_SP | `READ_ADDR | `PLUS | `ALU_CONST(8) | `W_RM); // sp = sp + 2
+op(`ADDR_SP | `READ_ADDR | `PLUS | `ALU_CONST(8) | `W_M);   // sp = sp + 2
 op(`PC_PLUS_1);                                           // pc = pc + 1
 op(`FETCH);                                               // op_cached? decode : goto fetch
 

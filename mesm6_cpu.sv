@@ -53,7 +53,7 @@ module mesm6_core (
 reg  [15:0] pc;                     // program counter (half word granularity)
 reg  [47:0] acc;                    // A: accumulator
 reg  [47:0] lsb;                    // Y: least significant bits
-reg  [14:0] rm[16];                 // M1-M15: index registers (modifiers)
+reg  [14:0] M[16];                  // M1-M15: index registers (modifiers)
 reg  [14:0] amod;                   // C: address modifier (m16)
 reg  [5:0]  rr;                     // R: rounding mode register
 reg  [15:1] pc_cached;              // cached PC
@@ -71,7 +71,7 @@ wire        sel_read;               // mux for data-in
 wire  [1:0] sel_alu;                // mux for alu
 wire  [1:0] sel_addr;               // mux for addr
 wire        w_pc;                   // write PC
-wire        w_rm;                   // write M[i]
+wire        w_m;                    // write M[i]
 wire        w_acc;                  // write A (from ALU result)
 wire        w_acc_mem;              // write A (from MEM read)
 wire        w_lsb;                  // write Y
@@ -81,7 +81,7 @@ wire        acc_is_zero;            // A == 0
 wire        acc_is_neg;             // A[41] == 1
 wire        busy;                   // busy signal to microcode sequencer (stalls cpu)
 
-reg  [`UPC_BITS-1:0] upc_next;      // microcode PC
+reg  [`UPC_BITS-1:0] upc;           // microcode PC
 reg  [`UOP_BITS-1:0] uop;           // current microcode operation
 wire [`UPC_BITS-1:0] uop_imm;       // immediate field of microinstruction
 
@@ -104,7 +104,7 @@ assign opcode = (pc[0] == 0) ? opcode_cache[47:24]
                              : opcode_cache[23:0];
 
 // Executive address.
-assign exaddr = op_addr + rm[op_ir];
+assign exaddr = op_addr + M[op_ir];
 
 //--------------------------------------------------------------
 // ALU instantiation.
@@ -171,9 +171,9 @@ end
 always @(posedge clk)
 begin
     if (reset)
-        rm[0] <= 0;
-    else if (w_rm)
-        rm[op_ir] <= (op_ir == 0) ? 0 : alu_r;
+        M[0] <= 0;
+    else if (w_m)
+        M[op_ir] <= (op_ir == 0) ? 0 : alu_r;
 end
 
 //--------------------------------------------------------------
@@ -187,6 +187,17 @@ begin
     end
 end
 assign is_op_cached = (pc[15:1] == pc_cached) ? 1'b1 : 1'b0;
+
+//--------------------------------------------------------------
+// Handle interrupts.
+//
+always @(posedge clk) begin
+    if (reset | on_interrupt)
+        int_requested <= 0;
+
+    else if (interrupt & ~on_interrupt & ~int_requested)
+        int_requested <= 1;                         // interrupt requested
+end
 
 //--------------------------------------------------------------
 // `On interrupt' status bit.
@@ -207,26 +218,18 @@ logic [`UOP_BITS-1:0] uop_rom[(1<<`UPC_BITS)-1:0] = '{
     default: 0
 };
 
-always @(posedge clk)
-    uop <= uop_rom[upc_next];
-
 //--------------------------------------------------------------
-// Tables of microcode routines.
+// Tables of entry addresses per opcode.
 //
-logic [`UPC_BITS-1:0] uaddr_lcmd[16] = '{
+logic [`UPC_BITS-1:0] entry16[16] = '{
     `include "jumptab16.v"
     default: 0
 };
 
-logic [`UPC_BITS-1:0] uaddr_scmd[64] = '{
+logic [`UPC_BITS-1:0] entry64[64] = '{
     `include "jumptab64.v"
     default: 0
 };
-
-// Routine to implement a given besm6 opcode.
-wire op_entry = op_lflag ?
-                    uaddr_lcmd[op_lcmd] :
-                    uaddr_scmd[op_scmd];
 
 //--------------------------------------------------------------
 // Microcode execution unit.
@@ -235,7 +238,7 @@ assign sel_read   = uop[`P_SEL_READ];    // map datapath signals with microcode 
 assign sel_alu    = uop[`P_SEL_ALU+1:`P_SEL_ALU];
 assign sel_addr   = uop[`P_SEL_ADDR+1:`P_SEL_ADDR];
 assign alu_op     = uop[`P_ALU+3:`P_ALU];
-assign w_rm       = uop[`P_W_RM] & ~busy;
+assign w_m        = uop[`P_W_M] & ~busy;
 assign w_pc       = uop[`P_W_PC] & ~busy;
 assign w_acc      = uop[`P_W_A] & ~busy;
 assign w_acc_mem  = uop[`P_W_A_MEM] & ~busy;
@@ -244,7 +247,7 @@ assign w_opcode   = uop[`P_W_OPCODE] & ~busy;
 assign ibus_fetch = uop[`P_FETCH];
 assign dbus_read  = uop[`P_MEM_R];
 assign dbus_write = uop[`P_MEM_W];
-assign uop_imm   = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
+assign uop_imm    = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
 
 assign exit_interrupt  = uop[`P_EXIT_INT]  & ~busy;
 assign enter_interrupt = uop[`P_ENTER_INT] & ~busy;
@@ -253,50 +256,35 @@ wire   cond_op_not_cached = uop[`P_OP_NOT_CACHED];  // conditional: true if opco
 wire   cond_acc_zero      = uop[`P_A_ZERO];         // conditional: true if A is zero
 wire   cond_acc_neg       = uop[`P_A_NEG];          // conditional: true if A is negative
 wire   decode             = uop[`P_DECODE];         // decode means jumps to apropiate microcode based on besm6 opcode
-wire   branch             = uop[`P_BRANCH];         // unconditional jump inside microcode
+wire   uncond_branch      = uop[`P_BRANCH];         // unconditional jump inside microcode
 
-// Conditional branch flag: sum of all conditionals.
-wire cond_branch = (cond_op_not_cached & ~is_op_cached) |
-                   (cond_acc_zero & acc_is_zero) |
-                   (cond_acc_neg & acc_is_neg);
+// Branch flag: sum of all conditionals and unconditionals.
+wire branch = (cond_op_not_cached & ~is_op_cached) |
+              (cond_acc_zero & acc_is_zero) |
+              (cond_acc_neg & acc_is_neg) |
+              uncond_branch;
 
 // Busy signal for microcode sequencer.
 assign busy = ((dbus_read | dbus_write) & ~dbus_done) |
               (ibus_fetch & ~ibus_done) |
               ~alu_done;
 
-//--------------------------------------------------------------
-// Handle interrupts.
-//
-always @(posedge clk) begin
-    if (reset | on_interrupt)
-        int_requested <= 0;
+// Next microcode PC address.
+wire [`UPC_BITS-1:0] upc_next = reset ? `UADDR_RESET - 1 :  // reset vector
+                                 busy ? upc :               // stall
+                               branch ? uop_imm :           // jump to mucrocode address
+                              ~decode ? upc + 1 :           // next microcode instruction (default)
+                        int_requested ? `UADDR_INTERRUPT :  // enter interrupt mode
+                             op_lflag ? entry16[op_lcmd] :  // entry for long format opcode
+                                        entry64[op_scmd];   // entry for short format opcode
+always @(posedge clk)
+    upc <= upc_next;
 
-    else if (interrupt & ~on_interrupt & ~int_requested)
-        int_requested <= 1;                         // interrupt requested
-end
-
-// Update microcode PC address
-always @(posedge clk) begin
-    if (reset) begin
-        upc_next <= `UADDR_RESET;           // reset vector
-
-    end else if (~busy) begin
-        // get next microcode instruction
-        if (branch | cond_branch) begin     // jump to mucrocode address
-            upc_next <= uop_imm;
-
-        end else if (decode) begin
-            // decode: entry point of a new besm6 opcode
-            if (int_requested)
-                upc_next <= `UADDR_INTERRUPT; // enter interrupt mode
-            else
-                upc_next <= op_entry;       // jump to routine to emulate a given besm6 opcode
-
-        end else begin
-            upc_next <= upc_next + 1;       // default, next microcode instruction
-        end
-    end
-end
+// Microinstruction.
+always @(posedge clk)
+    if (reset)
+        uop <= '0;
+    else
+        uop <= uop_rom[upc];
 
 endmodule

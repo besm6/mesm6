@@ -173,7 +173,7 @@ endtask
 // Get time at the rising edge of the clock.
 always @(posedge clk) begin
     ctime = $time;
-    upc_prev = cpu.upc_next;
+    upc_prev = cpu.upc;
     busy_prev = cpu.busy;
     if (~reset & ~cpu.busy)
         uinstr_count++;
@@ -317,7 +317,7 @@ task print_uop(
     logic [1:0] sel_addr;
     logic [3:0] alu_op;
     logic       w_sp;
-    logic       w_rm;
+    logic       w_m;
     logic       w_acc;
     logic       w_acc_mem;
     logic       w_lsb;
@@ -339,7 +339,7 @@ task print_uop(
     assign sel_alu            = uop[`P_SEL_ALU+1:`P_SEL_ALU];
     assign sel_addr           = uop[`P_SEL_ADDR+1:`P_SEL_ADDR];
     assign alu_op             = uop[`P_ALU+3:`P_ALU];
-    assign w_rm               = uop[`P_W_RM];
+    assign w_m                = uop[`P_W_M];
     assign w_acc              = uop[`P_W_A];
     assign w_acc_mem          = uop[`P_W_A_MEM];
     //assign w_lsb              = uop[`P_W_B];
@@ -366,7 +366,7 @@ task print_uop(
         if (sel_addr != 0) $fwrite(tracefd, " sel_addr=%0s", addr_name[sel_addr]);
         if (alu_op   != 0) $fwrite(tracefd, " alu_op=%0s", op_name[alu_op]);
 
-        if (w_rm               != 0) $fwrite(tracefd, " w_rm");
+        if (w_m                != 0) $fwrite(tracefd, " w_m");
         if (w_acc              != 0) $fwrite(tracefd, " w_acc");
         if (w_acc_mem          != 0) $fwrite(tracefd, " w_acc_mem");
         //if (w_lsb              != 0) $fwrite(tracefd, " w_lsb");
@@ -391,7 +391,7 @@ task print_uop(
         $fdisplay(tracefd, " --- busy");
 
     // ---- register operation dump ----
-    if (cpu.w_rm) $fdisplay(tracefd, "--- set M[%0d]=0x%h", cpu.op_ir, cpu.alu.alu_r);
+    if (cpu.w_m) $fdisplay(tracefd, "--- set M[%0d]=0x%h", cpu.op_ir, cpu.alu.alu_r);
     if (cpu.w_acc) $fdisplay(tracefd, "--- set A=0x%h", cpu.alu.alu_r);
     if (cpu.w_acc_mem) $fdisplay(tracefd, "--- set A=0x%h (from MEM)", cpu.dbus_input);
     if (cpu.w_lsb) $fdisplay(tracefd, "--- set B=0x%h", cpu.alu.alu_r);
