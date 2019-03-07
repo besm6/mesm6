@@ -52,29 +52,39 @@ module mesm6_core (
 //
 reg  [15:0] pc;                     // program counter (half word granularity)
 reg  [47:0] acc;                    // A: accumulator
-reg  [47:0] lsb;                    // Y: least significant bits
+reg  [47:0] Y;                      // Y: least significant bits
 reg  [14:0] M[16];                  // M1-M15: index registers (modifiers)
-reg  [14:0] amod;                   // C: address modifier (m16)
-reg  [5:0]  rr;                     // R: rounding mode register
+reg  [14:0] C;                      // C: address modifier
+reg         c_active;               // C modifier is active
+reg  [5:0]  R;                      // R: rounding mode register
 reg  [15:1] pc_cached;              // cached PC
 reg  [47:0] opcode_cache;           // cached instruction word
-wire [23:0] opcode;                 // opcode being processed
-wire [14:0] exaddr;                 // executive address (opcode.addr + mN)
-wire [14:0] sp;                     // stack pointer (m15)
 
-reg         int_requested;          // interrupt has been requested
+wire [23:0] opcode;                 // opcode being processed
+wire [14:0] Uaddr;                  // executive address (opcode.addr + M[i] + C)
+wire [14:0] Mi;                     // output of M[i] read
+wire [14:0] Mj;                     // output of M[j] read
+
+reg         irq;                    // interrupt has been requested
 reg         on_interrupt;           // serving interrupt
 wire        exit_interrupt;         // microcode says this is poppc_interrupt
 wire        enter_interrupt;        // microcode says we are entering interrupt
 
-wire        sel_read;               // mux for data-in
-wire  [1:0] sel_alu;                // mux for alu
-wire  [1:0] sel_addr;               // mux for addr
+wire  [1:0] sel_pc;                 // mux for pc
+wire  [1:0] sel_mr;                 // mux for M[i] read address
+wire  [1:0] sel_mw;                 // mux for M[i] write address
+wire  [1:0] sel_mwd;                // mux for M[i] write data
+wire  [2:0] sel_acc;                // mux for A write data
+wire        sel_addr;               // mux for data address
+wire        sel_j_add;              // use M[j] for Uaddr instead of Vaddr
+wire        sel_c;                  // use memory output for C instead of Uaddr
+wire        clear_c;                // clear C flag
+wire        m_use;                  // use M[i] for Uaddr
 wire        w_pc;                   // write PC
 wire        w_m;                    // write M[i]
 wire        w_acc;                  // write A (from ALU result)
-wire        w_acc_mem;              // write A (from MEM read)
-wire        w_lsb;                  // write Y
+wire        w_y;                    // write Y
+wire        w_c;                    // write C
 wire        w_opcode;               // write OPCODE (opcode cache)
 wire        is_op_cached;           // is opcode available?
 wire        acc_is_zero;            // A == 0
@@ -96,15 +106,18 @@ wire [14:0] op_addr  =                  // address field
 
 // memory addr / write ports
 assign ibus_addr   = pc[15:1];
-assign dbus_addr   = (sel_addr == `SEL_ADDR_SP) ? sp : exaddr;
-assign dbus_output = acc;        // only A can be written to memory
+assign dbus_addr   = sel_addr ? Mi : Uaddr;
+assign dbus_output = acc;           // only A can be written to memory
 
 // select left or right opcode from the cached opcode word
 assign opcode = (pc[0] == 0) ? opcode_cache[47:24]
                              : opcode_cache[23:0];
 
+// Full address.
+assign Vaddr = (C & {15{c_active}}) + op_addr;
+
 // Executive address.
-assign exaddr = op_addr + M[op_ir];
+assign Uaddr = (Mi & {15{m_use}}) + (sel_j_add ? Mj : Vaddr);
 
 //--------------------------------------------------------------
 // ALU instantiation.
@@ -117,10 +130,8 @@ wire        alu_done;
 
 // alu inputs multiplexors
 // constant in microcode is sign extended (in order to implement substractions like adds)
-assign alu_a = (sel_read == `SEL_READ_DATA) ? dbus_input : dbus_addr;
-assign alu_b = (sel_alu == `SEL_ALU_CONST)  ? { {39{uop_imm[`UPC_BITS-1]}}, uop_imm } : // most priority
-               (sel_alu == `SEL_ALU_A)      ? acc :
-               (sel_alu == `SEL_ALU_B)      ? lsb : { {24{1'b0}} , opcode };    // `SEL_ALU_OPCODE is less priority
+assign alu_a = acc;
+assign alu_b = dbus_input;
 
 mesm6_alu alu(
     .alu_a      (alu_a),
@@ -134,21 +145,41 @@ mesm6_alu alu(
 //--------------------------------------------------------------
 // PC: program counter.
 //
-always @(posedge clk)
-begin
+always @(posedge clk) begin
     if (w_pc)
-        pc <= {alu_r, 1'b0};
+        pc <= (sel_pc == `SEL_PC_IMM)   ? uop_imm :   // constant
+              (sel_pc == `SEL_PC_REG)   ? Mi :        // M[i]
+              (sel_pc == `SEL_PC_PLUS1) ? pc + 1 :    // pc + 1
+              (sel_pc == `SEL_PC_VA)    ? Vaddr :     // addr + C
+                                          Uaddr;      // addr + C + M[i]
+end
+
+//--------------------------------------------------------------
+// C address modifier.
+//
+always @(posedge clk) begin
+    if (w_c)
+        C <= sel_c ? dbus_output :      // from memory
+                     Uaddr;             // addr + C + M[i]
+end
+
+always @(posedge clk) begin
+    if (clear_c)
+        c_active <= 0;                  // deactivate C modifier
+    else if (w_c)
+        c_active <= 1;                  // C modifier is active
 end
 
 //--------------------------------------------------------------
 // Accumulator register.
 //
-always @(posedge clk)
-begin
+always @(posedge clk) begin
     if (w_acc)
-        acc <= alu_r;
-    else if (w_acc_mem)
-        acc <= dbus_input;
+        acc <= (sel_acc == `SEL_ACC_MEM) ? dbus_input : // from memory
+               (sel_acc == `SEL_ACC_REG) ? Mi :         // M[i]
+               (sel_acc == `SEL_ACC_RR)  ? R :          // R register
+               (sel_acc == `SEL_ACC_Y)   ? Y :          // Y register
+                                           alu_r;       // from ALU
 end
 
 // alu results over A register instead of alu result
@@ -159,21 +190,40 @@ assign acc_is_neg  = acc[31];
 //--------------------------------------------------------------
 // Y register: least significant bits of mantissa.
 //
-always @(posedge clk)
-begin
-    if (w_lsb)
-        lsb <= alu_r;
+always @(posedge clk) begin
+    if (w_y)
+        Y <= alu_r;
 end
 
 //--------------------------------------------------------------
 // Modifiers M1-M15.
 //
-always @(posedge clk)
-begin
-    if (reset)
-        M[0] <= 0;
-    else if (w_m)
-        M[op_ir] <= (op_ir == 0) ? 0 : alu_r;
+
+// Read address.
+wire [14:0] m_ra = (sel_mr == `SEL_MR_IMM) ? uop_imm :      // constant
+                   (sel_mr == `SEL_MR_VA)  ? Vaddr :        // addr + C
+                   (sel_mr == `SEL_MR_UA)  ? Uaddr :        // addr + C + M[i]
+                                             op_ir;         // opcode[24:21]
+// Write address.
+wire [14:0] m_wa = (sel_mw == `SEL_MW_IMM) ? uop_imm :      // constant
+                   (sel_mw == `SEL_MW_VA)  ? Vaddr :        // addr + C
+                   (sel_mw == `SEL_MW_UA)  ? Uaddr :        // addr + C + M[i]
+                                             op_ir;         // opcode[24:21]
+// Read results.
+assign Mi = M[m_ra];
+assign Mj = M[Vaddr];
+
+always @(posedge clk) begin
+    if (w_m & (m_wa != 0))
+        M[m_wa] <= (m_wa == 0)                     ? 0 :        // M[0]
+                   (sel_mwd == `SEL_MD_PC)         ? pc[15:1] : // PC
+                   (sel_mwd == `SEL_MD_A)          ? acc :      // accumulator
+                   (sel_mwd == `SEL_MD_ALU)        ? alu_r :    // from ALU
+                   (sel_mwd == `SEL_MD_REG)        ? Mi :       // M[i]
+                   (sel_mwd == `SEL_MD_REG_PLUS1)  ? Mi + 1 :   // M[i]
+                   (sel_mwd == `SEL_MD_REG_MINUS1) ? Mi - 1 :   // M[i]
+                   (sel_mwd == `SEL_MD_VA)         ? Vaddr :    // addr + C
+                                                     Uaddr;     // addr + C + M[i]
 end
 
 //--------------------------------------------------------------
@@ -193,10 +243,10 @@ assign is_op_cached = (pc[15:1] == pc_cached) ? 1'b1 : 1'b0;
 //
 always @(posedge clk) begin
     if (reset | on_interrupt)
-        int_requested <= 0;
+        irq <= 0;
 
-    else if (interrupt & ~on_interrupt & ~int_requested)
-        int_requested <= 1;                         // interrupt requested
+    else if (interrupt & ~on_interrupt)
+        irq <= 1;                       // interrupt requested
 end
 
 //--------------------------------------------------------------
@@ -234,16 +284,23 @@ logic [`UPC_BITS-1:0] entry64[64] = '{
 //--------------------------------------------------------------
 // Microcode execution unit.
 //
-assign sel_read   = uop[`P_SEL_READ];    // map datapath signals with microcode program bits
-assign sel_alu    = uop[`P_SEL_ALU+1:`P_SEL_ALU];
-assign sel_addr   = uop[`P_SEL_ADDR+1:`P_SEL_ADDR];
+assign sel_addr   = uop[`P_SEL_ADDR];
+assign sel_acc    = uop[`P_SEL_ACC+2:`P_SEL_ACC];
+assign sel_mwd    = uop[`P_SEL_MWD+2:`P_SEL_MWD];
+assign sel_mw     = uop[`P_SEL_MW+1:`P_SEL_MW];
+assign sel_mr     = uop[`P_SEL_MR+1:`P_SEL_MR];
+assign sel_pc     = uop[`P_SEL_PC+1:`P_SEL_PC];
+assign sel_j_add  = uop[`P_SEL_J_ADD];
+assign sel_c      = uop[`P_SEL_C_MEM];
 assign alu_op     = uop[`P_ALU+3:`P_ALU];
 assign w_m        = uop[`P_W_M] & ~busy;
 assign w_pc       = uop[`P_W_PC] & ~busy;
 assign w_acc      = uop[`P_W_A] & ~busy;
-assign w_acc_mem  = uop[`P_W_A_MEM] & ~busy;
-//assign w_lsb      = uop[`P_W_Y] & ~busy;
+assign w_lsb      = uop[`P_W_Y] & ~busy;
+assign w_c        = uop[`P_W_C] & ~busy;
+assign clear_c    = uop[`P_CLEAR_C];
 assign w_opcode   = uop[`P_W_OPCODE] & ~busy;
+assign m_use      = uop[`P_M_USE];
 assign ibus_fetch = uop[`P_FETCH];
 assign dbus_read  = uop[`P_MEM_R];
 assign dbus_write = uop[`P_MEM_W];
@@ -274,7 +331,7 @@ wire [`UPC_BITS-1:0] upc_next = reset ? `UADDR_RESET - 1 :  // reset vector
                                  busy ? upc :               // stall
                                branch ? uop_imm :           // jump to mucrocode address
                               ~decode ? upc + 1 :           // next microcode instruction (default)
-                        int_requested ? `UADDR_INTERRUPT :  // enter interrupt mode
+                                  irq ? `UADDR_INTERRUPT :  // enter interrupt mode
                              op_lflag ? entry16[op_lcmd] :  // entry for long format opcode
                                         entry64[op_scmd];   // entry for short format opcode
 always @(posedge clk)

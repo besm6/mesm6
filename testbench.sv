@@ -312,14 +312,11 @@ task print_uop(
         12:"?12",  13:"?13",   14:"?14",  15:"?15"
     };
 
-    logic       sel_read;
-    logic [1:0] sel_alu;
-    logic [1:0] sel_addr;
-    logic [3:0] alu_op;
+    logic       sel_addr;
+    logic [5:0] alu_op;
     logic       w_sp;
     logic       w_m;
     logic       w_acc;
-    logic       w_acc_mem;
     logic       w_lsb;
     logic       w_opcode;
     logic       mem_read;
@@ -335,13 +332,10 @@ task print_uop(
     logic       branch;
     logic [`UPC_BITS-1:0] imm;
 
-    assign sel_read           = uop[`P_SEL_READ];
-    assign sel_alu            = uop[`P_SEL_ALU+1:`P_SEL_ALU];
-    assign sel_addr           = uop[`P_SEL_ADDR+1:`P_SEL_ADDR];
-    assign alu_op             = uop[`P_ALU+3:`P_ALU];
+    assign sel_addr           = uop[`P_SEL_ADDR];
+    assign alu_op             = uop[`P_ALU+5:`P_ALU];
     assign w_m                = uop[`P_W_M];
     assign w_acc              = uop[`P_W_A];
-    assign w_acc_mem          = uop[`P_W_A_MEM];
     //assign w_lsb              = uop[`P_W_B];
     assign w_opcode           = uop[`P_W_OPCODE];
     assign mem_read           = uop[`P_MEM_R];
@@ -361,14 +355,11 @@ task print_uop(
     if (~busy_prev) begin
         $fwrite(tracefd, " %o", uop);
 
-        if (sel_read != 0) $fwrite(tracefd, " sel_read");
-        if (sel_alu  != 0) $fwrite(tracefd, " sel_alu=%0s", alu_name[sel_alu]);
         if (sel_addr != 0) $fwrite(tracefd, " sel_addr=%0s", addr_name[sel_addr]);
         if (alu_op   != 0) $fwrite(tracefd, " alu_op=%0s", op_name[alu_op]);
 
         if (w_m                != 0) $fwrite(tracefd, " w_m");
         if (w_acc              != 0) $fwrite(tracefd, " w_acc");
-        if (w_acc_mem          != 0) $fwrite(tracefd, " w_acc_mem");
         //if (w_lsb              != 0) $fwrite(tracefd, " w_lsb");
         if (w_opcode           != 0) $fwrite(tracefd, " w_opcode");
         if (mem_read           != 0) $fwrite(tracefd, " mem_r");
@@ -393,7 +384,6 @@ task print_uop(
     // ---- register operation dump ----
     if (cpu.w_m) $fdisplay(tracefd, "--- set M[%0d]=0x%h", cpu.op_ir, cpu.alu.alu_r);
     if (cpu.w_acc) $fdisplay(tracefd, "--- set A=0x%h", cpu.alu.alu_r);
-    if (cpu.w_acc_mem) $fdisplay(tracefd, "--- set A=0x%h (from MEM)", cpu.dbus_input);
     if (cpu.w_lsb) $fdisplay(tracefd, "--- set B=0x%h", cpu.alu.alu_r);
     if (cpu.w_opcode & ~cpu.is_op_cached) $fdisplay(tracefd, "--- set opcode_cache=0x%h, pc_cached=0x%h", cpu.alu.alu_r, {cpu.pc[31:2], 2'b0});
 

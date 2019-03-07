@@ -1,18 +1,36 @@
 `timescale 1ns / 1ps
 `include "mesm6_defines.sv"
 
-`define READ_DATA               (`SEL_READ_DATA << `P_SEL_READ)     // 1 bit
-`define READ_ADDR               (`SEL_READ_ADDR << `P_SEL_READ)
+`define ACC_ALU                 (`SEL_ACC_ALU << `P_SEL_ACC)
+`define ACC_MEM                 (`SEL_ACC_MEM << `P_SEL_ACC)
+`define ACC_REG                 (`SEL_ACC_REG << `P_SEL_ACC)
+`define ACC_RR                  (`SEL_ACC_RR << `P_SEL_ACC)
+`define ACC_Y                   (`SEL_ACC_Y << `P_SEL_ACC)
 
-`define ALU_A                   (`SEL_ALU_A << `P_SEL_ALU)          // 2 bit
-`define ALU_OPCODE              (`SEL_ALU_OPCODE << `P_SEL_ALU)
-`define ALU_CONST(addr)         (`SEL_ALU_CONST << `P_SEL_ALU | (addr) << `P_IMM)
-`define ALU_B                   (`SEL_ALU_B << `P_SEL_ALU)
+`define MR_I                    (`SEL_MR_I << `P_SEL_MR)
+`define MR_IMM(val)             (`SEL_MR_IMM << `P_SEL_MR | (val) << `P_IMM)
+`define MR_VADDR                (`SEL_MR_VADDR << `P_SEL_MR)
+`define MR_UADDR                (`SEL_MR_UADDR << `P_SEL_MR)
 
-`define ADDR_PC                 (`SEL_ADDR_PC << `P_SEL_ADDR)       // 2 bits
-`define ADDR_SP                 (`SEL_ADDR_SP << `P_SEL_ADDR)
-`define ADDR_A                  (`SEL_ADDR_A <<  `P_SEL_ADDR)
-`define ADDR_B                  (`SEL_ADDR_B << `P_SEL_ADDR)
+`define MW_IMM(val)             (`SEL_MW_IMM << `P_SEL_MW | (val) << `P_IMM)
+
+`define MD_PC                   (`SEL_MD_PC << `P_SEL_MWD)
+`define MD_A                    (`SEL_MD_A << `P_SEL_MWD)
+`define MD_ALU                  (`SEL_MD_ALU << `P_SEL_MWD)
+`define MD_REG                  (`SEL_MD_REG << `P_SEL_MWD)
+`define MD_REG_PLUS1            (`SEL_MD_REG_PLUS1 << `P_SEL_MWD)
+`define MD_REG_MINUS1           (`SEL_MD_REG_PLUS1 << `P_SEL_MWD)
+`define MD_VA                   (`SEL_MD_VA << `P_SEL_MWD)
+`define MD_UA                   (`SEL_MD_UA << `P_SEL_MWD)
+
+`define ADDR_M(i)               (1 << `P_SEL_ADDR | `MR_IMM(i))
+`define ADDR_SP                 `ADDR_M(15)
+
+`define PC_REG                  (`SEL_PC_REG << `P_SEL_PC)
+`define PC_IMM(val)             (`SEL_PC_IMM << `P_SEL_PC | (val) << `P_IMM)
+`define PC_VA                   (`SEL_PC_VA << `P_SEL_PC)
+`define PC_UA                   (`SEL_PC_UA << `P_SEL_PC)
+`define PC_PLUS1                (`SEL_PC_PLUS1 << `P_SEL_PC)
 
 `define NOP                     (`ALU_NOP << `P_ALU)                // 4 bits
 `define NOP_B                   (`ALU_NOP_B << `P_ALU)
@@ -26,10 +44,10 @@
 `define W_PC                    (1 << `P_W_PC)
 `define W_A                     (1 << `P_W_A)
 `define W_A_MEM                 (1 << `P_W_A_MEM)
-`define W_B                     0 // unused
 `define W_OPCODE                (1 << `P_W_OPCODE)
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
+`define CLEAR_C                 (1 << `P_CLEAR_C)
 
 `define MEM_FETCH               (1 << `P_FETCH)
 `define MEM_R                   (1 << `P_MEM_R)
@@ -42,10 +60,8 @@
 `define BRANCHIF_A_NEG(addr)        (1 << `P_A_NEG | (addr) << `P_IMM)
 
 // microcode common operations
-
-`define PC_PLUS_1               (`ADDR_PC | `READ_ADDR | `ALU_CONST(1) | `PLUS  | `W_PC)
-`define SP_MINUS_4              (`ADDR_SP | `READ_ADDR | `ALU_CONST(-4 & 127) | `PLUS | `W_M)
-`define SP_PLUS_4               (`ADDR_SP | `READ_ADDR | `ALU_CONST(4) | `PLUS  | `W_M)
+`define SP_PLUS_1               (`MR_IMM(15) | `MW_IMM(15) | `MD_REG_PLUS1 | `W_M)
+`define SP_MINUS_1              (`MR_IMM(15) | `MW_IMM(15) | `MD_REG_MINUS1 | `W_M)
 
 `define FETCH                   (`BRANCHIF_OP_NOT_CACHED(`UADDR_FETCH) | `DECODE) // fetch and decode current PC opcode
 `define GO_NEXT                 `BRANCH(`UADDR_FETCH_NEXT)  // go to next opcode (PC=PC+1, fetch, decode)
@@ -59,7 +75,7 @@ reg [`UOP_BITS-1:0] memory[(1<<`UPC_BITS)-1:0];
 reg [`UPC_BITS-1:0] stab[64];
 reg [`UPC_BITS-1:0] ltab[16];
 
-int c, n, fd;
+int c, n, fd, ret;
 
 //
 // Add microinstruction to the table.
@@ -79,21 +95,43 @@ task opcode(integer op);
         stab[op] = c;
 endtask
 
+task print_message();
+    if (ret == 0)
+        $display("*** Please update the following declarations in file mesm6_defines.sv:");
+    ret = 1;
+endtask
+
 initial begin
 c = 0;
+ret = 0;
 
 //--------------------------------------------------------------
 // Microcode entry point after reset.
-//
-// initialize cpu registers
-//    sp = 0
-//    pc = @RESET_VECTOR
+// Initialize cpu registers.
 //
 op(0);                                                  // reserved and empty for correct cpu startup
-$display("`define UADDR_RESET %0d", c);
-op(`ALU_CONST(0) | `NOP_B | `W_M);                      // sp = 0
-op(`ALU_CONST(`RESET_VECTOR) | `NOP_B | `W_PC |         // pc = @RESET
-              `EXIT_INTERRUPT);                         // enable interrupts on reset
+if (`UADDR_RESET != c) begin
+    print_message();
+    $display("`define UADDR_RESET %0d", c);
+end
+op(`MD_A | `MW_IMM(0) | `W_M | `CLEAR_C);               // m0 = 0, C = 0
+op(`ACC_REG | `MR_IMM(0) | `W_A);                       // acc = 0
+op(`MD_A | `MW_IMM(1) | `W_M);                          // m1 = 0
+op(`MD_A | `MW_IMM(2) | `W_M);                          // m2 = 0
+op(`MD_A | `MW_IMM(3) | `W_M);                          // m3 = 0
+op(`MD_A | `MW_IMM(4) | `W_M);                          // m4 = 0
+op(`MD_A | `MW_IMM(5) | `W_M);                          // m5 = 0
+op(`MD_A | `MW_IMM(6) | `W_M);                          // m6 = 0
+op(`MD_A | `MW_IMM(7) | `W_M);                          // m7 = 0
+op(`MD_A | `MW_IMM(8) | `W_M);                          // m8 = 0
+op(`MD_A | `MW_IMM(9) | `W_M);                          // m9 = 0
+op(`MD_A | `MW_IMM(10) | `W_M);                         // m10 = 0
+op(`MD_A | `MW_IMM(11) | `W_M);                         // m11 = 0
+op(`MD_A | `MW_IMM(12) | `W_M);                         // m12 = 0
+op(`MD_A | `MW_IMM(13) | `W_M);                         // m13 = 0
+op(`MD_A | `MW_IMM(14) | `W_M);                         // m14 = 0
+op(`MD_A | `MW_IMM(15) | `W_M);                         // sp = 0
+op(`PC_IMM(`RESET_VECTOR) | `W_PC | `EXIT_INTERRUPT);   // pc = RESET_VECTOR, enable interrupts on reset
 // fall throught fetch/decode
 
 //--------------------------------------------------------------
@@ -102,9 +140,12 @@ op(`ALU_CONST(`RESET_VECTOR) | `NOP_B | `W_PC |         // pc = @RESET
 //    opcode=mem[pc]
 //    decode (goto microcode entry point for opcode)
 //
-$display("`define UADDR_FETCH %0d", c);
-op(`ADDR_PC | `READ_DATA | `MEM_FETCH | `W_OPCODE);       // opcode_cache = mem[pc]
-op(`DECODE);                                              // decode jump to microcode
+if (`UADDR_FETCH != c) begin
+    print_message();
+    $display("`define UADDR_FETCH %0d", c);
+end
+op(`MEM_FETCH | `W_OPCODE);                                 // opcode_cache = mem[pc]
+op(`DECODE);                                                // decode jump to microcode
 
 //--------------------------------------------------------------
 // Next opcode.
@@ -113,8 +154,11 @@ op(`DECODE);                                              // decode jump to micr
 //    opcode cached ? decode : goto fetch
 //    decode (goto microcode entry point for opcode)
 //
-$display("`define UADDR_FETCH_NEXT %0d", c);
-op(`PC_PLUS_1);                                           // pc = pc + 1
+if (`UADDR_FETCH_NEXT != c) begin
+    print_message();
+    $display("`define UADDR_FETCH_NEXT %0d", c);
+end
+op(`PC_PLUS1);                                            // pc = pc + 1
 op(`FETCH);                                               // pc_cached ? decode else fetch,decode
 
 //--------------------------------------------------------------
@@ -124,8 +168,11 @@ op(`FETCH);                                               // pc_cached ? decode 
 //    mem[sp] = pc
 //    pc = mem[EMULATED_VECTORS + 0]
 //
-$display("`define UADDR_INTERRUPT %0d", c);
-op(`NOP_B | `ALU_CONST(0) | `W_B | `ENTER_INTERRUPT);     // b = 0 (#0 in emulate table) || disable interrupts
+if (`UADDR_INTERRUPT != c) begin
+    print_message();
+    $display("`define UADDR_INTERRUPT %0d", c);
+end
+op(`ACC_REG | `MR_IMM(0) | `W_A | `ENTER_INTERRUPT);      // acc = 0 (#0 in emulate table) || disable interrupts
 op(`GO_EMULATE);                                          // emulate #0 (interrupt)
 
 //--------------------------------------------------------------
@@ -138,13 +185,16 @@ op(`GO_EMULATE);                                          // emulate #0 (interru
 //  pc = mem[a + b]             calling the emulate microcode
 //  fetch
 //
-$display("`define UADDR_EMULATE %0d", c);
-op(`ADDR_PC | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A); // a = pc + 1
-op(`SP_MINUS_4);                                          // sp = sp - 1
-op(`ADDR_SP | `MEM_W);                                    // mem[sp] = a
-op(`NOP_B | `ALU_CONST(`EMULATION_VECTOR) | `W_A);        // a = @vector_emulated
-op(`ADDR_A | `READ_ADDR | `PLUS | `ALU_B | `W_A);         // a = a + b
-op(`ADDR_A | `MEM_R | `READ_DATA | `NOP | `W_PC);         // pc = mem[a]
+if (`UADDR_EMULATE != c) begin
+    print_message();
+    $display("`define UADDR_EMULATE %0d", c);
+end
+//op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = pc + 1
+//op(`SP_MINUS_1);                                            // sp = sp - 1
+//op(`ADDR_SP | `MEM_W);                                      // mem[sp] = a
+//op(`NOP_B | `ALU_CONST(`EMULATION_VECTOR) | `W_A);          // a = @vector_emulated
+//op(`PLUS | `W_A);                                           // a = a + b
+//op(`MEM_R | `NOP | `W_PC);                                  // pc = mem[a]
 op(`FETCH);
 
 //--------------------------------------------------------------
@@ -398,9 +448,9 @@ op(`GO_EMULATE);
 // 0000_0010 (02) pushsp  -------------------------------------
 //    mem[sp-1] = sp
 //    sp = sp - 1
-//op(`ADDR_SP | `READ_ADDR | `NOP | `W_A);                    // a = sp
-//op(`SP_MINUS_4);                                            // sp = sp - 1
-//op(`ADDR_SP | `MEM_W | `GO_NEXT);                          // mem[sp]=a
+//op(`ADDR_SP | `NOP | `W_A);                               // a = sp
+//op(`SP_MINUS_4);                                          // sp = sp - 1
+//op(`ADDR_SP | `MEM_W | `GO_NEXT);                         // mem[sp]=a
 
 // 0000_0011 (03) popint  -------------------------------------
 // pc=mem[sp]-1        (emulate stores pc+1 but we must return to
@@ -408,65 +458,65 @@ op(`GO_EMULATE);
 // fetch & decode, then clear_interrupt_flag
 // this guarantees that a continous interrupt allows to execute at least one
 // opcode of mainstream program before reentry to interrupt handler
-op(`ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `W_PC |       // pc = mem[sp]-1
+op(`ADDR_SP | `MEM_R | `PLUS | `W_PC |                      // pc = mem[sp]-1
              `ALU_CONST(-1 & 127));
-op(`ADDR_PC | `READ_DATA | `MEM_FETCH | `W_OPCODE);        // opcode_cache = mem[pc]
-op(`SP_PLUS_4 | `DECODE | `EXIT_INTERRUPT);                // sp=sp+1, decode opcode, exit_interrupt
+op(`MEM_FETCH | `W_OPCODE);                                 // opcode_cache = mem[pc]
+op(`SP_PLUS_4 | `DECODE | `EXIT_INTERRUPT);                 // sp=sp+1, decode opcode, exit_interrupt
 
 // 0000_0100 (04) poppc  -------------------------------------
 //    pc=mem[sp]
 //    sp = sp + 1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `W_PC);                // pc = mem[sp]
+op(`ADDR_SP | `MEM_R | `W_PC);                              // pc = mem[sp]
 op(`SP_PLUS_4);                                            // sp = sp + 1
 op(`FETCH);                                                // opcode cached ? decode : fetch,decode
 
 // 0000_0101 (05) add   -------------------------------------
 //    mem[sp+1] = mem[sp+1] + mem[sp]
 //    sp = sp + 1
-op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);             // a = mem[sp] || sp=sp+1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `ALU_A | `W_A); // a = a + mem[sp]
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                          // mem[sp] = a
+op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);              // a = mem[sp] || sp=sp+1
+op(`ADDR_SP | `MEM_R | `PLUS | `W_A);                       // a = a + mem[sp]
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // 0000_0110 (06) and   -------------------------------------
 //    mem[sp+1] = mem[sp+1] & mem[sp]
 //    sp = sp + 1
-op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);             // a = mem[sp] || sp=sp+1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `AND |`ALU_A | `W_A);  // a = a & mem[sp]
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                          // mem[sp] = a
+op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);              // a = mem[sp] || sp=sp+1
+op(`ADDR_SP | `MEM_R | `AND | `W_A);                        // a = a & mem[sp]
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // 0000_0111 (07) or   -------------------------------------
 //    mem[sp+1] = mem[sp+1] | mem[sp]
 //    sp = sp + 1
-op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);             // a = mem[sp] || sp=sp+1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `OR | `ALU_A | `W_A);  // a = a | mem[sp]
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                          // mem[sp] = a
+op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);              // a = mem[sp] || sp=sp+1
+op(`ADDR_SP | `MEM_R | `OR | `W_A);                         // a = a | mem[sp]
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // 0000_1000 (08) load   -------------------------------------
 //    mem[sp] = mem[ mem[sp] ]
-op(`ADDR_SP | `READ_DATA | `MEM_R | `W_A);                 // a = mem[sp]
-op(`ADDR_A | `READ_DATA | `MEM_R | `W_A);                  // a = mem[a]
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                          // mem[sp] = a
+op(`ADDR_SP | `MEM_R | `W_A);                               // a = mem[sp]
+op(`MEM_R | `W_A);                                          // a = mem[a]
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // 0000_1001 (09) not   -------------------------------------
 //    mem[sp] = ~mem[sp]
-op(`ADDR_SP | `READ_DATA | `MEM_R | `NOT | `W_A);          // a = ~mem[sp]
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                          // mem[sp] = a
+op(`ADDR_SP | `MEM_R | `NOT | `W_A);                        // a = ~mem[sp]
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // 0000_1010 (0a) flip   -------------------------------------
 //    mem[sp] = flip(mem[sp])
 op(`GO_EMULATE);
 
 // 0000_1011 (0b) nop   -------------------------------------
-op(`PC_PLUS_1);
+op(`PC_PLUS1);
 op(`FETCH);
 
 // 0000_1100 (0c) store   -------------------------------------
 //    mem[mem[sp]] <= mem[sp+1]
 //    sp = sp + 2
-op(`ADDR_SP | `READ_DATA | `MEM_R | `W_B);                 // b = mem[sp]
-op(`SP_PLUS_4);                                            // sp = sp + 1
-op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);             // a = mem[sp] || sp = sp + 1
-op(`ADDR_B | `MEM_W | `GO_NEXT);                           // mem[b] = a
+op(`ADDR_SP | `MEM_R | `W_B);                               // b = mem[sp]
+op(`SP_PLUS_4);                                             // sp = sp + 1
+op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);              // a = mem[sp] || sp = sp + 1
+op(`MEM_W | `GO_NEXT);                                      // mem[b] = a
 
 // 0000_1101 (0d) popsp   -------------------------------------
 //    sp = mem[sp]
@@ -481,61 +531,58 @@ op(`GO_EMULATE);
 
 // ------------- microcode opcode continuations ---------------
 // wset_continue1: ------------------------
-op(`ADDR_A | `READ_ADDR | `PLUS | `W_A | `ALU_CONST(12));  // a = a+12    save clear stack on mem[4]
-op(`ADDR_B | `MEM_W);                                      // mem[b] = a
-op(`ADDR_SP | `MEM_R | `READ_DATA | `W_PC);                // pc = mem[sp] (data)
-op(`SP_PLUS_4);                                            // sp = sp+4
-op(`ADDR_SP | `MEM_R | `READ_DATA | `W_B);                 // b = mem[sp] (count)
-op(`SP_PLUS_4);                                            // sp = sp+4
-op(`ADDR_SP | `MEM_R | `READ_DATA | `W_M);                  // sp = mem[sp] (destination @)
-op(`ADDR_B | `READ_ADDR | `W_A);                           // a = b (count)
+op(`PLUS | `W_A | `ALU_CONST(12));                          // a = a+12    save clear stack on mem[4]
+op(`MEM_W);                                                 // mem[b] = a
+op(`ADDR_SP | `MEM_R | `W_PC);                              // pc = mem[sp] (data)
+op(`SP_PLUS_4);                                             // sp = sp+4
+op(`ADDR_SP | `MEM_R | `W_B);                               // b = mem[sp] (count)
+op(`SP_PLUS_4);                                             // sp = sp+4
+op(`ADDR_SP | `MEM_R | `W_M);                               // sp = mem[sp] (destination @)
+op(`W_A);                                                   // a = b (count)
 // wset_loop:
-op(`BRANCHIF_A_ZERO(80));                                  // if (a==0) goto @wset_end
-op(`ADDR_B | `READ_ADDR | `PLUS | `W_B |                  // b = b-1 (count)
-             `ALU_CONST(-1 & 127));
-op(`ADDR_PC | `READ_ADDR | `W_A);                          // a = pc (data)
-op(`ADDR_SP | `MEM_W | `SP_PLUS_4);                        // mem[sp] = a || sp = sp+4 (sp=destination@)
-op(`ADDR_B | `READ_ADDR | `W_A | `BRANCH(72));             // a = b (count) || goto @wset_loop
+op(`BRANCHIF_A_ZERO(80));                                   // if (a==0) goto @wset_end
+op(`PLUS | `W_B | `ALU_CONST(-1 & 127));                    // b = b-1 (count)
+op(`W_A);                                                   // a = pc (data)
+op(`ADDR_SP | `MEM_W | `SP_PLUS_4);                         // mem[sp] = a || sp = sp+4 (sp=destination@)
+op(`W_A | `BRANCH(72));                                     // a = b (count) || goto @wset_loop
 // wset_end: wcpy_end: sncpy_end:
-op(`ADDR_A | `MEM_R | `READ_DATA | `W_PC);                 // pc = mem[a] (a is 0)
-op(`NOP_B | `ALU_CONST(4) | `W_B);                         // b = 4
-op(`ADDR_B | `MEM_R | `READ_DATA | `W_M | `FETCH);          // sp=mem[b] || goto @fetch
+op(`MEM_R | `W_PC);                                         // pc = mem[a] (a is 0)
+op(`NOP_B | `ALU_CONST(4) | `W_B);                          // b = 4
+op(`MEM_R | `W_M | `FETCH);                                 // sp=mem[b] || goto @fetch
 
 // wcpy_continue1: ------------------------
-op(`ADDR_A | `READ_ADDR | `PLUS | `ALU_CONST(12) | `W_A);  // a = a+12    save clear stack on mem[4]
-op(`ADDR_B | `MEM_W);                                      // mem[b] = a
-op(`ADDR_SP | `MEM_R | `READ_DATA | `W_B);                 // b = mem[sp] (count)
-op(`SP_PLUS_4);                                            // sp = sp+4
-op(`ADDR_SP | `MEM_R | `READ_DATA | `W_PC);                // pc = mem[sp] (destination @)
-op(`SP_PLUS_4);                                            // sp = sp+4
-op(`ADDR_SP | `MEM_R | `READ_DATA | `W_M);                  // sp = mem[sp] (source @)
-op(`ADDR_B | `READ_ADDR | `W_A);                           // a = b (count)
+op(`PLUS | `ALU_CONST(12) | `W_A);                          // a = a+12    save clear stack on mem[4]
+op(`MEM_W);                                                 // mem[b] = a
+op(`ADDR_SP | `MEM_R | `W_B);                               // b = mem[sp] (count)
+op(`SP_PLUS_4);                                             // sp = sp+4
+op(`ADDR_SP | `MEM_R | `W_PC);                              // pc = mem[sp] (destination @)
+op(`SP_PLUS_4);                                             // sp = sp+4
+op(`ADDR_SP | `MEM_R | `W_M);                               // sp = mem[sp] (source @)
+op(`W_A);                                                   // a = b (count)
 // wcpy_loop:
-op(`BRANCHIF_A_ZERO(80));                                  // if (a==0) goto @wcpy_end
-op(`ADDR_B | `READ_ADDR | `PLUS | `W_B |                  // b = b-1 (count)
-             `ALU_CONST(-1 & 127));
-op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);             // a = mem[sp] || sp = sp+4 (sp=source@)
-op(`ADDR_PC | `MEM_W | `READ_ADDR | `PLUS | `W_PC |       // mem[pc] = a || pc = pc+4 (pc=destination@)
-             `ALU_CONST(4));
-op(`ADDR_B | `READ_ADDR | `W_A | `BRANCH(92));             // a = b (count) || goto @wcpy_loop
+op(`BRANCHIF_A_ZERO(80));                                   // if (a==0) goto @wcpy_end
+op(`PLUS | `W_B | `ALU_CONST(-1 & 127));                    // b = b-1 (count)
+op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);              // a = mem[sp] || sp = sp+4 (sp=source@)
+op(`MEM_W | `PLUS | `W_PC | `ALU_CONST(4));                 // mem[pc] = a || pc = pc+4 (pc=destination@)
+op(`W_A | `BRANCH(92));                                     // a = b (count) || goto @wcpy_loop
 
 // -------------------------------------------------------------
 
 // 001_00000 (20) wcpy -----------------------------------------
 // before using this opcode you must save mem[0] & mem[4] words, then wcpy, then restore mems
 // c=mem[sp],d=mem[sp+1],s=mem[sp+2]); while(c-->0) mem[d++]=mem[s++]); sp=sp+3
-op(`NOP_B | `ALU_CONST(0) | `W_B);                        // b = 0
-op(`ADDR_PC | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A); // a = pc+1
-op(`ADDR_B | `MEM_W | `NOP_B | `W_B | `ALU_CONST(4));     // mem[b] = a || b = 4
-op(`ADDR_SP | `READ_ADDR | `W_A | `BRANCH(84));           // a = sp || goto @wcpy_continue1
+op(`NOP_B | `ALU_CONST(0) | `W_B);                          // b = 0
+op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = pc+1
+op(`MEM_W | `NOP_B | `W_B | `ALU_CONST(4));                 // mem[b] = a || b = 4
+op(`ADDR_SP | `W_A | `BRANCH(84));                          // a = sp || goto @wcpy_continue1
 
 // 001_00001 (21) wset ----------------------------------------
 // before using this opcode you must save mem[0] & mem[4] words, then wset, then restore mems
 // v=mem[sp],c=mem[sp+1],d=mem[sp+2]; while(c-->0) mem[d++]=v; sp=sp+3
-op(`NOP_B | `ALU_CONST(0) | `W_B);                        // b = 0
-op(`ADDR_PC | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A); // a = pc+1
-op(`ADDR_B | `MEM_W | `NOP_B | `W_B | `ALU_CONST(4));     // mem[b] = a || b = 4
-op(`ADDR_SP | `READ_ADDR | `W_A | `BRANCH(64));           // a = sp || goto @wset_continue1
+op(`NOP_B | `ALU_CONST(0) | `W_B);                          // b = 0
+op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = pc+1
+op(`MEM_W | `NOP_B | `W_B | `ALU_CONST(4));                 // mem[b] = a || b = 4
+op(`ADDR_SP | `W_A | `BRANCH(64));                          // a = sp || goto @wset_continue1
 
 // 001_00010 (22) loadh   -------------------------------------
 op(`GO_EMULATE;
@@ -584,11 +631,10 @@ op(`GO_EMULATE);
 // a = a - 1 || goto @label
 // fin: a = b
 // mem[sp] = a
-op(`ADDR_SP | `READ_DATA | `MEM_R | `AND | `W_A |        // a = mem[sp] & 5'b11111
-              `ALU_CONST(31));
-op(`SP_PLUS_4);                                           // sp = sp + 1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `W_B);                // b = mem[sp]
-op(`BRANCH(440));                                         // goto @ashiftleft_loop
+op(`ADDR_SP | `MEM_R | `AND | `W_A | `ALU_CONST(31));       // a = mem[sp] & 5'b11111
+op(`SP_PLUS_4);                                             // sp = sp + 1
+op(`ADDR_SP | `MEM_R | `W_B);                               // b = mem[sp]
+op(`BRANCH(440));                                           // goto @ashiftleft_loop
 
 // 001_01100 (2c) ashiftright   -------------------------------------
 op(`GO_EMULATE);
@@ -597,47 +643,46 @@ op(`GO_EMULATE);
 //    a = mem[sp]
 //    mem[sp]=pc+1
 //    pc = a
-op(`ADDR_SP | `READ_DATA | `MEM_R | `W_B);                // b = mem[sp]
-op(`ADDR_PC | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A); // a = pc + 1
-op(`ADDR_SP | `MEM_W | `NOP_B | `ALU_B | `W_PC);          // mem[sp] = a || pc = b
-op(`FETCH);                                               // op_cached ? decode : goto next
+op(`ADDR_SP | `MEM_R | `W_B);                               // b = mem[sp]
+op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = pc + 1
+op(`ADDR_SP | `MEM_W | `NOP_B | `W_PC);                     // mem[sp] = a || pc = b
+op(`FETCH);                                                 // op_cached ? decode : goto next
 
 // 001_01110 (2e) eq   -------------------------------------
 //    a = mem[sp]
 //    sp = sp + 1
 //    (mem[sp] - a == 0) ? mem[sp] = 1 : mem[sp] = 0
-op(`ADDR_SP | `MEM_R | `READ_DATA | `NOT | `W_A);         // a = NOT(mem[sp])
-op(`ADDR_A | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A);  // a = a + 1
-op(`SP_PLUS_4);                                           // sp = sp + 1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `ALU_A |     // a = mem[sp] + a || goto @eq_check
-              `W_A | `BRANCH(416));
+op(`ADDR_SP | `MEM_R | `NOT | `W_A);                        // a = NOT(mem[sp])
+op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = a + 1
+op(`SP_PLUS_4);                                             // sp = sp + 1
+op(`ADDR_SP | `MEM_R | `PLUS | `W_A | `BRANCH(416));        // a = mem[sp] + a || goto @eq_check
+
 
 // 001_01111 (2f) neq   -------------------------------------
 //    a = mem[sp]
 //    sp = sp + 1
 //    (mem[sp] - a != 0) ? mem[sp] = 1 : mem[sp] = 0
-op(`ADDR_SP | `READ_DATA | `MEM_R | `NOT | `W_A);         // a = NOT(mem[sp])
-op(`ADDR_A | `READ_ADDR |`PLUS | `ALU_CONST(1) | `W_A);   // a = a + 1
-op(`SP_PLUS_4);                                           // sp = sp + 1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `ALU_A |     // a = mem[sp] + a || goto @neq_check
-              `W_A | `BRANCH(412));
+op(`ADDR_SP | `MEM_R | `NOT | `W_A);                        // a = NOT(mem[sp])
+op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = a + 1
+op(`SP_PLUS_4);                                             // sp = sp + 1
+op(`ADDR_SP | `MEM_R | `PLUS | `W_A | `BRANCH(412));        // a = mem[sp] + a || goto @neq_check
+
 
 // 001_10000 (30) neg   -------------------------------------
 //    a = NOT(mem[sp])
 //    a = a + 1
 //    mem[sp] = a
-op(`ADDR_SP | `READ_DATA | `MEM_R | `NOT | `W_A);         // a = NOT(mem[sp])
-op(`ADDR_A | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A);  // a = a + 1
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                         // mem[sp] = a
+op(`ADDR_SP | `MEM_R | `NOT | `W_A);                        // a = NOT(mem[sp])
+op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = a + 1
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // 001_10001 (31) sub   -------------------------------------
 //    mem[sp+1] = mem[sp+1] - mem[sp]
 //  sp = sp + 1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `NOT | `W_A);         // a = NOT(mem[sp])
-op(`ADDR_A | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A);  // a = a + 1
-op(`SP_PLUS_4);                                           // sp = sp + 1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `ALU_A |     // a = mem[sp] + a || goto @sub_cont (set_mem[sp]=a)
-              `W_A | `BRANCH(400));
+op(`ADDR_SP | `MEM_R | `NOT | `W_A);                        // a = NOT(mem[sp])
+op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = a + 1
+op(`SP_PLUS_4);                                             // sp = sp + 1
+op(`ADDR_SP | `MEM_R | `PLUS | `W_A | `BRANCH(400));        // a = mem[sp] + a || goto @sub_cont (set_mem[sp]=a)
 
 // 001_10010 (32) xor   -------------------------------------
 // ALU doesn't perform XOR operation
@@ -648,10 +693,10 @@ op(`ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `ALU_A |     // a = mem[sp] + a || g
 // b = ~a  --> b = A&~B
 // a = a | b --> a = ~A&B | A&~B
 // mem[sp] = a
-op(`ADDR_SP | `READ_DATA | `MEM_R | `NOT | `W_A);         // a = ~mem[sp] --> a=~A
-op(`SP_PLUS_4);                                           // sp = sp + 1
-op(`ADDR_SP | `READ_DATA | `MEM_R | `AND | `ALU_A | `W_A); // a = mem[sp] & a --> a = ~A&B
-op(`ADDR_A | `READ_ADDR | `NOT | `W_B | `BRANCH(428));    // b = ~a || goto @xor_cont --> b = A&~B
+op(`ADDR_SP | `MEM_R | `NOT | `W_A);                        // a = ~mem[sp] --> a=~A
+op(`SP_PLUS_4);                                             // sp = sp + 1
+op(`ADDR_SP | `MEM_R | `AND | `W_A);                        // a = mem[sp] & a --> a = ~A&B
+op(`NOT | `W_B | `BRANCH(428));                             // b = ~a || goto @xor_cont --> b = A&~B
 
 // 001_10011 (33) loadb   -------------------------------------
 // b=pc
@@ -661,10 +706,10 @@ op(`ADDR_A | `READ_ADDR | `NOT | `W_B | `BRANCH(428));    // b = ~a || goto @xor
 // mem[sp]=a
 // pc=b
 // fetch
-op(`ADDR_PC | `READ_ADDR | `W_B);                         // b = pc
-op(`ADDR_SP | `READ_DATA | `MEM_R | `W_PC);               // pc = mem[sp]
-op(`ADDR_PC | `READ_DATA | `MEM_FETCH | `W_OPCODE);       // opcode_cache = mem[pc]
-op(`ALU_OPCODE | `NOP_B | `W_A | `BRANCH(396));           // a = opcode -> byte(pc, mem[pc]) || goto @loadb_continued
+op(`W_B);                                                   // b = pc
+op(`ADDR_SP | `MEM_R | `W_PC);                              // pc = mem[sp]
+op(`MEM_FETCH | `W_OPCODE);                                 // opcode_cache = mem[pc]
+op(`NOP_B | `W_A | `BRANCH(396));                           // a = opcode -> byte(pc, mem[pc]) || goto @loadb_continued
 
 // 001_10100 (34) storeb   -------------------------------------
 op(`GO_EMULATE);
@@ -680,28 +725,28 @@ op(`GO_EMULATE);
 //    a = mem[a]
 //    a = mem[sp] || a == 0 ? { pc = pc + a; sp = sp + 2 }
 //    else { sp = sp + 2, pc = pc + 1 }
-op(`ADDR_SP | `READ_ADDR | `PLUS | `ALU_CONST(4) | `W_A); // a = sp + 1
-op(`ADDR_A | `MEM_R | `W_A);                              // a = mem[a]
-op(`ADDR_SP | `MEM_R | `W_A | `BRANCHIF_A_ZERO(456));     // a = mem[sp] || a == 0 ? goto 456 (sp=sp+2, pc=pc+a)
-op(`BRANCH(460));                                         // else goto 460 (sp=sp+2, pc=pc+1)
+op(`ADDR_SP | `PLUS | `ALU_CONST(4) | `W_A);                // a = sp + 1
+op(`MEM_R | `W_A);                                          // a = mem[a]
+op(`ADDR_SP | `MEM_R | `W_A | `BRANCHIF_A_ZERO(456));       // a = mem[sp] || a == 0 ? goto 456 (sp=sp+2, pc=pc+a)
+op(`BRANCH(460));                                           // else goto 460 (sp=sp+2, pc=pc+1)
 
 // 001_11000 (38) neqbranch   -------------------------------------
 //    a = sp + 1
 //    a = mem[a]
 //    a = mem[sp] || a == 0 ? { sp = sp + 2, pc = pc + 1 }
 //    else { sp = sp + 2, pc = pc + a }
-op(`ADDR_SP | `READ_ADDR | `PLUS | `ALU_CONST(4) | `W_A); // a = sp + 1
-op(`ADDR_A | `MEM_R | `W_A);                              // a = mem[a]
-op(`ADDR_SP | `MEM_R | `W_A | `BRANCHIF_A_ZERO(460));     // a = mem[sp] || a == 0 ? goto 460 (sp=sp+2, pc=pc+1)
-op(`BRANCH(456));                                         // else goto 456 (sp=sp+2, pc=pc+a)
+op(`ADDR_SP | `PLUS | `ALU_CONST(4) | `W_A);                // a = sp + 1
+op(`MEM_R | `W_A);                                          // a = mem[a]
+op(`ADDR_SP | `MEM_R | `W_A | `BRANCHIF_A_ZERO(460));       // a = mem[sp] || a == 0 ? goto 460 (sp=sp+2, pc=pc+1)
+op(`BRANCH(456));                                           // else goto 456 (sp=sp+2, pc=pc+a)
 
 // 001_11001 (39) poppcrel   -------------------------------------
 //    a = mem[sp]
 //    sp = sp + 1
 //    pc = pc + a
-op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);            // a=mem[sp] || sp=sp+1
-op(`ADDR_PC | `READ_ADDR | `ALU_A | `PLUS | `W_PC);       // pc = pc + a
-op(`FETCH);                                               // op_cached? decode : goto next
+op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);              // a=mem[sp] || sp=sp+1
+op(`PLUS | `W_PC);                                          // pc = pc + a
+op(`FETCH);                                                 // op_cached? decode : goto next
 
 // 001_11010 (3a) config   -------------------------------------
 op(`GO_EMULATE);
@@ -718,11 +763,10 @@ op(`GO_EMULATE);
 // 001_11101 (3d) pushspadd   -------------------------------------
 //    a = mem[sp] << 2
 //    mem[sp] = a + sp
-op(`ADDR_SP | `MEM_R | `W_A_MEM);                         // a = mem[sp]
-op(`ADDR_A | `READ_ADDR | `ALU_A | `PLUS | `W_A);         // a = a + a
-op(`ADDR_A | `READ_ADDR | `ALU_A | `PLUS | `W_A);         // a = a + a
-op(`ADDR_SP | `READ_ADDR | `ALU_A | `PLUS | `W_A |       // a = a + sp || goto @cont (->mem[sp] = a)
-              `BRANCH(400));
+op(`ADDR_SP | `MEM_R | `W_A_MEM);                           // a = mem[sp]
+op(`PLUS | `W_A);                                           // a = a + a
+op(`PLUS | `W_A);                                           // a = a + a
+op(`ADDR_SP | `PLUS | `W_A | `BRANCH(400));                 // a = a + sp || goto @cont (->mem[sp] = a)
 
 // 001_11110 (3e) halfmult   -------------------------------------
 op(`GO_EMULATE);
@@ -731,11 +775,10 @@ op(`GO_EMULATE);
 //    a = mem[sp]
 //    mem[sp]=pc+1
 //    pc = pc + a
-op(`ADDR_SP | `READ_DATA | `MEM_R | `W_B);                // b = mem[sp]
-op(`ADDR_PC | `READ_ADDR | `PLUS | `ALU_CONST(1) | `W_A); // a = pc + 1
-op(`ADDR_SP | `MEM_W);                                    // mem[sp] = a;
-op(`ADDR_PC | `READ_ADDR | `ALU_B | `PLUS | `W_PC |      // pc = pc + b, goto @fetch
-              `GO_FETCH);
+op(`ADDR_SP | `MEM_R | `W_B);                               // b = mem[sp]
+op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = pc + 1
+op(`ADDR_SP | `MEM_W);                                      // mem[sp] = a;
+op(`PLUS | `W_PC | `GO_FETCH);                              // pc = pc + b, goto @fetch
 
 // --------------------- MICROCODE HOLE -----------------------------------
 
@@ -744,8 +787,8 @@ op(`ADDR_PC | `READ_ADDR | `ALU_B | `PLUS | `W_PC |      // pc = pc + b, goto @f
 // loadb continued microcode -----
 // mem[sp]=a || pc=b
 // opcode_cache=mem[pc] || go next
-op(`ADDR_SP | `MEM_W | `ALU_B | `NOP_B | `W_PC);          // mem[sp] = a || pc=b
-op(`ADDR_PC | `MEM_FETCH | `W_OPCODE | `GO_NEXT);         // opcode_cache = mem[pc] || go next
+op(`ADDR_SP | `MEM_W | `NOP_B | `W_PC);                     // mem[sp] = a || pc=b
+op(`MEM_FETCH | `W_OPCODE | `GO_NEXT);                      // opcode_cache = mem[pc] || go next
 
 // sub/pushspadd continued microcode ----------------
 op(`ADDR_SP | `MEM_W | `GO_NEXT);                         // mem[sp] = a
@@ -769,34 +812,33 @@ op(`BRANCHIF_A_NEG(464));                                 // a < 0 ? goto @set_m
 op(`BRANCH(468));                                         // else goto @set_mem[sp]=0
 
 // xor_cont continued microcode -----------------------------------
-op(`ADDR_A | `READ_ADDR | `OR | `ALU_B | `W_A);           // a = a | b --> a = ~A&B | A&~B
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                         // mem[sp] = a
+op(`OR | `W_A);                                             // a = a | b --> a = ~A&B | A&~B
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // ashiftright_loop continued microcode -----------------------------------
 
 // ashiftleft_loop continued microcode -----------------------------------
-op(`BRANCHIF_A_ZERO(444) | `BRANCHIF_A_NEG(444));         // (a <= 0) ? goto @ashiftleft_exit
-op(`ADDR_A | `READ_ADDR | `PLUS | `W_A |                 // a = a + (-1)
-              `ALU_CONST(-1 & 127));
-op(`ADDR_B | `READ_ADDR | `PLUS | `ALU_B | `W_B |        // b = b << 1 || goto @ashiftleft_loop
-              `BRANCH(440));
+op(`BRANCHIF_A_ZERO(444) | `BRANCHIF_A_NEG(444));           // (a <= 0) ? goto @ashiftleft_exit
+op(`PLUS | `W_A | `ALU_CONST(-1 & 127));                    // a = a + (-1)
+op(`PLUS | `W_B | `BRANCH(440));                            // b = b << 1 || goto @ashiftleft_loop
+
 // ashiftleft_exit
-op(`ADDR_B | `READ_ADDR | `NOP | `W_A);                   // a = b
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                         // mem[sp] = a
+op(`NOP | `W_A);                                            // a = b
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // neqbranch / eqbranch --- continued microcode   -------------------------------------
 //    sp = sp + 2
 //    pc = pc + a
-op(`ADDR_SP | `READ_ADDR | `PLUS | `ALU_CONST(8) | `W_M);   // sp = sp + 2
-op(`ADDR_PC | `READ_ADDR | `ALU_A | `PLUS | `W_PC);       // pc = pc + a
-op(`FETCH);                                               // op_cached ? decode : goto fetch
+op(`ADDR_SP | `PLUS | `ALU_CONST(8) | `W_M);                // sp = sp + 2
+op(`PLUS | `W_PC);                                          // pc = pc + a
+op(`FETCH);                                                 // op_cached ? decode : goto fetch
 
 // neqbranch / eqbranch  --- continued microcode   -------------------------------------
 //    sp = sp + 2
 //  pc = pc + 1
-op(`ADDR_SP | `READ_ADDR | `PLUS | `ALU_CONST(8) | `W_M);   // sp = sp + 2
-op(`PC_PLUS_1);                                           // pc = pc + 1
-op(`FETCH);                                               // op_cached? decode : goto fetch
+op(`ADDR_SP | `PLUS | `ALU_CONST(8) | `W_M);                // sp = sp + 2
+op(`PC_PLUS1);                                              // pc = pc + 1
+op(`FETCH);                                                 // op_cached? decode : goto fetch
 
 // neq / eq / lessthan_1 --- continued microcode   --------------------
 //     mem[sp] = 1
@@ -819,24 +861,24 @@ op(`GO_EMULATE);
 // 010_xxxxx storesp x
 //    mem[sp + x<<2] = mem[sp]
 //    sp = sp + 1
-op(`ADDR_SP | `READ_ADDR | `PLUS_OFFSET | `ALU_OPCODE | `W_B); // b = sp + offset
-op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);                // a=mem[sp] || sp=sp+1
-op(`ADDR_B | `MEM_W | `GO_NEXT);                              // mem[b] = a
+op(`ADDR_SP | `PLUS_OFFSET | `W_B);                         // b = sp + offset
+op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);              // a=mem[sp] || sp=sp+1
+op(`MEM_W | `GO_NEXT);                                      // mem[b] = a
 
 // 011_xxxxx loadsp x       -------------------------------------
 //    mem[sp-1] = mem [sp + x<<2]
 //    sp = sp - 1
-op(`ADDR_SP | `READ_ADDR | `PLUS_OFFSET | `ALU_OPCODE | `W_A); // a = sp + offset
-op(`ADDR_A | `READ_DATA | `MEM_R | `W_A);                     // a = mem[a]
-op(`SP_MINUS_4);                                              // sp = sp - 1
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                             // mem[sp] = a
+op(`ADDR_SP | `PLUS_OFFSET | `W_A);                         // a = sp + offset
+op(`MEM_R | `W_A);                                          // a = mem[a]
+op(`SP_MINUS_4);                                            // sp = sp - 1
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
 // 0001_xxxx addsp x       -------------------------------------
 //     mem[sp] = mem[sp] + mem[sp + x<<2]
-op(`ADDR_SP | `READ_ADDR | `PLUS_OFFSET | `ALU_OPCODE | `W_A); // a = sp + offset
-op(`ADDR_A | `READ_DATA | `MEM_R | `W_A);                     // a = mem[a]
-op(`ADDR_SP | `READ_DATA | `MEM_R | `PLUS | `ALU_A | `W_A);   // a = a + mem[sp]
-op(`ADDR_SP | `MEM_W | `GO_NEXT);                             // mem[sp] = a
+op(`ADDR_SP | `PLUS_OFFSET | `W_A);                         // a = sp + offset
+op(`MEM_R | `W_A);                                          // a = mem[a]
+op(`ADDR_SP | `MEM_R | `PLUS | `W_A);                       // a = a + mem[sp]
+op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 `endif
 
 // --------------------- END OF MICROCODE PROGRAM --------------------------
@@ -860,5 +902,6 @@ for(n = 0; n < 64; n = n + 1) begin
 end
 $fclose(fd);
 
+$finish(ret);
 end // initial
 endmodule

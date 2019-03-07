@@ -1,21 +1,39 @@
-`define EMULATION_VECTOR    15'o10      // table of emulated opcodes (interrupt & exception vectors plus up to 5 emulated opcodes) TODO: remove
-`define RESET_VECTOR        15'o1       // reset entry point (can be moved up to 0x3c as per emulation table needs)
+`define RESET_VECTOR            15'o00001   // reset vector
+`define EMULATION_VECTOR        15'o00010   // interrupt & exception vectors
 
 // ------- microcode core datapath selectors --------
-`define SEL_READ_DATA           0
-`define SEL_READ_ADDR           1
+`define SEL_ACC_ALU             0   // from ALU
+`define SEL_ACC_MEM             1   // from memory
+`define SEL_ACC_REG             2   // M[i]
+`define SEL_ACC_RR              3   // R register
+`define SEL_ACC_Y               4   // Y register
 
-`define SEL_ALU_A               0
-`define SEL_ALU_OPCODE          1
-`define SEL_ALU_CONST           2
-`define SEL_ALU_B               3
+`define SEL_MR_I                0
+`define SEL_MR_IMM              1
+`define SEL_MR_VA               2
+`define SEL_MR_UA               3
 
-`define SEL_ADDR_PC             0
-`define SEL_ADDR_SP             1
-`define SEL_ADDR_A              2
-`define SEL_ADDR_B              3
+`define SEL_MW_I                0
+`define SEL_MW_IMM              1
+`define SEL_MW_VA               2
+`define SEL_MW_UA               3
 
-`define ALU_OP_WIDTH            4   // alu operation is 4 bits
+`define SEL_MD_PC               0
+`define SEL_MD_A                1
+`define SEL_MD_ALU              2
+`define SEL_MD_REG              3
+`define SEL_MD_REG_PLUS1        4
+`define SEL_MD_REG_MINUS1       5
+`define SEL_MD_VA               6
+`define SEL_MD_UA               7
+
+`define SEL_PC_REG              0
+`define SEL_PC_IMM              1
+`define SEL_PC_VA               2
+`define SEL_PC_UA               3
+`define SEL_PC_PLUS1            4
+
+`define ALU_OP_WIDTH            6   // alu operation is 6 bits
 
 `define ALU_NOP                 0   // r = a
 `define ALU_NOP_B               1   // r = b
@@ -34,36 +52,42 @@
 
 // ------- microcode memory settings ------
 `define UPC_BITS                9   // 512 microcode operations
-`define UOP_BITS                36  // microcode opcode width
+`define UOP_BITS                49  // microcode opcode width
 
 // ------- microcode labels for opcode execution -------
 // based on microcode program
-`define UADDR_RESET             0
-`define UADDR_FETCH             3
-`define UADDR_FETCH_NEXT        5
-`define UADDR_INTERRUPT         7
-`define UADDR_EMULATE           9
+`define UADDR_RESET             1
+`define UADDR_FETCH             19
+`define UADDR_FETCH_NEXT        21
+`define UADDR_INTERRUPT         23
+`define UADDR_EMULATE           25
 
 // ---------- microcode settings --------------------
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level
-`define P_SEL_READ              9   // alu-A multiplexor between data-in and addr-out (1 bit)
-`define P_SEL_ALU               10  // alu-B multiplexor between a, b, mc_const or opcode (2 bits)
-`define P_SEL_ADDR              12  // addr-out multiplexor between sp, pc, a, b (2 bits)
-`define P_ALU                   14  // alu operation (4 bits)
-`define P_W_M                   18  // write M[i] (from alu-out)
-`define P_W_PC                  19  // write pc (from alu-out)
-`define P_W_A                   20  // write a (from alu-out)
-`define P_FETCH                 21  // request instruction fetch
-`define P_SET_IDIM              22  // unused
-`define P_CLEAR_IDIM            23  // unused
-`define P_W_OPCODE              24  // write opcode  (from alu-out) : check if can be written directly from data-in
-`define P_DECODE                25  // jump to microcode entry point based on current opcode
-`define P_MEM_R                 26  // request memory read
-`define P_MEM_W                 27  // request memory write
-`define P_BRANCH                28  // microcode inconditional branch to address
-`define P_OP_NOT_CACHED         29  // microcode branch if byte[pc] is not cached at opcode
-`define P_A_ZERO                30  // microcode branch if a is zero
-`define P_A_NEG                 31  // microcode branch if a is negative a[31]=1
-`define P_W_A_MEM               32  // write a directly from data-in (alu datapath is free to perform any other operation in parallel)
-`define P_EXIT_INT              34  // clear interrupt flag (exit from interrupt)
-`define P_ENTER_INT             35  // set interrupt flag (enter interrupt)
+`define P_ALU                   9   // alu operation (6 bits)
+`define P_SEL_ACC               15  // accumulator multiplexor (3 bits)
+`define P_SEL_MWD               18  // M[i] write data multiplexor (3 bits)
+`define P_SEL_MW                21  // M[i] write address multiplexor (2 bits)
+`define P_W_M                   23  // write M[i] (from alu-out)
+`define P_SEL_MR                24  // M read address multiplexor (2 bits)
+`define P_M_USE                 26  // use M[i] for Uaddr
+`define P_SEL_PC                27  // PC multiplexor (3 bits)
+`define P_SEL_ADDR              30  // addr-out multiplexor between Uaddr and M[i]
+`define P_SEL_J_ADD             31  // use M[j] for Uaddr instead of Vaddr
+`define P_SEL_C_MEM             32  // use memory output for C instead of Uaddr
+`define P_OP_NOT_CACHED         33  // microcode branch if byte[pc] is not cached at opcode
+`define P_FETCH                 34  // request instruction fetch
+`define P_W_OPCODE              35  // write opcode
+`define P_DECODE                36  // jump to microcode entry point based on current opcode
+`define P_MEM_R                 37  // request memory read
+`define P_MEM_W                 38  // request memory write
+`define P_W_A                   39  // write accumulator (from alu-out)
+`define P_W_C                   40  // write C register
+`define P_W_Y                   41  // write Y register
+`define P_A_NEG                 42  // microcode branch if a is negative a[31]=1
+`define P_A_ZERO                43  // microcode branch if a is zero
+`define P_BRANCH                44  // microcode inconditional branch to address
+`define P_CLEAR_C               45  // clear C register flag
+`define P_ENTER_INT             46  // set interrupt flag (enter interrupt)
+`define P_EXIT_INT              47  // clear interrupt flag (exit from interrupt)
+`define P_W_PC                  48  // write pc (from alu-out)
