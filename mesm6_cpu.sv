@@ -284,27 +284,27 @@ logic [`UPC_BITS-1:0] entry64[64] = '{
 //--------------------------------------------------------------
 // Microcode execution unit.
 //
-assign sel_addr   = uop[`P_SEL_ADDR];
+assign uop_imm    = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
+assign alu_op     = uop[`P_ALU+5:`P_ALU];
 assign sel_acc    = uop[`P_SEL_ACC+2:`P_SEL_ACC];
 assign sel_mwd    = uop[`P_SEL_MWD+2:`P_SEL_MWD];
 assign sel_mw     = uop[`P_SEL_MW+1:`P_SEL_MW];
+assign w_m        = uop[`P_W_M] & ~busy;
 assign sel_mr     = uop[`P_SEL_MR+1:`P_SEL_MR];
+assign m_use      = uop[`P_M_USE];
 assign sel_pc     = uop[`P_SEL_PC+1:`P_SEL_PC];
+assign sel_addr   = uop[`P_SEL_ADDR];
 assign sel_j_add  = uop[`P_SEL_J_ADD];
 assign sel_c      = uop[`P_SEL_C_MEM];
-assign alu_op     = uop[`P_ALU+3:`P_ALU];
-assign w_m        = uop[`P_W_M] & ~busy;
-assign w_pc       = uop[`P_W_PC] & ~busy;
-assign w_acc      = uop[`P_W_A] & ~busy;
-assign w_lsb      = uop[`P_W_Y] & ~busy;
-assign w_c        = uop[`P_W_C] & ~busy;
-assign clear_c    = uop[`P_CLEAR_C];
-assign w_opcode   = uop[`P_W_OPCODE] & ~busy;
-assign m_use      = uop[`P_M_USE];
 assign ibus_fetch = uop[`P_FETCH];
+assign w_opcode   = uop[`P_W_OPCODE] & ~busy;
 assign dbus_read  = uop[`P_MEM_R];
 assign dbus_write = uop[`P_MEM_W];
-assign uop_imm    = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
+assign w_acc      = uop[`P_W_A] & ~busy;
+assign w_c        = uop[`P_W_C] & ~busy;
+assign w_lsb      = uop[`P_W_Y] & ~busy;
+assign clear_c    = uop[`P_CLEAR_C];
+assign w_pc       = uop[`P_W_PC] & ~busy;
 
 assign exit_interrupt  = uop[`P_EXIT_INT]  & ~busy;
 assign enter_interrupt = uop[`P_ENTER_INT] & ~busy;
