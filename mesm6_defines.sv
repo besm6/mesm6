@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-`define RESET_VECTOR            15'o00001   // reset vector
-`define EMULATION_VECTOR        15'o00010   // interrupt & exception vectors
+`define RESET_VECTOR            'o00001     // reset vector
+`define EMULATION_VECTOR        'o00010     // interrupt & exception vectors
 
 // ------- microcode core datapath selectors --------
 `define SEL_ACC_ALU             0   // from ALU
@@ -78,12 +78,8 @@
 `define UOP_BITS                49  // microcode opcode width
 
 // ------- microcode labels for opcode execution -------
-// based on microcode program
-`define UADDR_RESET             0
-`define UADDR_FETCH             18
-`define UADDR_FETCH_NEXT        20
-`define UADDR_INTERRUPT         22
-`define UADDR_EMULATE           24
+`define UADDR_RESET             0   // start from zero
+`define UADDR_INTERRUPT         22  // defined by mesm6_microcode.sv at runtime
 
 // ---------- microcode settings --------------------
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level

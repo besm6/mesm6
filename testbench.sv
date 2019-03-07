@@ -100,10 +100,9 @@ bit old_reset = 0;                      // Previous state of reset
 //
 // Last fetch address
 //
-logic [`UPC_BITS-1:0] upc_prev;  // delayed PC
-logic [`UPC_BITS-1:0] upc_next;  // current PC
-logic [`UOP_BITS-1:0] uop_prev;  // delayed micro-instruction
-logic                 busy_prev; // delayed busy signal
+logic [`UPC_BITS-1:0] upc;  // last PC
+logic [`UOP_BITS-1:0] uop;  // last micro-instruction
+logic                 busy; // last busy signal
 
 //
 // Import standard C function gettimeofday().
@@ -175,10 +174,9 @@ endtask
 // Get time at the rising edge of the clock.
 always @(posedge clk) begin
     ctime = $time;
-    upc_prev = upc_next;
-    upc_next = cpu.upc_next;
-    uop_prev = cpu.uop;
-    busy_prev = cpu.busy;
+    upc = cpu.upc;
+    uop = cpu.uop;
+    busy = cpu.busy;
     if (~reset & ~cpu.busy)
         uinstr_count++;
 end
@@ -202,7 +200,7 @@ always @(negedge clk) begin
         end else begin
             if (tracelevel > 1) begin
                 // Print last executed micro-instruction
-                print_uop(uop_prev);
+                print_uop();
             end
 
             // Print changed architectural state
@@ -297,9 +295,7 @@ endtask
 //
 // Print micro-instruction.
 //
-task print_uop(
-    input logic [`UOP_BITS-1:0] uop     // microcode operation
-);
+task print_uop();
     static string op_name[16] = '{
         0: "A",    1: "B",     2: "A+B",  3: "A+Boff",
         4: "A&B",  5: "A|B",   6: "~A",   7: "?7",
@@ -384,7 +380,7 @@ task print_uop(
     assign exit_interrupt     = uop[`P_EXIT_INT];
     assign w_pc               = uop[`P_W_PC];
 
-    $fwrite(tracefd, "(%0d) %3d: %o", ctime, upc_prev, uop);
+    $fwrite(tracefd, "(%0d) %3d: %o", ctime, upc, uop);
 
     if (sel_pc == `SEL_PC_IMM || sel_mr == `SEL_MR_IMM ||
         sel_mw == `SEL_MW_IMM || cond_op_not_cached ||
@@ -424,7 +420,7 @@ task print_uop(
 
     if (uop == 0) $fwrite(tracefd, " nop");
 
-    if (busy_prev)
+    if (busy)
         $fwrite(tracefd, " --- busy");
     $fdisplay(tracefd, "");
 

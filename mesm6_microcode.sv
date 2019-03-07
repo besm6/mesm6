@@ -62,10 +62,9 @@
 `define SP_PLUS_1               (`MR_IMM(15) | `MW_IMM(15) | `MD_REG_PLUS1 | `W_M)
 `define SP_MINUS_1              (`MR_IMM(15) | `MW_IMM(15) | `MD_REG_MINUS1 | `W_M)
 
-`define FETCH                   (`BRANCHIF_OP_NOT_CACHED(`UADDR_FETCH) | `DECODE) // fetch and decode current PC opcode
-`define GO_NEXT                 `BRANCH(`UADDR_FETCH_NEXT)  // go to next opcode (PC=PC+1, fetch, decode)
-`define GO_FETCH                `BRANCH(`UADDR_FETCH)       // go to fetch opcode at PC, then decode
-`define GO_EMULATE              `BRANCH(`UADDR_EMULATE)     // go to emulation routine
+`define GO_FETCH_OR_DECODE      (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE) // fetch and decode current PC opcode
+`define GO_NEXT                 `BRANCH(uaddr_fetch_next)   // go to next opcode (PC=PC+1, fetch, decode)
+`define GO_FETCH                `BRANCH(uaddr_fetch)        // go to fetch opcode at PC, then decode
 
 module gendata();
 
@@ -73,6 +72,9 @@ reg [`UOP_BITS-1:0] memory[(1<<`UPC_BITS)-1:0];
 
 reg [`UPC_BITS-1:0] stab[64];
 reg [`UPC_BITS-1:0] ltab[16];
+
+reg [`UPC_BITS-1:0] uaddr_fetch;
+reg [`UPC_BITS-1:0] uaddr_fetch_next;
 
 int c, n, fd, ret;
 
@@ -138,10 +140,7 @@ op(`PC_IMM(`RESET_VECTOR) | `W_PC | `EXIT_INTERRUPT);   // pc = RESET_VECTOR, en
 //    opcode=mem[pc]
 //    decode (goto microcode entry point for opcode)
 //
-if (`UADDR_FETCH != c) begin
-    print_message();
-    $display("`define UADDR_FETCH %0d", c);
-end
+uaddr_fetch = c;
 op(`MEM_FETCH | `W_OPCODE);                                 // opcode_cache = mem[pc]
 op(`DECODE);                                                // decode jump to microcode
 
@@ -152,12 +151,9 @@ op(`DECODE);                                                // decode jump to mi
 //    opcode cached ? decode : goto fetch
 //    decode (goto microcode entry point for opcode)
 //
-if (`UADDR_FETCH_NEXT != c) begin
-    print_message();
-    $display("`define UADDR_FETCH_NEXT %0d", c);
-end
-op(`PC_PLUS1);                                            // pc = pc + 1
-op(`FETCH);                                               // pc_cached ? decode else fetch,decode
+uaddr_fetch_next = c;
+op(`PC_PLUS1);                                              // pc = pc + 1
+op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 //--------------------------------------------------------------
 // Interrupt request.
@@ -170,275 +166,253 @@ if (`UADDR_INTERRUPT != c) begin
     print_message();
     $display("`define UADDR_INTERRUPT %0d", c);
 end
-op(`ACC_REG | `MR_IMM(0) | `W_A | `ENTER_INTERRUPT);      // acc = 0 (#0 in emulate table) || disable interrupts
-op(`GO_EMULATE);                                          // emulate #0 (interrupt)
-
-//--------------------------------------------------------------
-// Emulate opcode.
-//
-//  <expects b = offset into table for emulated opcode>
-//    sp = sp - 1
-//    mem[sp] = pc + 1          emulated opcode microcode must set b to
-//  a = @EMULATION_TABLE        offset inside emulated_table prior to
-//  pc = mem[a + b]             calling the emulate microcode
-//  fetch
-//
-if (`UADDR_EMULATE != c) begin
-    print_message();
-    $display("`define UADDR_EMULATE %0d", c);
-end
-//op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = pc + 1
-//op(`SP_MINUS_1);                                            // sp = sp - 1
-//op(`ADDR_SP | `MEM_W);                                      // mem[sp] = a
-//op(`NOP_B | `ALU_CONST(`EMULATION_VECTOR) | `W_A);          // a = @vector_emulated
-//op(`PLUS | `W_A);                                           // a = a + b
-//op(`MEM_R | `NOP | `W_PC);                                  // pc = mem[a]
-op(`FETCH);
+op(`ENTER_INTERRUPT);                                       // disable interrupts
+op(`GO_FETCH_OR_DECODE);
 
 //--------------------------------------------------------------
 // Opcodes 000-077.
 //
 opcode('o000);  // ATX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o001);  // STX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o002);  // MOD
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o003);  // XTS
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o004);  // A+X
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o005);  // A-X
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o006);  // X-A
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o007);  // AMX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o010);  // XTA
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o011);  // AAX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o012);  // AEX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o013);  // ARX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o014);  // AVX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o015);  // AOX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o016);  // A/X
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o017);  // A*X
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o020);  // APX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o021);  // AUX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o022);  // ACX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o023);  // ANX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o024);  // E+X
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o025);  // E-X
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o026);  // ASX
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o027);  // XTR
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o030);  // RTE
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o031);  // YTA
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o032);  // 032
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o033);  // EXT
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o034);  // E+N
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o035);  // E-N
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o036);  // ASN
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o037);  // NTR
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o040);  // ATI
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o041);  // STI
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o042);  // ITA
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o043);  // ITS
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o044);  // MTJ
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o045);  // J+M
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o046);  // E46
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o047);  // E47
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o050);  // E50
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o051);  // E51
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o052);  // E52
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o053);  // E53
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o054);  // E54
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o055);  // E55
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o056);  // E56
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o057);  // E57
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o060);  // E60
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o061);  // E61
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o062);  // E62
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o063);  // E63
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o064);  // E64
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o065);  // E65
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o066);  // E66
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o067);  // E67
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o070);  // E70
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o071);  // E71
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o072);  // E72
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o073);  // E73
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o074);  // E74
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o075);  // E75
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o076);  // E76
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o077);  // E77
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 //--------------------------------------------------------------
 // Opcodes 20-37.
 opcode('o200);  // E20
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o210);  // E21
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o220);  // UTC
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o230);  // WTC
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o240);  // VTM
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o250);  // UTM
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o260);  // UZA
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o270);  // UIA
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o300);  // UJ
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o310);  // VJM
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o320);  // IJ
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o330);  // STOP
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o340);  // VZM
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o350);  // VIM
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o360);  // E36
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 opcode('o370);  // VLM
-op(`GO_EMULATE);
+op(`GO_NEXT);
 
 `ifdef notdef
 // ----- OPCODES WITHOUT CONSTANT ------
@@ -465,8 +439,8 @@ op(`SP_PLUS_4 | `DECODE | `EXIT_INTERRUPT);                 // sp=sp+1, decode o
 //    pc=mem[sp]
 //    sp = sp + 1
 op(`ADDR_SP | `MEM_R | `W_PC);                              // pc = mem[sp]
-op(`SP_PLUS_4);                                            // sp = sp + 1
-op(`FETCH);                                                // opcode cached ? decode : fetch,decode
+op(`SP_PLUS_4);                                             // sp = sp + 1
+op(`GO_FETCH_OR_DECODE);                                    // opcode cached ? decode : fetch,decode
 
 // 0000_0101 (05) add   -------------------------------------
 //    mem[sp+1] = mem[sp+1] + mem[sp]
@@ -500,13 +474,9 @@ op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 op(`ADDR_SP | `MEM_R | `NOT | `W_A);                        // a = ~mem[sp]
 op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 
-// 0000_1010 (0a) flip   -------------------------------------
-//    mem[sp] = flip(mem[sp])
-op(`GO_EMULATE);
-
 // 0000_1011 (0b) nop   -------------------------------------
 op(`PC_PLUS1);
-op(`FETCH);
+op(`GO_FETCH_OR_DECODE);
 
 // 0000_1100 (0c) store   -------------------------------------
 //    mem[mem[sp]] <= mem[sp+1]
@@ -519,13 +489,6 @@ op(`MEM_W | `GO_NEXT);                                      // mem[b] = a
 // 0000_1101 (0d) popsp   -------------------------------------
 //    sp = mem[sp]
 op(`ADDR_SP | `MEM_R | `W_M | `GO_NEXT);                    // sp = mem[sp]
-
-
-// 0000_1110 (0e) ipsum    ------------------------------------
-op(`GO_EMULATE);
-
-// 0000_1111 (0f) sncpy   ---------------------------------------
-op(`GO_EMULATE);
 
 // ------------- microcode opcode continuations ---------------
 // wset_continue1: ------------------------
@@ -546,7 +509,7 @@ op(`W_A | `BRANCH(72));                                     // a = b (count) || 
 // wset_end: wcpy_end: sncpy_end:
 op(`MEM_R | `W_PC);                                         // pc = mem[a] (a is 0)
 op(`NOP_B | `ALU_CONST(4) | `W_B);                          // b = 4
-op(`MEM_R | `W_M | `FETCH);                                 // sp=mem[b] || goto @fetch
+op(`MEM_R | `W_M | `GO_FETCH_OR_DECODE);                    // sp=mem[b] || goto @fetch
 
 // wcpy_continue1: ------------------------
 op(`PLUS | `ALU_CONST(12) | `W_A);                          // a = a+12    save clear stack on mem[4]
@@ -582,44 +545,6 @@ op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = pc+1
 op(`MEM_W | `NOP_B | `W_B | `ALU_CONST(4));                 // mem[b] = a || b = 4
 op(`ADDR_SP | `W_A | `BRANCH(64));                          // a = sp || goto @wset_continue1
 
-// 001_00010 (22) loadh   -------------------------------------
-op(`GO_EMULATE;
-
-// 001_00011 (23) storeh   -------------------------------------
-op(`GO_EMULATE);
-
-// 001_00100 (24) lessthan   -------------------------------------
-// (mem[sp]-mem[sp+1]) < 0 ? mem[sp+1]=1 : mem[sp+1]=0
-// sp=sp+1
-op(`GO_EMULATE);
-
-// 001_00101 (25) lessthanorequal   -------------------------------------
-// (mem[sp]-mem[sp+1]) <= 0 ? mem[sp+1]=1 : mem[sp+1]=0
-// sp=sp+1
-op(`GO_EMULATE);
-
-// 001_00110 (26) ulessthan   -------------------------------------
-// signA!=signB -> (unsigA < unsigB) == ~(sigA < sigA)
-// signA==signB -> (unsigA < unsigB) ==  (sigA < sigB)
-// (mem[sp]-mem[sp+1]) < 0 ? mem[sp+1]=1 : mem[sp+1]=0
-// sp=sp+1
-op(`GO_EMULATE);
-
-// 001_00111 (27) ulessthanorequal   -------------------------------------
-// (mem[sp]-mem[sp+1]) <= 0 ? mem[sp+1]=1 : mem[sp+1]=0
-// sp=sp+1
-op(`GO_EMULATE);
-
-// 001_01000 (28) swap   -------------------------------------
-op(`GO_EMULATE);
-
-// 001_01001 (29) mult   -------------------------------------
-op(`NOP_B | `ALU_CONST(8) | `W_B);                        // b = 8 (#2 in emulate table)
-op(`GO_EMULATE);                                          // emulate #2 (mult opcode)
-
-// 001_01010 (2a) lshiftright   -------------------------------------
-op(`GO_EMULATE);
-
 // 001_01011 (2b) ashiftleft   -------------------------------------
 // a = mem[sp] & 5'b11111
 // sp = sp + 1
@@ -634,9 +559,6 @@ op(`SP_PLUS_4);                                             // sp = sp + 1
 op(`ADDR_SP | `MEM_R | `W_B);                               // b = mem[sp]
 op(`BRANCH(440));                                           // goto @ashiftleft_loop
 
-// 001_01100 (2c) ashiftright   -------------------------------------
-op(`GO_EMULATE);
-
 // 001_01101 (2d) call   -------------------------------------
 //    a = mem[sp]
 //    mem[sp]=pc+1
@@ -644,7 +566,7 @@ op(`GO_EMULATE);
 op(`ADDR_SP | `MEM_R | `W_B);                               // b = mem[sp]
 op(`PLUS | `ALU_CONST(1) | `W_A);                           // a = pc + 1
 op(`ADDR_SP | `MEM_W | `NOP_B | `W_PC);                     // mem[sp] = a || pc = b
-op(`FETCH);                                                 // op_cached ? decode : goto next
+op(`GO_FETCH_OR_DECODE);                                    // op_cached ? decode : goto next
 
 // 001_01110 (2e) eq   -------------------------------------
 //    a = mem[sp]
@@ -709,15 +631,6 @@ op(`ADDR_SP | `MEM_R | `W_PC);                              // pc = mem[sp]
 op(`MEM_FETCH | `W_OPCODE);                                 // opcode_cache = mem[pc]
 op(`NOP_B | `W_A | `BRANCH(396));                           // a = opcode -> byte(pc, mem[pc]) || goto @loadb_continued
 
-// 001_10100 (34) storeb   -------------------------------------
-op(`GO_EMULATE);
-
-// 001_10101 (35) div    -------------------------------------
-op(`GO_EMULATE);
-
-// 001_10110 (36) mod   -------------------------------------
-op(`GO_EMULATE);
-
 // 001_10111 (37) eqbranch   -------------------------------------
 //    a = sp + 1
 //    a = mem[a]
@@ -744,19 +657,13 @@ op(`BRANCH(456));                                           // else goto 456 (sp
 //    pc = pc + a
 op(`ADDR_SP | `MEM_R | `W_A_MEM | `SP_PLUS_4);              // a=mem[sp] || sp=sp+1
 op(`PLUS | `W_PC);                                          // pc = pc + a
-op(`FETCH);                                                 // op_cached? decode : goto next
-
-// 001_11010 (3a) config   -------------------------------------
-op(`GO_EMULATE);
+op(`GO_FETCH_OR_DECODE);                                    // op_cached? decode : goto next
 
 // 001_11011 (3b) pushpc   -------------------------------------
 //    sp = sp - 1
 //    mem[sp] = pc
 op(`SP_MINUS_4 | `W_A);                                   // a = sp = sp - 1
 op(`ADDR_SP | `MEM_W | `GO_NEXT);                         // mem[sp] = a
-
-// 001_11100 (3c) syscall_emulate  ------------------------------
-op(`GO_EMULATE);
 
 // 001_11101 (3d) pushspadd   -------------------------------------
 //    a = mem[sp] << 2
@@ -765,9 +672,6 @@ op(`ADDR_SP | `MEM_R | `W_A_MEM);                           // a = mem[sp]
 op(`PLUS | `W_A);                                           // a = a + a
 op(`PLUS | `W_A);                                           // a = a + a
 op(`ADDR_SP | `PLUS | `W_A | `BRANCH(400));                 // a = a + sp || goto @cont (->mem[sp] = a)
-
-// 001_11110 (3e) halfmult   -------------------------------------
-op(`GO_EMULATE);
 
 // 001_11111 (3f) callpcrel   -------------------------------------
 //    a = mem[sp]
@@ -829,14 +733,14 @@ op(`ADDR_SP | `MEM_W | `GO_NEXT);                           // mem[sp] = a
 //    pc = pc + a
 op(`ADDR_SP | `PLUS | `ALU_CONST(8) | `W_M);                // sp = sp + 2
 op(`PLUS | `W_PC);                                          // pc = pc + a
-op(`FETCH);                                                 // op_cached ? decode : goto fetch
+op(`GO_FETCH_OR_DECODE);                                    // op_cached ? decode : goto fetch
 
 // neqbranch / eqbranch  --- continued microcode   -------------------------------------
 //    sp = sp + 2
 //  pc = pc + 1
 op(`ADDR_SP | `PLUS | `ALU_CONST(8) | `W_M);                // sp = sp + 2
 op(`PC_PLUS1);                                              // pc = pc + 1
-op(`FETCH);                                                 // op_cached? decode : goto fetch
+op(`GO_FETCH_OR_DECODE);                                    // op_cached? decode : goto fetch
 
 // neq / eq / lessthan_1 --- continued microcode   --------------------
 //     mem[sp] = 1
@@ -849,12 +753,6 @@ op(`ALU_CONST(0) | `NOP_B | `W_A);                        // a = 0
 op(`ADDR_SP | `MEM_W | `GO_NEXT);                         // mem[sp] = a
 
 // ---------------- OPCODES WITH PARAMETER IN OPCODE ----------------
-
-// 1_xxxxxxx im x        -------------------------------------
-op(`GO_EMULATE);
-
-// 1_xxxxxxx im x        -------------------------------------
-op(`GO_EMULATE);
 
 // 010_xxxxx storesp x
 //    mem[sp + x<<2] = mem[sp]
