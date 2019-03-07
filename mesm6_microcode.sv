@@ -14,14 +14,14 @@
 
 `define MW_IMM(val)             (`SEL_MW_IMM << `P_SEL_MW | (val) << `P_IMM)
 
-`define MD_PC                   (`SEL_MD_PC << `P_SEL_MWD)
-`define MD_A                    (`SEL_MD_A << `P_SEL_MWD)
-`define MD_ALU                  (`SEL_MD_ALU << `P_SEL_MWD)
-`define MD_REG                  (`SEL_MD_REG << `P_SEL_MWD)
-`define MD_REG_PLUS1            (`SEL_MD_REG_PLUS1 << `P_SEL_MWD)
-`define MD_REG_MINUS1           (`SEL_MD_REG_PLUS1 << `P_SEL_MWD)
-`define MD_VA                   (`SEL_MD_VA << `P_SEL_MWD)
-`define MD_UA                   (`SEL_MD_UA << `P_SEL_MWD)
+`define MD_PC                   (`SEL_MD_PC << `P_SEL_MD)
+`define MD_A                    (`SEL_MD_A << `P_SEL_MD)
+`define MD_ALU                  (`SEL_MD_ALU << `P_SEL_MD)
+`define MD_REG                  (`SEL_MD_REG << `P_SEL_MD)
+`define MD_REG_PLUS1            (`SEL_MD_REG_PLUS1 << `P_SEL_MD)
+`define MD_REG_MINUS1           (`SEL_MD_REG_PLUS1 << `P_SEL_MD)
+`define MD_VA                   (`SEL_MD_VA << `P_SEL_MD)
+`define MD_UA                   (`SEL_MD_UA << `P_SEL_MD)
 
 `define ADDR_M(i)               (1 << `P_SEL_ADDR | `MR_IMM(i))
 `define ADDR_SP                 `ADDR_M(15)
@@ -43,7 +43,6 @@
 `define W_M                     (1 << `P_W_M)
 `define W_PC                    (1 << `P_W_PC)
 `define W_A                     (1 << `P_W_A)
-`define W_A_MEM                 (1 << `P_W_A_MEM)
 `define W_OPCODE                (1 << `P_W_OPCODE)
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
@@ -80,7 +79,7 @@ int c, n, fd, ret;
 //
 // Add microinstruction to the table.
 //
-task op(integer uop);
+task op(reg [`UOP_BITS-1:0] uop);
     memory[c] = uop;
     c = c + 1;
 endtask

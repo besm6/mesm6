@@ -50,10 +50,10 @@
 `define SEL_MD_VA               6
 `define SEL_MD_UA               7
 
-`define SEL_PC_REG              0
-`define SEL_PC_IMM              1
-`define SEL_PC_VA               2
-`define SEL_PC_UA               3
+`define SEL_PC_UA               0
+`define SEL_PC_VA               1
+`define SEL_PC_REG              2
+`define SEL_PC_IMM              3
 `define SEL_PC_PLUS1            4
 
 `define ALU_OP_WIDTH            6   // alu operation is 6 bits
@@ -89,7 +89,7 @@
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level
 `define P_ALU                   9   // alu operation (6 bits)
 `define P_SEL_ACC               15  // accumulator multiplexor (3 bits)
-`define P_SEL_MWD               18  // M[i] write data multiplexor (3 bits)
+`define P_SEL_MD                18  // M[i] write data multiplexor (3 bits)
 `define P_SEL_MW                21  // M[i] write address multiplexor (2 bits)
 `define P_W_M                   23  // write M[i] (from alu-out)
 `define P_SEL_MR                24  // M read address multiplexor (2 bits)

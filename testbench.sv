@@ -101,6 +101,8 @@ bit old_reset = 0;                      // Previous state of reset
 // Last fetch address
 //
 logic [`UPC_BITS-1:0] upc_prev;  // delayed PC
+logic [`UPC_BITS-1:0] upc_next;  // current PC
+logic [`UOP_BITS-1:0] uop_prev;  // delayed micro-instruction
 logic                 busy_prev; // delayed busy signal
 
 //
@@ -173,7 +175,10 @@ endtask
 // Get time at the rising edge of the clock.
 always @(posedge clk) begin
     ctime = $time;
-    upc_prev = cpu.upc;
+    upc_prev = upc_next;
+    if (~cpu.busy)
+        upc_next = cpu.upc;
+    uop_prev = cpu.uop;
     busy_prev = cpu.busy;
     if (~reset & ~cpu.busy)
         uinstr_count++;
@@ -198,14 +203,11 @@ always @(negedge clk) begin
         end else begin
             if (tracelevel > 1) begin
                 // Print last executed micro-instruction
-                print_uop(cpu.uop);
-
-                // Print changed micro state
-                //print_changed_cpu(opcode_x);
-            end else begin
-                // Print changed architectural state
-                //print_changed_regs(opcode_x);
+                print_uop(uop_prev);
             end
+
+            // Print changed architectural state
+            print_changed_regs();
 
 `ifdef notdef
             // Print transactions on external bus
@@ -299,97 +301,187 @@ endtask
 task print_uop(
     input logic [`UOP_BITS-1:0] uop     // microcode operation
 );
-    static string alu_name[4] = '{
-        0: "A",    1: "OPCODE",    2: "CONST",   3: "B"
-    };
-    static string addr_name[4] = '{
-        0: "PC",    1: "SP",    2: "A",   3: "B"
-    };
     static string op_name[16] = '{
         0: "A",    1: "B",     2: "A+B",  3: "A+Boff",
         4: "A&B",  5: "A|B",   6: "~A",   7: "?7",
         8: "?8",   9: "?9",    10:"?10",  11:"?11",
-        12:"?12",  13:"?13",   14:"?14",  15:"?15"
+        12:"?12",  13:"?13",   14:"?14",  15:"?15",
+        default: "???"
+    };
+    static string acc_name[8] = '{
+        0: "ALU",  1: "MEM",   2: "REG",  3: "RR",
+        4: "Y",    5: "?5",    6: "?6",   7: "?7"
+    };
+    static string md_name[8] = '{
+        0: "PC",     1: "A",       2: "ALU",  3: "REG",
+        4: "RPLUS1", 5: "RMINUS1", 6: "VA",   7: "UA"
+    };
+    static string mw_name[4] = '{
+        0: "I",      1: "IMM",     2: "VA",  3: "UA"
+    };
+    static string mr_name[4] = '{
+        0: "I",      1: "IMM",     2: "VA",  3: "UA"
+    };
+    static string pc_name[8] = '{
+        0: "REG",   1: "IMM", 2: "VA", 3: "UA",
+        4: "PLUS1", 5: "?5",  6: "?6", 7: "?7"
     };
 
-    logic       sel_addr;
+    logic [`UPC_BITS-1:0] imm;
     logic [5:0] alu_op;
-    logic       w_sp;
+    logic [2:0] sel_acc;
+    logic [2:0] sel_md;
+    logic [1:0] sel_mw;
+    logic [1:0] sel_mr;
+    logic [2:0] sel_pc;
     logic       w_m;
-    logic       w_acc;
-    logic       w_lsb;
-    logic       w_opcode;
-    logic       mem_read;
-    logic       mem_write;
-    logic       mem_fetch;
-    logic       w_pc_increment;
-    logic       exit_interrupt;
-    logic       enter_interrupt;
+    logic       m_use;
+    logic       sel_addr;
+    logic       sel_j_add;
+    logic       sel_c_mem;
     logic       cond_op_not_cached;
+    logic       fetch;
+    logic       w_opcode;
+    logic       decode;
+    logic       mem_r;
+    logic       mem_w;
+    logic       w_a;
+    logic       w_c;
+    logic       w_y;
     logic       cond_a_zero;
     logic       cond_a_neg;
-    logic       decode;
     logic       branch;
-    logic [`UPC_BITS-1:0] imm;
+    logic       clear_c;
+    logic       enter_interrupt;
+    logic       exit_interrupt;
+    logic       w_pc;
 
-    assign sel_addr           = uop[`P_SEL_ADDR];
-    assign alu_op             = uop[`P_ALU+5:`P_ALU];
-    assign w_m                = uop[`P_W_M];
-    assign w_acc              = uop[`P_W_A];
-    //assign w_lsb              = uop[`P_W_B];
-    assign w_opcode           = uop[`P_W_OPCODE];
-    assign mem_read           = uop[`P_MEM_R];
-    assign mem_write          = uop[`P_MEM_W];
-    assign mem_fetch          = uop[`P_FETCH];
-    assign exit_interrupt     = uop[`P_EXIT_INT];
-    assign enter_interrupt    = uop[`P_ENTER_INT];
-    assign cond_op_not_cached = uop[`P_OP_NOT_CACHED];
-    assign cond_a_zero        = uop[`P_A_ZERO];
-    assign cond_a_neg         = uop[`P_A_NEG];
-    assign decode             = uop[`P_DECODE];
-    assign branch             = uop[`P_BRANCH];
     assign imm                = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
+    assign alu_op             = uop[`P_ALU+5:`P_ALU];
+    assign sel_acc            = uop[`P_SEL_ACC+2:`P_SEL_ACC];
+    assign sel_md             = uop[`P_SEL_MD+2:`P_SEL_MD];
+    assign sel_mw             = uop[`P_SEL_MW+1:`P_SEL_MW];
+    assign sel_mr             = uop[`P_SEL_MR+1:`P_SEL_MR];
+    assign sel_pc             = uop[`P_SEL_PC+2:`P_SEL_PC];
+    assign w_m                = uop[`P_W_M];
+    assign m_use              = uop[`P_M_USE];
+    assign sel_addr           = uop[`P_SEL_ADDR];
+    assign sel_j_add          = uop[`P_SEL_J_ADD];
+    assign sel_c_mem          = uop[`P_SEL_C_MEM];
+    assign cond_op_not_cached = uop[`P_OP_NOT_CACHED];
+    assign fetch              = uop[`P_FETCH];
+    assign w_opcode           = uop[`P_W_OPCODE];
+    assign decode             = uop[`P_DECODE];
+    assign mem_r              = uop[`P_MEM_R];
+    assign mem_w              = uop[`P_MEM_W];
+    assign w_a                = uop[`P_W_A];
+    assign w_c                = uop[`P_W_C];
+    assign w_y                = uop[`P_W_Y];
+    assign cond_a_zero        = uop[`P_A_NEG];
+    assign cond_a_neg         = uop[`P_A_ZERO];
+    assign branch             = uop[`P_BRANCH];
+    assign clear_c            = uop[`P_CLEAR_C];
+    assign enter_interrupt    = uop[`P_ENTER_INT];
+    assign exit_interrupt     = uop[`P_EXIT_INT];
+    assign w_pc               = uop[`P_W_PC];
 
     $fwrite(tracefd, "(%0d) %0d:", ctime, upc_prev);
 
     if (~busy_prev) begin
         $fwrite(tracefd, " %o", uop);
 
-        if (sel_addr != 0) $fwrite(tracefd, " sel_addr=%0s", addr_name[sel_addr]);
-        if (alu_op   != 0) $fwrite(tracefd, " alu_op=%0s", op_name[alu_op]);
+        if (sel_pc == `SEL_PC_IMM || sel_mr == `SEL_MR_IMM ||
+            sel_mw == `SEL_MW_IMM || cond_op_not_cached ||
+            cond_a_zero || cond_a_neg || branch)
+            $fwrite(tracefd, " imm=%0d", imm);
+        if (alu_op) $fwrite(tracefd, " alu=%0s",  op_name[alu_op]);
+        if (w_a)    $fwrite(tracefd, " acc=%0s", acc_name[sel_acc]);
+        if (w_m)    $fwrite(tracefd, " md=%0s",  md_name[sel_md]);
+        if (w_m)    $fwrite(tracefd, " mw=%0s",  mw_name[sel_mw]);
+        if (sel_addr || m_use || sel_pc == `SEL_PC_REG ||
+            sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG ||
+            sel_md == `SEL_MD_REG_PLUS1 || sel_md == `SEL_MD_REG_MINUS1)
+            $fwrite(tracefd, " mr=%0s",  mr_name[sel_mr]);
+        if (w_pc) $fwrite(tracefd, " pc=%0s",  pc_name[sel_pc]);
 
-        if (w_m                != 0) $fwrite(tracefd, " w_m");
-        if (w_acc              != 0) $fwrite(tracefd, " w_acc");
-        //if (w_lsb              != 0) $fwrite(tracefd, " w_lsb");
-        if (w_opcode           != 0) $fwrite(tracefd, " w_opcode");
-        if (mem_read           != 0) $fwrite(tracefd, " mem_r");
-        if (mem_write          != 0) $fwrite(tracefd, " mem_w");
-        if (mem_fetch          != 0) $fwrite(tracefd, " mem_fetch");
-        if (w_pc_increment     != 0) $fwrite(tracefd, " w_pc_increment");
-        if (exit_interrupt     != 0) $fwrite(tracefd, " exit_interrupt");
-        if (enter_interrupt    != 0) $fwrite(tracefd, " enter_interrupt");
-        if (cond_op_not_cached != 0) $fwrite(tracefd, " cond_op_not_cached");
-        if (cond_a_zero        != 0) $fwrite(tracefd, " cond_a_zero");
-        if (cond_a_neg         != 0) $fwrite(tracefd, " cond_a_neg");
-        if (decode             != 0) $fwrite(tracefd, " decode");
-        if (branch             != 0) $fwrite(tracefd, " branch");
+        if (w_m)                $fwrite(tracefd, " w_m");
+        if (m_use)              $fwrite(tracefd, " m_use");
+        if (sel_addr)           $fwrite(tracefd, " sel_addr");
+        if (sel_j_add)          $fwrite(tracefd, " sel_j_add");
+        if (sel_c_mem)          $fwrite(tracefd, " sel_c_mem");
+        if (cond_op_not_cached) $fwrite(tracefd, " cond_op_not_cached");
+        if (fetch)              $fwrite(tracefd, " fetch");
+        if (w_opcode)           $fwrite(tracefd, " w_opcode");
+        if (decode)             $fwrite(tracefd, " decode");
+        if (mem_r)              $fwrite(tracefd, " mem_r");
+        if (mem_w)              $fwrite(tracefd, " mem_w");
+        if (w_a)                $fwrite(tracefd, " w_a");
+        if (w_c)                $fwrite(tracefd, " w_c");
+        if (w_y)                $fwrite(tracefd, " w_y");
+        if (cond_a_zero)        $fwrite(tracefd, " cond_a_zero");
+        if (cond_a_neg)         $fwrite(tracefd, " cond_a_neg");
+        if (branch)             $fwrite(tracefd, " branch");
+        if (clear_c)            $fwrite(tracefd, " clear_c");
+        if (enter_interrupt)    $fwrite(tracefd, " enter_interrupt");
+        if (exit_interrupt)     $fwrite(tracefd, " exit_interrupt");
+        if (w_pc)               $fwrite(tracefd, " w_pc");
 
-        if (imm != 0) $fwrite(tracefd, " imm=%0o", imm);
         if (uop == 0) $fwrite(tracefd, " nop");
         $fdisplay(tracefd, "");
 
     end else
         $fdisplay(tracefd, " --- busy");
 
-    // ---- register operation dump ----
-    if (cpu.w_m) $fdisplay(tracefd, "--- set M[%0d]=0x%h", cpu.op_ir, cpu.alu.alu_r);
-    if (cpu.w_acc) $fdisplay(tracefd, "--- set A=0x%h", cpu.alu.alu_r);
-    if (cpu.w_lsb) $fdisplay(tracefd, "--- set B=0x%h", cpu.alu.alu_r);
-    if (cpu.w_opcode & ~cpu.is_op_cached) $fdisplay(tracefd, "--- set opcode_cache=0x%h, pc_cached=0x%h", cpu.alu.alu_r, {cpu.pc[31:2], 2'b0});
+endtask
 
-    if (~cpu.busy & upc_prev == `UADDR_INTERRUPT) $fdisplay(tracefd, "--- ***** ENTERING INTERRUPT MICROCODE ******");
-    if (~cpu.busy & cpu.exit_interrupt) $fdisplay(tracefd, "--- ***** INTERRUPT FLAG CLEARED *****");
-    if (~cpu.busy & cpu.enter_interrupt) $fdisplay(tracefd, "--- ***** INTERRUPT FLAG SET *****");
+//
+// Print changed state at architectural level
+//
+task print_changed_regs();
+    static logic [47:0] old_acc, old_Y;
+    static logic [5:0] old_R;
+    static logic [14:0] old_M[16], old_C;
+    static string ir_name[16] = '{
+        0:"M0",     1:"M1",     2:"M2",     3:"M3",
+        4:"M4",     5:"M5",     6:"M6",     7:"M7",
+        8:"M8",     9:"M9",     10:"M10",   11:"M11",
+        12:"M12",   13:"M13",   14:"M14",   15:"SP"
+    };
+
+    // Accumulator
+    if (cpu.acc !== old_acc) begin
+        $fdisplay(tracefd, "(%0d)               Write A = %o", ctime, cpu.acc);
+        old_acc = cpu.acc;
+    end
+
+    // Y register
+    if (cpu.Y !== old_Y) begin
+        $fdisplay(tracefd, "(%0d)               Write Y = %o", ctime, cpu.Y);
+        old_Y = cpu.Y;
+    end
+
+    // R register
+    if (cpu.R !== old_R) begin
+        $fdisplay(tracefd, "(%0d)               Write R = %o", ctime, cpu.R);
+        old_R = cpu.R;
+    end
+
+    // C register
+    if (cpu.C !== old_C) begin
+        $fdisplay(tracefd, "(%0d)               Write C = %o", ctime, cpu.C);
+        old_C = cpu.C;
+    end
+
+    //
+    // Index-registers
+    //
+    for (int i=0; i<16; i+=1) begin
+        if (cpu.M[i] !== old_M[i]) begin
+            $fdisplay(tracefd, "(%0d)               Write %0s = %o",
+                ctime, ir_name[i], cpu.M[i]);
+            old_M[i] = cpu.M[i];
+        end
+    end
 
 endtask
 

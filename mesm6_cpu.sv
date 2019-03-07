@@ -73,7 +73,7 @@ wire        enter_interrupt;        // microcode says we are entering interrupt
 wire  [1:0] sel_pc;                 // mux for pc
 wire  [1:0] sel_mr;                 // mux for M[i] read address
 wire  [1:0] sel_mw;                 // mux for M[i] write address
-wire  [1:0] sel_mwd;                // mux for M[i] write data
+wire  [1:0] sel_md;                 // mux for M[i] write data
 wire  [2:0] sel_acc;                // mux for A write data
 wire        sel_addr;               // mux for data address
 wire        sel_j_add;              // use M[j] for Uaddr instead of Vaddr
@@ -147,11 +147,11 @@ mesm6_alu alu(
 //
 always @(posedge clk) begin
     if (w_pc)
-        pc <= (sel_pc == `SEL_PC_IMM)   ? uop_imm :   // constant
-              (sel_pc == `SEL_PC_REG)   ? Mi :        // M[i]
-              (sel_pc == `SEL_PC_PLUS1) ? pc + 1 :    // pc + 1
-              (sel_pc == `SEL_PC_VA)    ? Vaddr :     // addr + C
-                                          Uaddr;      // addr + C + M[i]
+        pc <= (sel_pc == `SEL_PC_IMM)   ? {uop_imm, 1'b0} : // constant
+              (sel_pc == `SEL_PC_REG)   ? Mi :              // M[i]
+              (sel_pc == `SEL_PC_PLUS1) ? pc + 1 :          // pc + 1
+              (sel_pc == `SEL_PC_VA)    ? Vaddr :           // addr + C
+                                          Uaddr;            // addr + C + M[i]
 end
 
 //--------------------------------------------------------------
@@ -214,23 +214,22 @@ assign Mi = M[m_ra];
 assign Mj = M[Vaddr];
 
 always @(posedge clk) begin
-    if (w_m & (m_wa != 0))
-        M[m_wa] <= (m_wa == 0)                     ? 0 :        // M[0]
-                   (sel_mwd == `SEL_MD_PC)         ? pc[15:1] : // PC
-                   (sel_mwd == `SEL_MD_A)          ? acc :      // accumulator
-                   (sel_mwd == `SEL_MD_ALU)        ? alu_r :    // from ALU
-                   (sel_mwd == `SEL_MD_REG)        ? Mi :       // M[i]
-                   (sel_mwd == `SEL_MD_REG_PLUS1)  ? Mi + 1 :   // M[i]
-                   (sel_mwd == `SEL_MD_REG_MINUS1) ? Mi - 1 :   // M[i]
-                   (sel_mwd == `SEL_MD_VA)         ? Vaddr :    // addr + C
-                                                     Uaddr;     // addr + C + M[i]
+    if (w_m)
+        M[m_wa] <= (m_wa == 0)                    ? 0 :         // M[0]
+                   (sel_md == `SEL_MD_PC)         ? pc[15:1] :  // PC
+                   (sel_md == `SEL_MD_A)          ? acc :       // accumulator
+                   (sel_md == `SEL_MD_ALU)        ? alu_r :     // from ALU
+                   (sel_md == `SEL_MD_REG)        ? Mi :        // M[i]
+                   (sel_md == `SEL_MD_REG_PLUS1)  ? Mi + 1 :    // M[i]
+                   (sel_md == `SEL_MD_REG_MINUS1) ? Mi - 1 :    // M[i]
+                   (sel_md == `SEL_MD_VA)         ? Vaddr :     // addr + C
+                                                    Uaddr;      // addr + C + M[i]
 end
 
 //--------------------------------------------------------------
 // Instruction opcode and opcode_cache.
 //
-always @(posedge clk)
-begin
+always @(posedge clk) begin
     if (w_opcode) begin
         opcode_cache <= ibus_input;     // store all opcodes in the word
         pc_cached <= pc[15:1];          // store PC address of cached opcodes
@@ -287,9 +286,8 @@ logic [`UPC_BITS-1:0] entry64[64] = '{
 assign uop_imm    = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
 assign alu_op     = uop[`P_ALU+5:`P_ALU];
 assign sel_acc    = uop[`P_SEL_ACC+2:`P_SEL_ACC];
-assign sel_mwd    = uop[`P_SEL_MWD+2:`P_SEL_MWD];
+assign sel_md     = uop[`P_SEL_MD+2:`P_SEL_MD];
 assign sel_mw     = uop[`P_SEL_MW+1:`P_SEL_MW];
-assign w_m        = uop[`P_W_M] & ~busy;
 assign sel_mr     = uop[`P_SEL_MR+1:`P_SEL_MR];
 assign m_use      = uop[`P_M_USE];
 assign sel_pc     = uop[`P_SEL_PC+1:`P_SEL_PC];
@@ -297,14 +295,15 @@ assign sel_addr   = uop[`P_SEL_ADDR];
 assign sel_j_add  = uop[`P_SEL_J_ADD];
 assign sel_c      = uop[`P_SEL_C_MEM];
 assign ibus_fetch = uop[`P_FETCH];
-assign w_opcode   = uop[`P_W_OPCODE] & ~busy;
 assign dbus_read  = uop[`P_MEM_R];
 assign dbus_write = uop[`P_MEM_W];
+assign w_opcode   = uop[`P_W_OPCODE] & ~busy;
+assign w_m        = uop[`P_W_M] & ~busy;
 assign w_acc      = uop[`P_W_A] & ~busy;
 assign w_c        = uop[`P_W_C] & ~busy;
 assign w_lsb      = uop[`P_W_Y] & ~busy;
-assign clear_c    = uop[`P_CLEAR_C];
 assign w_pc       = uop[`P_W_PC] & ~busy;
+assign clear_c    = uop[`P_CLEAR_C];
 
 assign exit_interrupt  = uop[`P_EXIT_INT]  & ~busy;
 assign enter_interrupt = uop[`P_ENTER_INT] & ~busy;
@@ -341,7 +340,7 @@ always @(posedge clk)
 always @(posedge clk)
     if (reset)
         uop <= '0;
-    else
+    else if (~busy)
         uop <= uop_rom[upc];
 
 endmodule
