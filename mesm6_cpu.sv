@@ -341,6 +341,6 @@ always @(posedge clk)
     if (reset)
         uop <= '0;
     else if (~busy)
-        uop <= uop_rom[upc];
+        uop <= uop_rom[upc_next];
 
 endmodule

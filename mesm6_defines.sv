@@ -79,11 +79,11 @@
 
 // ------- microcode labels for opcode execution -------
 // based on microcode program
-`define UADDR_RESET             1
-`define UADDR_FETCH             19
-`define UADDR_FETCH_NEXT        21
-`define UADDR_INTERRUPT         23
-`define UADDR_EMULATE           25
+`define UADDR_RESET             0
+`define UADDR_FETCH             18
+`define UADDR_FETCH_NEXT        20
+`define UADDR_INTERRUPT         22
+`define UADDR_EMULATE           24
 
 // ---------- microcode settings --------------------
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level

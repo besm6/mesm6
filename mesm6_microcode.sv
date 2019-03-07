@@ -108,7 +108,6 @@ ret = 0;
 // Microcode entry point after reset.
 // Initialize cpu registers.
 //
-op(0);                                                  // reserved and empty for correct cpu startup
 if (`UADDR_RESET != c) begin
     print_message();
     $display("`define UADDR_RESET %0d", c);

@@ -120,7 +120,7 @@ timeval_t t0;               // Start time of simulation
 //
 // Generate clock 500MHz.
 //
-always #1 clk = ~clk;
+always #0.5 clk = ~clk;
 
 //
 // Main loop.
@@ -154,7 +154,7 @@ initial begin
     irq = 0;
 
     // Hold reset for a while.
-    #2 reset = 0;
+    #1 reset = 0;
 
     // Run until limit.
     gettimeofday(t0, null);
@@ -176,8 +176,7 @@ endtask
 always @(posedge clk) begin
     ctime = $time;
     upc_prev = upc_next;
-    if (~cpu.busy)
-        upc_next = cpu.upc;
+    upc_next = cpu.upc_next;
     uop_prev = cpu.uop;
     busy_prev = cpu.busy;
     if (~reset & ~cpu.busy)
@@ -385,52 +384,49 @@ task print_uop(
     assign exit_interrupt     = uop[`P_EXIT_INT];
     assign w_pc               = uop[`P_W_PC];
 
-    $fwrite(tracefd, "(%0d) %0d:", ctime, upc_prev);
+    $fwrite(tracefd, "(%0d) %3d: %o", ctime, upc_prev, uop);
 
-    if (~busy_prev) begin
-        $fwrite(tracefd, " %o", uop);
+    if (sel_pc == `SEL_PC_IMM || sel_mr == `SEL_MR_IMM ||
+        sel_mw == `SEL_MW_IMM || cond_op_not_cached ||
+        cond_a_zero || cond_a_neg || branch)
+        $fwrite(tracefd, " imm=%0d", imm);
+    if (alu_op) $fwrite(tracefd, " alu=%0s",  op_name[alu_op]);
+    if (w_a)    $fwrite(tracefd, " acc=%0s", acc_name[sel_acc]);
+    if (w_m)    $fwrite(tracefd, " md=%0s",  md_name[sel_md]);
+    if (w_m)    $fwrite(tracefd, " mw=%0s",  mw_name[sel_mw]);
+    if (sel_addr || m_use || sel_pc == `SEL_PC_REG ||
+        sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG ||
+        sel_md == `SEL_MD_REG_PLUS1 || sel_md == `SEL_MD_REG_MINUS1)
+        $fwrite(tracefd, " mr=%0s",  mr_name[sel_mr]);
+    if (w_pc) $fwrite(tracefd, " pc=%0s",  pc_name[sel_pc]);
 
-        if (sel_pc == `SEL_PC_IMM || sel_mr == `SEL_MR_IMM ||
-            sel_mw == `SEL_MW_IMM || cond_op_not_cached ||
-            cond_a_zero || cond_a_neg || branch)
-            $fwrite(tracefd, " imm=%0d", imm);
-        if (alu_op) $fwrite(tracefd, " alu=%0s",  op_name[alu_op]);
-        if (w_a)    $fwrite(tracefd, " acc=%0s", acc_name[sel_acc]);
-        if (w_m)    $fwrite(tracefd, " md=%0s",  md_name[sel_md]);
-        if (w_m)    $fwrite(tracefd, " mw=%0s",  mw_name[sel_mw]);
-        if (sel_addr || m_use || sel_pc == `SEL_PC_REG ||
-            sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG ||
-            sel_md == `SEL_MD_REG_PLUS1 || sel_md == `SEL_MD_REG_MINUS1)
-            $fwrite(tracefd, " mr=%0s",  mr_name[sel_mr]);
-        if (w_pc) $fwrite(tracefd, " pc=%0s",  pc_name[sel_pc]);
+    if (w_m)                $fwrite(tracefd, " w_m");
+    if (m_use)              $fwrite(tracefd, " m_use");
+    if (sel_addr)           $fwrite(tracefd, " sel_addr");
+    if (sel_j_add)          $fwrite(tracefd, " sel_j_add");
+    if (sel_c_mem)          $fwrite(tracefd, " sel_c_mem");
+    if (cond_op_not_cached) $fwrite(tracefd, " cond_op_not_cached");
+    if (fetch)              $fwrite(tracefd, " fetch");
+    if (w_opcode)           $fwrite(tracefd, " w_opcode");
+    if (decode)             $fwrite(tracefd, " decode");
+    if (mem_r)              $fwrite(tracefd, " mem_r");
+    if (mem_w)              $fwrite(tracefd, " mem_w");
+    if (w_a)                $fwrite(tracefd, " w_a");
+    if (w_c)                $fwrite(tracefd, " w_c");
+    if (w_y)                $fwrite(tracefd, " w_y");
+    if (cond_a_zero)        $fwrite(tracefd, " cond_a_zero");
+    if (cond_a_neg)         $fwrite(tracefd, " cond_a_neg");
+    if (branch)             $fwrite(tracefd, " branch");
+    if (clear_c)            $fwrite(tracefd, " clear_c");
+    if (enter_interrupt)    $fwrite(tracefd, " enter_interrupt");
+    if (exit_interrupt)     $fwrite(tracefd, " exit_interrupt");
+    if (w_pc)               $fwrite(tracefd, " w_pc");
 
-        if (w_m)                $fwrite(tracefd, " w_m");
-        if (m_use)              $fwrite(tracefd, " m_use");
-        if (sel_addr)           $fwrite(tracefd, " sel_addr");
-        if (sel_j_add)          $fwrite(tracefd, " sel_j_add");
-        if (sel_c_mem)          $fwrite(tracefd, " sel_c_mem");
-        if (cond_op_not_cached) $fwrite(tracefd, " cond_op_not_cached");
-        if (fetch)              $fwrite(tracefd, " fetch");
-        if (w_opcode)           $fwrite(tracefd, " w_opcode");
-        if (decode)             $fwrite(tracefd, " decode");
-        if (mem_r)              $fwrite(tracefd, " mem_r");
-        if (mem_w)              $fwrite(tracefd, " mem_w");
-        if (w_a)                $fwrite(tracefd, " w_a");
-        if (w_c)                $fwrite(tracefd, " w_c");
-        if (w_y)                $fwrite(tracefd, " w_y");
-        if (cond_a_zero)        $fwrite(tracefd, " cond_a_zero");
-        if (cond_a_neg)         $fwrite(tracefd, " cond_a_neg");
-        if (branch)             $fwrite(tracefd, " branch");
-        if (clear_c)            $fwrite(tracefd, " clear_c");
-        if (enter_interrupt)    $fwrite(tracefd, " enter_interrupt");
-        if (exit_interrupt)     $fwrite(tracefd, " exit_interrupt");
-        if (w_pc)               $fwrite(tracefd, " w_pc");
+    if (uop == 0) $fwrite(tracefd, " nop");
 
-        if (uop == 0) $fwrite(tracefd, " nop");
-        $fdisplay(tracefd, "");
-
-    end else
-        $fdisplay(tracefd, " --- busy");
+    if (busy_prev)
+        $fwrite(tracefd, " --- busy");
+    $fdisplay(tracefd, "");
 
 endtask
 
@@ -444,31 +440,31 @@ task print_changed_regs();
     static string ir_name[16] = '{
         0:"M0",     1:"M1",     2:"M2",     3:"M3",
         4:"M4",     5:"M5",     6:"M6",     7:"M7",
-        8:"M8",     9:"M9",     10:"M10",   11:"M11",
-        12:"M12",   13:"M13",   14:"M14",   15:"SP"
+        8:"M10",    9:"M11",    10:"M12",   11:"M13",
+        12:"M14",   13:"M15",   14:"M16",   15:"SP"
     };
 
     // Accumulator
     if (cpu.acc !== old_acc) begin
-        $fdisplay(tracefd, "(%0d)               Write A = %o", ctime, cpu.acc);
+        $fdisplay(tracefd, "(%0d)      Write A = %o", ctime, cpu.acc);
         old_acc = cpu.acc;
     end
 
     // Y register
     if (cpu.Y !== old_Y) begin
-        $fdisplay(tracefd, "(%0d)               Write Y = %o", ctime, cpu.Y);
+        $fdisplay(tracefd, "(%0d)      Write Y = %o", ctime, cpu.Y);
         old_Y = cpu.Y;
     end
 
     // R register
     if (cpu.R !== old_R) begin
-        $fdisplay(tracefd, "(%0d)               Write R = %o", ctime, cpu.R);
+        $fdisplay(tracefd, "(%0d)      Write R = %o", ctime, cpu.R);
         old_R = cpu.R;
     end
 
     // C register
     if (cpu.C !== old_C) begin
-        $fdisplay(tracefd, "(%0d)               Write C = %o", ctime, cpu.C);
+        $fdisplay(tracefd, "(%0d)      Write C = %o", ctime, cpu.C);
         old_C = cpu.C;
     end
 
@@ -477,7 +473,7 @@ task print_changed_regs();
     //
     for (int i=0; i<16; i+=1) begin
         if (cpu.M[i] !== old_M[i]) begin
-            $fdisplay(tracefd, "(%0d)               Write %0s = %o",
+            $fdisplay(tracefd, "(%0d)      Write %0s = %o",
                 ctime, ir_name[i], cpu.M[i]);
             old_M[i] = cpu.M[i];
         end
