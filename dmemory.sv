@@ -41,14 +41,10 @@ logic [47:0] mem[32*1024];              // main RAM 32k words
 always @(posedge clk) begin
     if (i_read) begin
         o_data <= mem[i_addr];          // memory load
-        if (testbench.tracefd)
-            $fdisplay(testbench.tracefd, "--- read %h -> %h", i_addr, mem[i_addr]);
     end
 
     if (i_write) begin
         mem[i_addr] <= i_data;          // memory store
-        if (testbench.tracefd)
-            $fdisplay(testbench.tracefd, "--- write %h := %h", i_addr, i_data);
     end
 
     o_done <= i_read | i_write;

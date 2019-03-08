@@ -206,10 +206,10 @@ always @(negedge clk) begin
             // Print changed architectural state
             print_changed_regs();
 
-`ifdef notdef
             // Print transactions on external bus
             print_ext_bus();
 
+`ifdef notdef
             // Print BESM instruction
             if (!reset)
                 print_insn();
@@ -475,6 +475,23 @@ task print_changed_regs();
         end
     end
 
+endtask
+
+//
+// Print transactions on external bus: memory loads/stores/fetches etc.
+//
+task print_ext_bus();
+    if (ibus_rd & ibus_done && tracelevel > 1)
+        $fdisplay(tracefd, "(%0d)      Memory Fetch [%o] = %o",
+            ctime, ibus_addr, ibus_input);
+
+    if (dbus_wr & dbus_done)
+        $fdisplay(tracefd, "(%0d)      Memory Store [%o] = %o",
+            ctime, dbus_addr, dbus_output);
+
+    else if (dbus_rd & dbus_done)
+        $fdisplay(tracefd, "(%0d)      Memory Load [%o] = %o",
+            ctime, dbus_addr, dbus_input);
 endtask
 
 endmodule
