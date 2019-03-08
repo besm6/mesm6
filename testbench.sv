@@ -431,8 +431,9 @@ endtask
 //
 task print_changed_regs();
     static logic [47:0] old_acc, old_Y;
-    static logic [5:0] old_R;
+    static logic  [5:0] old_R;
     static logic [14:0] old_M[16], old_C;
+    static logic        old_gie;
     static string ir_name[16] = '{
         0:"M0",     1:"M1",     2:"M2",     3:"M3",
         4:"M4",     5:"M5",     6:"M6",     7:"M7",
@@ -473,6 +474,12 @@ task print_changed_regs();
                 ctime, ir_name[i], cpu.M[i]);
             old_M[i] = cpu.M[i];
         end
+    end
+
+    // Global Interrupt Enable
+    if (cpu.gie !== old_gie) begin
+        $fdisplay(tracefd, "(%0d)      Write GIE = %o", ctime, cpu.gie);
+        old_gie = cpu.gie;
     end
 
 endtask

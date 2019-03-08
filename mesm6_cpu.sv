@@ -66,7 +66,7 @@ wire [14:0] Mi;                     // output of M[i] read
 wire [14:0] Mj;                     // output of M[j] read
 
 reg         irq;                    // interrupt has been requested
-reg         on_interrupt;           // serving interrupt
+reg         gie;                    // global interrupt enable
 wire        exit_interrupt;         // microcode says this is poppc_interrupt
 wire        enter_interrupt;        // microcode says we are entering interrupt
 
@@ -241,11 +241,10 @@ assign is_op_cached = (pc[15:1] == pc_cached) ? 1'b1 : 1'b0;
 // Handle interrupts.
 //
 always @(posedge clk) begin
-    if (reset | on_interrupt)
+    if (reset)
         irq <= 0;
-
-    else if (interrupt & ~on_interrupt)
-        irq <= 1;                       // interrupt requested
+    else
+        irq <= interrupt & gie;         // interrupt requested
 end
 
 //--------------------------------------------------------------
@@ -253,10 +252,10 @@ end
 //
 always @(posedge clk)
 begin
-    if (reset | exit_interrupt)
-        on_interrupt <= 1'b0;
-    else if (enter_interrupt)
-        on_interrupt <= 1'b1;
+    if (reset | enter_interrupt)
+        gie <= 0;
+    else if (exit_interrupt)
+        gie <= 1;
 end
 
 //--------------------------------------------------------------
