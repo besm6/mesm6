@@ -1,0 +1,14 @@
+*
+* Test for instructions J+M, UTM
+*
+start   start   '1'
+        vtm     1(2)
+        vtm     -15(3)
+        uj      next
+loop    j+m     2(2)            ; shift right by 1
+        utm     1(3)
+next    v1m     loop(2)
+        v1m     fail(3)
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+        fin

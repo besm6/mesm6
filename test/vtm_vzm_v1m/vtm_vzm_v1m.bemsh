@@ -1,0 +1,16 @@
+*
+* Test for instructions VTM, VZM, V1M
+*
+start   start   '1'
+        vtm     0(2)
+        vzm     ok(2)
+        uj      fail
+ok      v1m     fail(2)
+        v1m     fail(2)
+        vtm     -1(2)
+        vzm     fail(2)
+        vzm     fail(2)
+        v1m     pass(2)
+fail    стоп    '76543'(2)
+pass    стоп    '12345'(6)
+        fin

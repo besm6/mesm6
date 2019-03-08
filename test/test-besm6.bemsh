@@ -1,0 +1,924 @@
+*
+* а здесь Силин держит
+* старорежимную часть теста!
+*
+**********************************
+*
+* I.  Репертуар старой БЭСМ-6.
+* ============================
+*
+**********************************
+*
+* 21 - проверка команд VTM, VZM, V1M:
+*
+t21     nop
+        vtm     0(2)
+        vzm     *+1(2)
+        uj      error
+t21a    v1m     error(2)
+        v1m     error(2)
+        vtm     -1(2)
+        vzm     error(2)
+        vzm     error(2)
+        v1m     t22(2)
+        uj      error
+*
+* 22 - проверка команд J+M, UTM:
+*
+t22     nop
+        vtm     1(2)
+        vtm     -15(3)
+        uj      *+2
+:       j+m     2(2)            ; сдвиг "1" влево
+        utm     1(3)
+:       v1m     *-1(2)
+        v1m     error(3)
+        vjm     newtest(13)
+*
+* 23 - проверка команды VLM:
+*
+t23     nop
+        vtm     -999(2)
+        vtm     -1000(3)
+:       utm     1(3)
+        vlm     *(2)
+        v1m     error(2)
+        v1m     error(3)
+:       vlm     error(2)        ; а что при "0"
+        v1m     error(2)
+*
+* слабое место: короткий цикл
+*
+        xta     cful
+        vtm     -1023(14)
+:       atx     ws+1023(14)
+        vlm     *(14)
+        xta
+        vtm     -1023(15)
+:       arx     ws+1023(15)
+        vlm     *(15)
+        aex     cful
+        u1a     error
+        vtm     -1023(14)
+        vtm     -1023(13)
+:       arx     ws+1023(14)
+        vlm     *(14)
+        aex     cful
+        u1a     error
+:       arx     ws+1023(13)
+        vlm     *(13)
+        aex     cful
+        u1a     error
+        vtm     -1023(12)
+        vtm     -1023(11)
+:       arx     ws+1023(12)
+        vlm     *(12)
+        aex     cful
+        u1a     error
+:       arx     ws+1023(11)
+        vlm     *(11)
+        aex     cful
+        u1a     error
+        vtm     -1023(10)
+        vtm     -1023(9)
+:       arx     ws+1023(10)
+        vlm     *(10)
+        aex     cful
+        u1a     error
+:       arx     ws+1023(9)
+        vlm     *(9)
+        aex     cful
+        u1a     error
+        vtm     -1023(8)
+        vtm     -1023(7)
+:       arx     ws+1023(8)
+        vlm     *(8)
+        aex     cful
+        u1a     error
+:       arx     ws+1023(7)
+        vlm     *(7)
+        aex     cful
+        u1a     error
+        vtm     -1023(6)
+        vtm     -1023(5)
+:       arx     ws+1023(6)
+        vlm     *(6)
+        aex     cful
+        u1a     error
+:       arx     ws+1023(5)
+        vlm     *(5)
+        aex     cful
+        u1a     error
+        vtm     -1023(4)
+        vtm     -1023(3)
+:       arx     ws+1023(4)
+        vlm     *(4)
+        aex     cful
+        u1a     error
+:       arx     ws+1023(3)
+        vlm     *(3)
+        aex     cful
+        u1a     error
+        vtm     -1023(2)
+:       arx     ws+1023(2)
+        vlm     *(2)
+        aex     cful
+        u1a     error
+        vtm     -1023(1)
+:       arx     ws+1023(1)
+        vlm     *(1)
+        vtm     @23(1)
+        aex     cful
+        u1a     error
+        vjm     newtest(13)
+*
+* 24 - проверка команд ATI, ITA:
+*
+t24     nop
+        xta
+        vtm     -1(2)
+        ati     2
+        v1m     error(2)
+        xta     cful
+        ati     2
+        vzm     error(2)
+        ita     2
+        ati     3
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+        vjm     newtest(13)
+*
+* 25 - проверка команд UTC, WTC:
+*
+t25     nop
+        utc     -1
+        vtm     (3)
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+:       utc     -1
+:       vtm     (3)
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+:       wtc     см1
+        vtm     (3)
+        vzm     error(3)
+        utm     1(3)
+:       v1m     error(3)
+        wtc     см1
+:       vtm     (3)
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+        utc     -7
+        utc     8
+        vtm     -2(3)
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+        wtc     см1
+        utc     8
+        vtm     -6(3)
+        utm     -1(3)
+        v1m     error(3)
+        vtm     -1(3)
+:       wtc     chess+1(3)
+        vtm     (4)
+        ita     4
+        aex     chess+1(3)
+        asn     64-33
+        u1a     error
+        vlm     *-3(3)
+        vjm     newtest(13)
+*
+* 26 - проверка команды VJM:
+*
+t26     nop
+        vjm     t26_1(2)        ; справа
+t26_1   utm     -t26_1(2)
+        v1m     error(2)
+:       vjm     t26_2(2)        ; слева
+t26_2   utm     -t26_2(2)
+        v1m     error(2)
+:       vjm     *+2(2)
+:       utc     -1
+:       vtm     1(3)
+        vzm     error(3)
+:       vtm     -1(3)
+        vjm     *+2(2)
+:       vtm     -2(3)
+:       utm     1(3)
+        v1m     error(3)
+        vjm     newtest(13)
+*
+* 27 - MTJ, J+M, VTM, UTM
+*
+t27     nop
+        utc     -13
+        vtm     14(2)
+        ita     2
+        aex     i1
+        u1a     error
+        vtm     15(2)
+        utm     -15(2)
+        ita     2
+        u1a     error
+        vtm     1(3)
+        j+m     2(3)
+        ita     2
+        aex     i1
+        u1a     error
+        ita     3
+        aex     i1
+        u1a     error
+        mtj     2(3)
+        ita     2
+        aex     i1
+        u1a     error
+        ita     3
+        aex     i1
+        u1a     error
+        vjm     newtest(13)
+*
+* 2a, 2b - проверка мат.адреса 0
+*          и модификатора 0:
+*
+t2а     nop
+        vtm     -1(2)
+        ita     2
+        atx
+:       xta                     ; слева
+        ati     2
+        v1m     error(2)
+        vtm     -1(2)
+        ita     2
+:       atx
+        xta                     ; справа
+        ati     2
+        v1m     error(2)
+t2b     nop
+        vtm     -1(2)
+        ita     2
+        ati
+:       ita                     ; слева
+        ati     2
+        v1m     error(2)
+        vtm     -1(2)
+        ita     2
+:       ati
+        ita                     ; справа
+        ati     2
+        v1m     error(2)
+        vjm     newtest(13)
+*
+* 2с - работа с регистром режима
+*      UZA, U1A, XTR, NTR, RТЕ, УТА
+*
+t2с     nop
+        vtm     63(2)
+        vtm     -63(3)
+lt0c2c  ntr     (2)
+        rte     63
+        atx     ws
+        its     2
+        asn     64-41
+        aex     (15)
+        u1a     error
+        u1a     error
+        xtr
+        rte     63
+        uza     error
+        aox
+        u1a     error
+        xtr     ws
+        rte     63
+        its     2
+        asn     64-41
+        aex     (15)
+        u1a     error
+        u1a     error
+*
+        vtm     ws+1(15)
+        xtr     (15)
+        vtm     mst(15)
+        rte     63
+        its     2
+        asn     64-41
+        aex     (15)
+        u1a     error
+        utm     -1(2)
+        vlm     lt0c2c(3)
+*
+        ntr     63
+        rte     @21
+        aex     е42х
+        u1a     error
+        ntr     0
+        uza     error
+:       u1a     *+1
+        uj      error
+:       ntr     (7)             ; лог.гр.
+        u1a     error
+        ntr     (11)            ; гр.умн.
+        uza     error
+        aox
+        u1a     error
+        ntr     19              ; гр.слож.
+        u1a     error
+        xta     cful
+        uza     error
+        ntr     11
+        u1a     error
+        ntr     19
+        uza     error
+*
+        ntr     24              ; гс+гу=гс
+        uza     error
+        ntr     (12)            ; гу+гл=гу
+        u1a     error
+        xta     i1
+        ntr     20              ; гс+гл=гс
+        u1a     error
+        xta     cful
+        aex
+        xta
+        yta
+        aex     cful
+        u1a     error
+        arx                         ; должна
+        uza     error               ; получиться
+        arx     cful                ; гр.умн.
+        u1a     error
+        aax     cful                ; лог.гр.
+        uza     error
+        vjm     newtest(13)
+*
+* 30:39 - магазинное обращение
+* ===============================
+* 30: 15 ATX   31: XTS   32: ITS
+* 33: 15 XTA   34: SТХ   35: STI
+* 36: 15 ATX а      37: 15 XTA а
+* 38: 15 WTC        3а: 15 АОР (разные)
+*
+t30     nop
+        atx     ws
+        atx     ws+1
+        atx     ws+2
+        vtm     ws+1(15)
+        xta     cful
+        atx     (15)
+        utm     -2-ws(15)
+        vjm     chstake(13)
+*
+t31     nop
+        vtm     ws(15)
+        xta
+        xts     cful
+        xts
+        xts
+        utm     -3-ws(15)
+        vjm     chstake(13)
+*
+t32     nop
+        vtm     ws(15)
+        ita
+        its
+        xta     cful
+        its
+        its
+        utm     -3-ws(15)
+        vjm     chstake(13)
+*
+t36     nop
+        vtm     ws-1(15)
+        xta
+        atx     1(15)
+        atx     3(15)
+        xta     cful
+        utc     2
+        atx     (15)
+        utm     1-ws(15)
+        vjm     chstake(13)
+*
+t33     nop
+        xta
+        atx     ws+1
+        vtm     ws+3(15)
+        xta     (15)
+        ati     2
+        asn     64+24
+        ati     3
+        xta     (15)
+        ati     4
+        asn     64+24
+        ati     5
+        xta     (15)
+        ati     6
+        asn     64+32
+        ati     7
+        vjm     chst2e(13)
+*
+t34     nop
+        vtm     ws+3(15)
+        stx     ws+4
+        ati     2
+        asn     64+32
+        ati     3
+        stx     ws+4
+        ati     4
+        asn     64+32
+        ati     5
+        stx     ws+4
+        ati     6
+        asn     64+32
+        ati     7
+        vjm     chst2e(13)
+*
+t35     nop
+        vtm     ws+3(15)
+        sti     6
+        ati     6
+        asn     64+32
+        sti     7
+        ati     4
+        asn     64+32
+        sti     5
+        ati     2
+        asn     64+32
+        ati     3
+        vjm     chst2e(13)
+*
+t37     nop
+        vtm     ws+3(15)
+        utc     -1
+        xta     (15)
+        ati     6
+        asn     64+32
+        ati     7
+        xta     -2(15)
+        ati     4
+        asn     64+32
+        ati     5
+        xta     -3(15)
+        ati     2
+        asn     64+32
+        ati     3
+        utm     -3(15)
+        vjm     chst2e(13)
+*
+t38     nop
+        vtm     1(4)
+        vtm     -1(7)
+        vtm     -1(3)
+        vtm     ws+3(15)
+        wtc     (15)
+        vtm     (6)
+        wtc     (15)
+        vtm     (4)
+        wtc     (15)
+        vtm     (2)
+        vjm     chst2e(13)
+        vtm     ws(15)
+        xta     i1
+        xts
+        xts     i2
+        xts     i3
+        wtc     -2(15)
+        vtm     (2)
+        v1m     error(2)
+        utm     -3-ws(15)
+        v1m     error(15)
+*
+* ранее забытые команды:
+*
+t3а     nop
+        vtm     ws(15)
+        xta     chess
+        xts     chess+1
+        aax     (15)
+        u1a     error
+        xta     chess
+        xts     chess+1
+        arx     (15)
+        xts     chess
+        xts     chess+1
+        aox     (15)
+        aex     (15)
+        u1a     error
+        xta     chess
+        xts     chess+1
+        xts     cful
+        apx     (15)
+        aux     (15)
+        aex     chess
+        u1a     error
+        xts     cful
+        acx     (15)
+        aex     i48
+        u1a     error
+        xts     cful
+        anx     (15)
+        aex     i1
+        u1a     error
+        xta     cful
+        atx     (15)
+        asx     (15)
+        u1a     error
+        vjm     newtest(13)
+*
+* 40 - AAX, AOX, AEX
+*
+t40     nop
+        xta     cful
+        aax
+        u1a     error
+        xta     cful
+        aax     cful
+        aex     cful
+        u1a     error
+        xta     chess
+        aax     chess
+        aex     chess
+        u1a     error
+        xta     chess
+        aax     chess+1
+        u1a     error
+        xta     chess
+        aox     chess+1
+        aex     cful
+        u1a     error
+        vjm     newtest(13)
+*
+* 42 - ARX
+*
+t42     nop
+        xta     i11
+        arx     i1
+        aex     i12
+        u1a     error
+        xta     cful
+        arx     i1
+        aex     i1
+        u1a     error
+        xta     cful
+        arx     cful
+        aex     cful
+        u1a     error
+        vjm     newtest(13)
+*
+* 43 - APX, AUX
+*
+t43     nop
+        xta     chess
+        apx     cful
+        aux     c0ful
+        aex     chess+1
+        u1a     error
+        xta     chess
+        apx     chess+1
+        u1a     error
+        xta     chess
+        apx     chess
+        aux     chess+1
+        aex     chess+1
+        u1a     error
+        xta     cful
+        aux     chess+1
+        aex     chess+1
+        u1a     error
+        vjm     newtest(13)
+*
+* 44 - ACX, ANX
+*
+t44     nop
+        acx
+        u1a     error
+        xta     cful
+        acx
+        aex     i48
+        u1a     error
+        xta     chess+1
+        acx     iм24
+        aex     i1
+        u1a     error
+        vtm     -48(12)
+        vtm     48(11)
+        xta     i1
+tanxe   v1m     *+1(11)
+        xta
+:       atx     ws
+        anx
+        its     11
+        aex     (15)
+        u1a     error
+        xta     ws
+        asn     64-1
+        its     11
+        aax     i7
+        aox     (15)
+        utm     -1(11)
+        vlm     tanxe(12)
+        xta
+        anx     cful
+        aex     cful
+        u1a     error
+        vtm     @201(14)
+        ita     (14)            ; проверка
+        anx     cful            ; засылки
+        yta
+        aex     c008u           ; остатка
+        u1a     error           ; в рмр
+        vjm     newtest(13)
+*
+* 45 - ASN, ASX
+*
+t45     nop
+        vtm     -48(12)
+        vtm     48(11)
+tsft1e  xta     c8u
+        asn     64-1(11)
+        anx
+        its     11
+        aex     (15)
+        u1a     error
+        utm     -1(11)
+        vlm     tsft1e(12)
+        vtm     -48(12)
+        vtm     48(11)
+tsft2e  xta     i1
+        asn     64-48(11)
+        anx
+        its     11
+        aex     (15)
+        u1a     error
+        utm     -1(11)
+        vlm     tsft2e(12)
+        xta     cful
+        asx     cful
+        u1a     error
+        xta     chess+1
+        asx     c0ful
+        aex     chess
+        u1a     error
+        xta     cful            ; а что
+        asn     64-12           ; попадет
+        yta                     ; в рмр
+        aex     cfff            ; при
+        u1a     error           ; сдвигах ?
+        xta     cful
+        asn     64+4
+        yta
+        aex     cfu
+        u1a     error
+        vjm     newtest(13)
+*
+* 46 - Е+N, Е-N, Е+Х, Е-Х
+*
+t46     nop
+        vtm     -@7e(12)
+        xta     cfe8u
+        atx     ws
+l76е    xta     ws
+        e+n     64-1
+        atx     ws
+        asn     64+41
+        ati     14
+        j+m     14(12)
+        v1m     error(14)
+        vlm     l76е(12)
+        xta     ws
+        e-n     64+1
+        uza     error
+        vtm     -@7e(12)
+        xta     c008u
+        atx     ws
+        vtm     -1(11)
+l761е   xta     ws
+        e-x     c7e8u
+        atx     ws
+        asn     64+41
+        ati     14
+        j+m     14(11)
+        v1m     error(14)
+        utm     -1(11)
+        vlm     l761е(12)
+        xta     ws
+        e+x     c008u
+        aex     c7e8u
+        u1a     error
+        vjm     newtest(13)
+*
+* 47 - А+Х, А-Х, Х-А
+*
+t47     nop
+        ntr     3
+        vtm     64(14)
+        ita     14
+        a-x     i65
+        uza     error
+        a+x     i1
+        u1a     error
+        aox
+        u1a     error
+        xta     i2
+        x-a     i1
+        a-x     iм1
+        u1a     error
+        aox
+        u1a     error
+        xta     i2
+        xts     i1
+        xts     i2
+        xts     i3
+        a-x     (15)            ; 3-2=1
+        u1a     error
+        a+x     (15)            ; 1+1 = 2
+        x-a     (15)            ; 2-2 = 0
+        u1a     error
+        aox
+        u1a     error
+        xta     cdu40l          ; 64
+        a-x     cdu42l          ; 66
+        uza     error
+        a+x     c848u           ; 2.
+        u1a     error
+        aox
+        uza     error
+        aex     cdu             ; i0
+        u1a     error
+        ntr     2
+        xta     c848u           ; 2.
+        xts     c84cu           ; 3.
+        xts     c848u           ; 2.
+        xts     c84cu           ; 3.
+        a+x     (15)            ; 3+2
+        a-x     (15)            ; 5-3
+        x-a     (15)            ; 2-2
+        u1a     error
+        aox
+        vjm     newtest(13)
+*
+* 48  - А*Х, А/Х
+*
+t48     nop
+        ntr     3
+        xta     cdu5l
+        a*x     c5udl           ; 13/2**64
+        atx     (15)
+        yta     64
+        stx     ws
+        aex     cau
+        u1a     error
+        xta     ws
+        aex     cau41l          ; 65/2**24
+        u1a     error
+        xta     c5u5l           ; 5/2**64
+        a*x     cim13           ; = -65
+        atx     (15)
+        yta     64
+        stx     ws
+        aex     ca1ufs
+        u1a     error
+        xta     ws
+        e+n     64+24
+        aex     cd0fsbf         ; -65!-
+        u1a     error
+        ntr     2
+        xta     c848u           ; 2.
+        a*x     c84cu           ; 3.
+        atx     ws
+        aex     c84cu           ; 3.
+        aex     c02u
+        u1a     error           ; !=6
+        xta     ws              ; восст. а=6.
+        a/x     c84cu           ; 3.
+        aex     c848u           ; 2.
+        u1a     error
+        vjm     newtest(13)
+*--------------------------------------
+oldfin  uj      t51             ; *** в тест нового режима
+*--------------------------------------
+*
+chstake v1m     error(15)
+        xta     ws
+        ati     2
+        v1m     error(2)
+        asn     64+24
+        ati     2
+        v1m     error(2)
+        xta     ws+2
+        ati     2
+        v1m     error(2)
+        asn     64+24
+        ati     2
+        v1m     error(2)
+        xta     ws+1
+        ati     2
+        asn     64+24
+        ati     3
+        utm     1(2)
+        v1m     error(2)
+        utm     1(3)
+        v1m     error(3)
+        xta     ufsl1
+        atx     ws
+        atx     ws+1
+        atx     ws+2
+        uj      (13)
+chst2e  utm     -ws(15)
+        v1m     error(15)
+        utm     -1(2)
+        v1m     error(2)
+        utm     1(3)
+        v1m     error(3)
+        v1m     error(4)
+        v1m     error(5)
+        utm     -1(6)
+        v1m     error(6)
+        utm     1(7)
+        v1m     error(7)
+        uj      (13)
+*
+* константы
+*
+i1      atx
+        atx     1
+i2      atx
+        atx     2
+i3      atx
+        atx     3
+i11     atx
+        atx     11
+i12     atx
+        atx     12
+i7      atx
+        atx     7
+i48     atx
+        atx     48
+cful    vlm     @fffff(15)
+        vlm     @fffff(15)
+см1     vlm     @fffff(15)
+        vlm     @fffff(15)
+ufsl1   vlm     @fffff(15)
+        atx     1
+c0ful   vlm     @fffff(7)
+        vlm     @fffff(15)
+iм24    vlm     @fffff(15)
+        vlm     @fffe8(15)
+c8u     atx     (8)
+        atx
+cfu     atx     (15)
+        atx
+cfff    atx
+        atx     @fff
+е42х    ati     (4)
+        atx
+cfe8u   v1m     (15)
+        atx
+c008u   xta     (0)
+        atx
+c7e8u   v1m     (7)
+        atx
+i65     atx
+        atx     65
+iм1     ntr     @ffff
+        vlm     @ffff(15)
+cdu40l  atx     (13)
+        atx     @40
+cdu41l  atx     (13)
+        atx     @41
+cdu42l  atx     (13)
+        atx     @42             ; 66
+cdu     atx     (13)
+        atx
+c848u   xta     @7000(8)
+        atx                     ; 2.
+c84cu   avx     @7000(8)
+        atx                     ; 3.
+cdu5l   atx     (13)
+        atx     5
+c5udl   atx     (5)
+        atx     @d
+c5u5l   atx     (5)
+        atx     5
+cau     atx     (10)
+        atx
+cau41l  atx     (10)
+        atx     @41
+c02u    ati
+        atx
+cim13   ntr     @fff(13)
+        vlm     @7ff3(15)
+ca1ufs  ntr     @7fff(10)
+        vlm     @7fff(15)
+cd0fsbf a*x     @fff(13)
+        vlm     @7fbf(15)       ; -65!-
+chess   utm     @aaaaa(10)
+        utm     @aaaaa(10)
+        atx
+        atx
+*
+* конец теста эмуляции
+*

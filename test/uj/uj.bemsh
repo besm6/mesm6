@@ -1,0 +1,8 @@
+*
+* Test for UJ instruction
+*
+start   start   '1'
+        uj      pass
+fail    стоп    '76543'(2)
+pass    стоп    '12345'(6)
+        fin
