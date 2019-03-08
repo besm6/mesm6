@@ -209,14 +209,12 @@ always @(negedge clk) begin
             // Print transactions on external bus
             print_ext_bus();
 
-`ifdef notdef
             // Print BESM instruction
             if (!reset)
                 print_insn();
 
-            if (int_flag_x)
-                $fdisplay(tracefd, "(%0d) *** Interrupt #%0d", ctime, cpu.int_vect);
-`endif
+            if (cpu.irq)
+                $fdisplay(tracefd, "(%0d) *** Interrupt", ctime);
 
             // Get data from fetch stage
             //int_flag_x = cpu.int_flag;
@@ -226,15 +224,6 @@ always @(negedge clk) begin
             //->instruction_retired;
         end
     end
-
-`ifdef notdef
-    if (!reset && $isunknown(cpu.opcode)) begin
-        $display("(%0d) Unknown instruction: cpu.opcode=%h", ctime, cpu.opcode);
-        if (tracefd)
-            $fdisplay(tracefd, "(%0d) *** Unknown instruction: cpu.opcode=%h", ctime, cpu.opcode);
-        terminate("Fatal Error!");
-    end
-`endif
 
     if ((cpu.dbus_read | cpu.dbus_write) && $isunknown(cpu.dbus_addr)) begin
         $display("(%0d) Unknown address: dbus_addr=%h", ctime, cpu.dbus_addr);
@@ -380,7 +369,7 @@ task print_uop();
     assign exit_interrupt     = uop[`P_EXIT_INT];
     assign w_pc               = uop[`P_W_PC];
 
-    $fwrite(tracefd, "(%0d) %3d: %o", ctime, upc, uop);
+    $fwrite(tracefd, "(%0d) %5d: %o", ctime, upc, uop);
 
     if (sel_pc == `SEL_PC_IMM || sel_mr == `SEL_MR_IMM ||
         sel_mw == `SEL_MW_IMM || cond_op_not_cached ||
@@ -443,25 +432,25 @@ task print_changed_regs();
 
     // Accumulator
     if (cpu.acc !== old_acc) begin
-        $fdisplay(tracefd, "(%0d)      Write A = %o", ctime, cpu.acc);
+        $fdisplay(tracefd, "(%0d)        Write A = %o", ctime, cpu.acc);
         old_acc = cpu.acc;
     end
 
     // Y register
     if (cpu.Y !== old_Y) begin
-        $fdisplay(tracefd, "(%0d)      Write Y = %o", ctime, cpu.Y);
+        $fdisplay(tracefd, "(%0d)        Write Y = %o", ctime, cpu.Y);
         old_Y = cpu.Y;
     end
 
     // R register
     if (cpu.R !== old_R) begin
-        $fdisplay(tracefd, "(%0d)      Write R = %o", ctime, cpu.R);
+        $fdisplay(tracefd, "(%0d)        Write R = %o", ctime, cpu.R);
         old_R = cpu.R;
     end
 
     // C register
     if (cpu.C !== old_C) begin
-        $fdisplay(tracefd, "(%0d)      Write C = %o", ctime, cpu.C);
+        $fdisplay(tracefd, "(%0d)        Write C = %o", ctime, cpu.C);
         old_C = cpu.C;
     end
 
@@ -470,7 +459,7 @@ task print_changed_regs();
     //
     for (int i=0; i<16; i+=1) begin
         if (cpu.M[i] !== old_M[i]) begin
-            $fdisplay(tracefd, "(%0d)      Write %0s = %o",
+            $fdisplay(tracefd, "(%0d)        Write %0s = %o",
                 ctime, ir_name[i], cpu.M[i]);
             old_M[i] = cpu.M[i];
         end
@@ -478,7 +467,7 @@ task print_changed_regs();
 
     // Global Interrupt Enable
     if (cpu.gie !== old_gie) begin
-        $fdisplay(tracefd, "(%0d)      Write GIE = %o", ctime, cpu.gie);
+        $fdisplay(tracefd, "(%0d)        Write GIE = %o", ctime, cpu.gie);
         old_gie = cpu.gie;
     end
 
@@ -489,16 +478,62 @@ endtask
 //
 task print_ext_bus();
     if (ibus_rd & ibus_done && tracelevel > 1)
-        $fdisplay(tracefd, "(%0d)      Memory Fetch [%o] = %o",
+        $fdisplay(tracefd, "(%0d)        Memory Fetch [%o] = %o",
             ctime, ibus_addr, ibus_input);
 
     if (dbus_wr & dbus_done)
-        $fdisplay(tracefd, "(%0d)      Memory Store [%o] = %o",
+        $fdisplay(tracefd, "(%0d)        Memory Store [%o] = %o",
             ctime, dbus_addr, dbus_output);
 
     else if (dbus_rd & dbus_done)
-        $fdisplay(tracefd, "(%0d)      Memory Load [%o] = %o",
+        $fdisplay(tracefd, "(%0d)        Memory Load [%o] = %o",
             ctime, dbus_addr, dbus_input);
+endtask
+
+//
+// Print BESM-6 instruction.
+//
+task print_insn();
+    static string long_name[16] = '{
+        0:"20", 1:"21",   2:"utc", 3:"wtc", 4:"vtm",  5:"utm",  6:"uza", 7:"u1a",
+        8:"uj", 9:"vjm", 10:"32", 11:"33", 12:"vzm", 13:"v1m", 14:"36", 15:"vlm"
+    };
+    static string short_name[64] = '{
+         0:"atx",  1:"stx",  2:"*02",  3:"xts",  4:"a+x",  5:"a-x",  6:"x-a",  7:"amx",
+         8:"xta",  9:"aax", 10:"aex", 11:"arx", 12:"avx", 13:"aox", 14:"a/x", 15:"a*x",
+        16:"apx", 17:"aux", 18:"acx", 19:"anx", 20:"e+x", 21:"e-x", 22:"asx", 23:"xtr",
+        24:"rte", 25:"yta", 26:"*32", 27:"*33", 28:"e+n", 29:"e-n", 30:"asn", 31:"ntr",
+        32:"ati", 33:"sti", 34:"ita", 35:"its", 36:"mtj", 37:"j+m", 38:"*46", 39:"*47",
+        40:"*50", 41:"*51", 42:"*52", 43:"*53", 44:"*54", 45:"*55", 46:"*56", 47:"*57",
+        48:"*60", 49:"*61", 50:"*62", 51:"*63", 52:"*64", 53:"*65", 54:"*66", 55:"*67",
+        56:"*70", 57:"*71", 58:"*72", 59:"*73", 60:"*74", 61:"*75", 62:"*76", 63:"*77"
+    };
+
+    // Only when MAP=ME and jump taken, and not UTC.
+    if (!cpu.decode)
+        return;
+
+    // Print BESM instruction.
+    $fwrite(tracefd, "(%0d) %05o: %o", ctime, cpu.pc[15:1], cpu.opcode);
+
+    if ($isunknown(cpu.opcode)) begin
+        $fdisplay(tracefd, " *** Unknown");
+        return;
+    end
+
+    // Instruction name
+    $fwrite(tracefd, " %s ", cpu.op_lflag ? long_name[cpu.op_lcmd] :
+                                       short_name[cpu.op_scmd]);
+
+    // Address
+    if (cpu.op_addr != 0) begin
+        $fwrite(tracefd, "%o", cpu.op_addr);
+    end
+
+    // Register
+    if (cpu.op_ir != 0)
+        $fwrite(tracefd, "(M%0o)", cpu.op_ir);
+    $fdisplay(tracefd, "");
 endtask
 
 endmodule
