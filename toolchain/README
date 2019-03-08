@@ -1,0 +1,12 @@
+Here you can find a cross-development system for MESM-6 project.
+
+It includes:
+
+  * as          - assembler and disassembler
+  * ld          - linker, archiver, and other object file utilities
+  * besm6       - include files
+
+To build and install to /usr/local/bin, run:
+
+    make
+    make install

@@ -6,3 +6,6 @@ jumptab16.v
 jumptab64.v
 microcode.v
 work/
+*.dump
+*.lst
+*.b6
