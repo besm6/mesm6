@@ -79,7 +79,7 @@
 
 // ------- microcode labels for opcode execution -------
 `define UADDR_RESET             0   // start from zero
-`define UADDR_INTERRUPT         22  // defined by mesm6_microcode.sv at runtime
+`define UADDR_INTERRUPT         20  // defined by mesm6_microcode.sv at runtime
 
 // ---------- microcode settings --------------------
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level

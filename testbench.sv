@@ -478,16 +478,19 @@ endtask
 //
 task print_ext_bus();
     if (ibus_rd & ibus_done && tracelevel > 1)
-        $fdisplay(tracefd, "(%0d)        Memory Fetch [%o] = %o",
-            ctime, ibus_addr, ibus_input);
+        $fdisplay(tracefd, "(%0d)        Memory Fetch [%o] = %o %o %o %o",
+            ctime, ibus_addr, ibus_input[47:36], ibus_input[36:24],
+            ibus_input[23:12], ibus_input[11:0]);
 
     if (dbus_wr & dbus_done)
-        $fdisplay(tracefd, "(%0d)        Memory Store [%o] = %o",
-            ctime, dbus_addr, dbus_output);
+        $fdisplay(tracefd, "(%0d)        Memory Store [%o] = %o %o %o %o",
+            ctime, dbus_addr, dbus_output[47:36], dbus_output[36:24],
+            dbus_output[23:12], dbus_output[11:0]);
 
     else if (dbus_rd & dbus_done)
-        $fdisplay(tracefd, "(%0d)        Memory Load [%o] = %o",
-            ctime, dbus_addr, dbus_input);
+        $fdisplay(tracefd, "(%0d)        Memory Load [%o] = %o %o %o %o",
+            ctime, dbus_addr, dbus_input[47:36], dbus_input[36:24],
+            dbus_input[23:12], dbus_input[11:0]);
 endtask
 
 //
@@ -495,8 +498,8 @@ endtask
 //
 task print_insn();
     static string long_name[16] = '{
-        0:"20", 1:"21",   2:"utc", 3:"wtc", 4:"vtm",  5:"utm",  6:"uza", 7:"u1a",
-        8:"uj", 9:"vjm", 10:"32", 11:"33", 12:"vzm", 13:"v1m", 14:"36", 15:"vlm"
+        0:"20", 1:"21",   2:"utc", 3:"wtc",   4:"vtm",  5:"utm",  6:"uza", 7:"u1a",
+        8:"uj", 9:"vjm", 10:"ij",  11:"stop", 12:"vzm", 13:"v1m", 14:"36", 15:"vlm"
     };
     static string short_name[64] = '{
          0:"atx",  1:"stx",  2:"*02",  3:"xts",  4:"a+x",  5:"a-x",  6:"x-a",  7:"amx",
@@ -510,7 +513,7 @@ task print_insn();
     };
 
     // Only when MAP=ME and jump taken, and not UTC.
-    if (!cpu.decode)
+    if (!cpu.decode || cpu.branch)
         return;
 
     // Print BESM instruction.
@@ -527,7 +530,7 @@ task print_insn();
 
     // Address
     if (cpu.op_addr != 0) begin
-        $fwrite(tracefd, "%o", cpu.op_addr);
+        $fwrite(tracefd, "%0o", cpu.op_addr);
     end
 
     // Register

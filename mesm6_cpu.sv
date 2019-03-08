@@ -70,7 +70,7 @@ reg         gie;                    // global interrupt enable
 wire        exit_interrupt;         // microcode says this is poppc_interrupt
 wire        enter_interrupt;        // microcode says we are entering interrupt
 
-wire  [1:0] sel_pc;                 // mux for pc
+wire  [2:0] sel_pc;                 // mux for pc
 wire  [1:0] sel_mr;                 // mux for M[i] read address
 wire  [1:0] sel_mw;                 // mux for M[i] write address
 wire  [1:0] sel_md;                 // mux for M[i] write data
@@ -289,7 +289,7 @@ assign sel_md     = uop[`P_SEL_MD+2:`P_SEL_MD];
 assign sel_mw     = uop[`P_SEL_MW+1:`P_SEL_MW];
 assign sel_mr     = uop[`P_SEL_MR+1:`P_SEL_MR];
 assign m_use      = uop[`P_M_USE];
-assign sel_pc     = uop[`P_SEL_PC+1:`P_SEL_PC];
+assign sel_pc     = uop[`P_SEL_PC+2:`P_SEL_PC];
 assign sel_addr   = uop[`P_SEL_ADDR];
 assign sel_j_add  = uop[`P_SEL_J_ADD];
 assign sel_c      = uop[`P_SEL_C_MEM];
