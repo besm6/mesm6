@@ -13,8 +13,11 @@
 `define MR_UADDR                (`SEL_MR_UADDR << `P_SEL_MR)
 
 `define MW_IMM(val)             (`SEL_MW_IMM << `P_SEL_MW | (val) << `P_IMM)
+`define MW_I                    (`SEL_MW_I << `P_SEL_MW)
+`define MW_VA                   (`SEL_MW_VA << `P_SEL_MW)
+`define MW_UA                   (`SEL_MW_UA << `P_SEL_MW)
 
-`define MD_PC                   (`SEL_MD_PC << `P_SEL_MD)
+`define MD_PC1                  (`SEL_MD_PC1 << `P_SEL_MD)
 `define MD_A                    (`SEL_MD_A << `P_SEL_MD)
 `define MD_ALU                  (`SEL_MD_ALU << `P_SEL_MD)
 `define MD_REG                  (`SEL_MD_REG << `P_SEL_MD)
@@ -47,6 +50,7 @@
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
 `define CLEAR_C                 (1 << `P_CLEAR_C)
+`define J_ADD                   (1 << `P_SEL_J_ADD)
 
 `define MEM_FETCH               (1 << `P_FETCH)
 `define MEM_R                   (1 << `P_MEM_R)
@@ -57,6 +61,7 @@
 `define BRANCHIF_OP_NOT_CACHED(a)   (1 << `P_OP_NOT_CACHED | (a) << `P_IMM)
 `define BRANCHIF_A_ZERO(addr)       (1 << `P_A_ZERO | (addr) << `P_IMM)
 `define BRANCHIF_A_NEG(addr)        (1 << `P_A_NEG | (addr) << `P_IMM)
+`define BRANCHIF_M_ZERO(addr)       (1 << `P_M_ZERO | (addr) << `P_IMM)
 
 // microcode common operations
 `define SP_PLUS_1               (`MR_IMM(15) | `MW_IMM(15) | `MD_REG_PLUS1 | `W_M)
@@ -304,11 +309,11 @@ op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o044);  // MTJ
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
+op(`MW_VA | `MD_REG | `W_M | `PC_PLUS1 | `W_PC);            // m[j] = m[i]; pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o045);  // J+M
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
+op(`MW_VA | `MD_UA | `J_ADD | `W_M | `PC_PLUS1 | `W_PC);    // m[j] = Mi + Mj; pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o046);  // E46
@@ -434,11 +439,11 @@ op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o240);  // VTM
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
+op(`MW_I | `MD_VA | `W_M | `PC_PLUS1 | `W_PC);              // m[i] = Vaddr; pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o250);  // UTM
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
+op(`MW_I | `MD_UA | `W_M | `PC_PLUS1 | `W_PC);              // m[i] = Uaddr; pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o260);  // UZA
@@ -450,11 +455,11 @@ op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o300);  // UJ
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
+op(`PC_UA | `W_PC);                                         // pc = Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o310);  // VJM
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
+op(`MW_I | `MD_PC1 | `W_M | `PC_VA | `W_PC);                // m[i] = pc+1; pc = Vaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o320);  // IJ
@@ -466,10 +471,14 @@ op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o340);  // VZM
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
+op(`BRANCHIF_M_ZERO(c+2) | `PC_PLUS1 | `W_PC);              // pc = pc + 1; if (a==0) goto @wset_end
+op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`PC_VA | `W_PC);                                         // pc = Vaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o350);  // VIM
+op(`BRANCHIF_M_ZERO(c+2));                                  // pc = pc + 1; if (a==0) goto @wset_end
+op(`PC_VA | `W_PC | `BRANCH(c+2));                          // pc = Vaddr
 op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
@@ -478,6 +487,8 @@ op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o370);  // VLM
+op(`BRANCHIF_M_ZERO(c+2));                                  // pc = pc + 1; if (a==0) goto @wset_end
+op(`MW_I | `MD_REG_PLUS1 | `W_M | `PC_VA | `W_PC | `BRANCH(c+2)); // m[i] = m[i] + 1; pc = Vaddr
 op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 

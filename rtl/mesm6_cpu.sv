@@ -22,6 +22,7 @@
 // SOFTWARE.
 //
 `timescale 1ns / 1ps
+`default_nettype none
 `include "mesm6_defines.sv"
 
 // all signals are polled on clk rising edge
@@ -54,6 +55,21 @@ reg  [15:0] pc;                     // program counter (half word granularity)
 reg  [47:0] acc;                    // A: accumulator
 reg  [47:0] Y;                      // Y: least significant bits
 reg  [14:0] M[16];                  // M1-M15: index registers (modifiers)
+wire [14:0] M1 = M[1];
+wire [14:0] M2 = M[2];
+wire [14:0] M3 = M[3];
+wire [14:0] M4 = M[4];
+wire [14:0] M5 = M[5];
+wire [14:0] M6 = M[6];
+wire [14:0] M7 = M[7];
+wire [14:0] M8 = M[8];
+wire [14:0] M9 = M[9];
+wire [14:0] M10 = M[10];
+wire [14:0] M11 = M[11];
+wire [14:0] M12 = M[12];
+wire [14:0] M13= M[13];
+wire [14:0] M14= M[14];
+wire [14:0] M15= M[15];
 reg  [14:0] C;                      // C: address modifier
 reg         c_active;               // C modifier is active
 reg  [5:0]  R;                      // R: rounding mode register
@@ -61,7 +77,8 @@ reg  [15:1] pc_cached;              // cached PC
 reg  [47:0] opcode_cache;           // cached instruction word
 
 wire [23:0] opcode;                 // opcode being processed
-wire [14:0] Uaddr;                  // executive address (opcode.addr + M[i] + C)
+wire [14:0] Vaddr;                  // full address (opcode.addr + C)
+wire [14:0] Uaddr;                  // executive address (opcode.addr + C + M[i])
 wire [14:0] Mi;                     // output of M[i] read
 wire [14:0] Mj;                     // output of M[j] read
 
@@ -73,7 +90,7 @@ wire        enter_interrupt;        // microcode says we are entering interrupt
 wire  [2:0] sel_pc;                 // mux for pc
 wire  [1:0] sel_mr;                 // mux for M[i] read address
 wire  [1:0] sel_mw;                 // mux for M[i] write address
-wire  [1:0] sel_md;                 // mux for M[i] write data
+wire  [2:0] sel_md;                 // mux for M[i] write data
 wire  [2:0] sel_acc;                // mux for A write data
 wire        sel_addr;               // mux for data address
 wire        sel_j_add;              // use M[j] for Uaddr instead of Vaddr
@@ -89,6 +106,7 @@ wire        w_opcode;               // write OPCODE (opcode cache)
 wire        is_op_cached;           // is opcode available?
 wire        acc_is_zero;            // A == 0
 wire        acc_is_neg;             // A[41] == 1
+wire        Mi_is_zero;             // M[i] == 0
 wire        busy;                   // busy signal to microcode sequencer (stalls cpu)
 
 reg  [`UPC_BITS-1:0] upc;           // microcode PC
@@ -117,7 +135,7 @@ assign opcode = (pc[0] == 0) ? opcode_cache[47:24]
 assign Vaddr = (C & {15{c_active}}) + op_addr;
 
 // Executive address.
-assign Uaddr = (Mi & {15{m_use}}) + (sel_j_add ? Mj : Vaddr);
+assign Uaddr = Mi + (sel_j_add ? Mj : Vaddr);
 
 //--------------------------------------------------------------
 // ALU instantiation.
@@ -148,10 +166,10 @@ mesm6_alu alu(
 always @(posedge clk) begin
     if (w_pc)
         pc <= (sel_pc == `SEL_PC_IMM)   ? {uop_imm, 1'b0} : // constant
-              (sel_pc == `SEL_PC_REG)   ? Mi :              // M[i]
+              (sel_pc == `SEL_PC_REG)   ? {Mi, 1'b0} :      // M[i]
               (sel_pc == `SEL_PC_PLUS1) ? pc + 1 :          // pc + 1
-              (sel_pc == `SEL_PC_VA)    ? Vaddr :           // addr + C
-                                          Uaddr;            // addr + C + M[i]
+              (sel_pc == `SEL_PC_VA)    ? {Vaddr, 1'b0} :   // addr + C
+                                          {Uaddr, 1'b0};    // addr + C + M[i]
 end
 
 //--------------------------------------------------------------
@@ -212,18 +230,19 @@ wire [14:0] m_wa = (sel_mw == `SEL_MW_IMM) ? uop_imm :      // constant
 // Read results.
 assign Mi = M[m_ra];
 assign Mj = M[Vaddr];
+assign Mi_is_zero = (Mi == 0);
 
 always @(posedge clk) begin
     if (w_m)
         M[m_wa] <= (m_wa == 0)                    ? 0 :         // M[0]
-                   (sel_md == `SEL_MD_PC)         ? pc[15:1] :  // PC
+                   (sel_md == `SEL_MD_PC1)        ? pc[15:1] + 1 : // PC
                    (sel_md == `SEL_MD_A)          ? acc :       // accumulator
                    (sel_md == `SEL_MD_ALU)        ? alu_r :     // from ALU
                    (sel_md == `SEL_MD_REG)        ? Mi :        // M[i]
                    (sel_md == `SEL_MD_REG_PLUS1)  ? Mi + 1 :    // M[i]
                    (sel_md == `SEL_MD_REG_MINUS1) ? Mi - 1 :    // M[i]
                    (sel_md == `SEL_MD_VA)         ? Vaddr :     // addr + C
-                                                    Uaddr;      // addr + C + M[i]
+                             /*SEL_MD_UA*/          Uaddr;      // addr + C + M[i]
 end
 
 //--------------------------------------------------------------
@@ -300,7 +319,7 @@ assign w_opcode   = uop[`P_W_OPCODE] & ~busy;
 assign w_m        = uop[`P_W_M] & ~busy;
 assign w_acc      = uop[`P_W_A] & ~busy;
 assign w_c        = uop[`P_W_C] & ~busy;
-assign w_lsb      = uop[`P_W_Y] & ~busy;
+assign w_y        = uop[`P_W_Y] & ~busy;
 assign w_pc       = uop[`P_W_PC] & ~busy;
 assign clear_c    = uop[`P_CLEAR_C];
 
@@ -309,6 +328,7 @@ assign enter_interrupt = uop[`P_ENTER_INT] & ~busy;
 
 wire   cond_op_not_cached = uop[`P_OP_NOT_CACHED];  // conditional: true if opcode not cached
 wire   cond_acc_zero      = uop[`P_A_ZERO];         // conditional: true if A is zero
+wire   cond_m_zero        = uop[`P_M_ZERO];         // conditional: true if M[i] is zero
 wire   cond_acc_neg       = uop[`P_A_NEG];          // conditional: true if A is negative
 wire   decode             = uop[`P_DECODE];         // decode means jumps to apropiate microcode based on besm6 opcode
 wire   uncond_branch      = uop[`P_BRANCH];         // unconditional jump inside microcode
@@ -317,6 +337,7 @@ wire   uncond_branch      = uop[`P_BRANCH];         // unconditional jump inside
 wire branch = (cond_op_not_cached & ~is_op_cached) |
               (cond_acc_zero & acc_is_zero) |
               (cond_acc_neg & acc_is_neg) |
+              (cond_m_zero & Mi_is_zero) |
               uncond_branch;
 
 // Busy signal for microcode sequencer.
