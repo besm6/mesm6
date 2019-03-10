@@ -22,25 +22,28 @@
 // SOFTWARE.
 //
 `define RESET_VECTOR            'o00001     // reset vector
-`define EMULATION_VECTOR        'o00010     // interrupt & exception vectors
+`define INTERRUPT_VECTOR        'o00010     // interrupt & exception vectors
 
-// ------- microcode core datapath selectors --------
+// Accumulator source selector
 `define SEL_ACC_ALU             0   // from ALU
 `define SEL_ACC_MEM             1   // from memory
 `define SEL_ACC_REG             2   // M[i]
 `define SEL_ACC_RR              3   // R register
 `define SEL_ACC_Y               4   // Y register
 
+// M[i] read index selector
 `define SEL_MR_I                0
 `define SEL_MR_IMM              1
 `define SEL_MR_VA               2
 `define SEL_MR_UA               3
 
+// M[i] write index selector
 `define SEL_MW_I                0
 `define SEL_MW_IMM              1
 `define SEL_MW_VA               2
 `define SEL_MW_UA               3
 
+// M[i] write data selector
 `define SEL_MD_PC               0
 `define SEL_MD_A                1
 `define SEL_MD_ALU              2
@@ -50,14 +53,14 @@
 `define SEL_MD_VA               6
 `define SEL_MD_UA               7
 
-`define SEL_PC_UA               0
-`define SEL_PC_VA               1
-`define SEL_PC_REG              2
-`define SEL_PC_IMM              3
-`define SEL_PC_PLUS1            4
+// PC source selector
+`define SEL_PC_UA               0   // from Uaddr
+`define SEL_PC_VA               1   // from Vaddr
+`define SEL_PC_REG              2   // from M[i]
+`define SEL_PC_IMM              3   // from immediate
+`define SEL_PC_PLUS1            4   // pc + 1
 
-`define ALU_OP_WIDTH            6   // alu operation is 6 bits
-
+// ALU operations
 `define ALU_NOP                 0   // r = a
 `define ALU_NOP_B               1   // r = b
 `define ALU_PLUS                2   // r = a + b
@@ -66,22 +69,17 @@
 `define ALU_OR                  5   // r = a OR b
 `define ALU_NOT                 6   // r = NOT a
 
-// ------- special opcodes ------
-`define OP_NOP                  8'b0000_1011 // default value for opcode cache on reset
-`define OP_EMULATE              3'b001
-`define OP_STORESP              3'b010
-`define OP_LOADSP               3'b011
-`define OP_ADDSP                4'b0001
+`define ALU_OP_WIDTH            6   // alu operation is 6 bits
 
-// ------- microcode memory settings ------
-`define UPC_BITS                9   // 512 microcode operations
+// Microcode memory settings
+`define UPC_BITS                9   // microcode address width
 `define UOP_BITS                49  // microcode opcode width
 
-// ------- microcode labels for opcode execution -------
+// Dedicated microcode addresses
 `define UADDR_RESET             0   // start from zero
 `define UADDR_INTERRUPT         20  // defined by mesm6_microcode.sv at runtime
 
-// ---------- microcode settings --------------------
+// Micro-instruction fields
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level
 `define P_ALU                   9   // alu operation (6 bits)
 `define P_SEL_ACC               15  // accumulator multiplexor (3 bits)
