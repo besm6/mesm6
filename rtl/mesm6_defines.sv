@@ -44,7 +44,7 @@
 `define SEL_MW_UA               3
 
 // M[i] write data selector
-`define SEL_MD_PC               0
+`define SEL_MD_PC1              0
 `define SEL_MD_A                1
 `define SEL_MD_ALU              2
 `define SEL_MD_REG              3
@@ -73,7 +73,7 @@
 
 // Microcode memory settings
 `define UPC_BITS                9   // microcode address width
-`define UOP_BITS                49  // microcode opcode width
+`define UOP_BITS                50  // microcode opcode width
 
 // Dedicated microcode addresses
 `define UADDR_RESET             0   // start from zero
@@ -108,3 +108,4 @@
 `define P_ENTER_INT             46  // set interrupt flag (enter interrupt)
 `define P_EXIT_INT              47  // clear interrupt flag (exit from interrupt)
 `define P_W_PC                  48  // write pc (from alu-out)
+`define P_M_ZERO                49  // microcode branch if M[i] is zero

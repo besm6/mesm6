@@ -334,6 +334,7 @@ task print_uop();
     logic       w_y;
     logic       cond_a_zero;
     logic       cond_a_neg;
+    logic       cond_m_zero;
     logic       branch;
     logic       clear_c;
     logic       enter_interrupt;
@@ -361,8 +362,9 @@ task print_uop();
     assign w_a                = uop[`P_W_A];
     assign w_c                = uop[`P_W_C];
     assign w_y                = uop[`P_W_Y];
-    assign cond_a_zero        = uop[`P_A_NEG];
-    assign cond_a_neg         = uop[`P_A_ZERO];
+    assign cond_a_zero        = uop[`P_A_ZERO];
+    assign cond_a_neg         = uop[`P_A_NEG];
+    assign cond_m_zero        = uop[`P_M_ZERO];
     assign branch             = uop[`P_BRANCH];
     assign clear_c            = uop[`P_CLEAR_C];
     assign enter_interrupt    = uop[`P_ENTER_INT];
@@ -373,7 +375,7 @@ task print_uop();
 
     if (sel_pc == `SEL_PC_IMM || sel_mr == `SEL_MR_IMM ||
         sel_mw == `SEL_MW_IMM || cond_op_not_cached ||
-        cond_a_zero || cond_a_neg || branch)
+        cond_a_zero || cond_m_zero || cond_a_neg || branch)
         $fwrite(tracefd, " imm=%0d", imm);
     if (alu_op) $fwrite(tracefd, " alu=%0s",  op_name[alu_op]);
     if (w_a)    $fwrite(tracefd, " acc=%0s", acc_name[sel_acc]);
@@ -401,6 +403,7 @@ task print_uop();
     if (w_y)                $fwrite(tracefd, " w_y");
     if (cond_a_zero)        $fwrite(tracefd, " cond_a_zero");
     if (cond_a_neg)         $fwrite(tracefd, " cond_a_neg");
+    if (cond_m_zero)        $fwrite(tracefd, " cond_m_zero");
     if (branch)             $fwrite(tracefd, " branch");
     if (clear_c)            $fwrite(tracefd, " clear_c");
     if (enter_interrupt)    $fwrite(tracefd, " enter_interrupt");
@@ -419,6 +422,7 @@ endtask
 // Print changed state at architectural level
 //
 task print_changed_regs();
+    static logic [15:0] old_pc;
     static logic [47:0] old_acc, old_Y;
     static logic  [5:0] old_R;
     static logic [14:0] old_M[16], old_C;
@@ -429,6 +433,12 @@ task print_changed_regs();
         8:"M10",    9:"M11",    10:"M12",   11:"M13",
         12:"M14",   13:"M15",   14:"M16",   15:"SP"
     };
+
+    // PC
+    if (cpu.pc !== old_pc) begin
+        $fdisplay(tracefd, "(%0d)        Write PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
+        old_pc = cpu.pc;
+    end
 
     // Accumulator
     if (cpu.acc !== old_acc) begin
@@ -535,7 +545,7 @@ task print_insn();
 
     // Register
     if (cpu.op_ir != 0)
-        $fwrite(tracefd, "(M%0o)", cpu.op_ir);
+        $fwrite(tracefd, "(%0d)", cpu.op_ir);
     $fdisplay(tracefd, "");
 endtask
 
