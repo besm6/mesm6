@@ -125,6 +125,8 @@ always #0.5 clk = ~clk;
 // Main loop.
 //
 initial begin
+    string octfile;
+
     $display("");
     $display("--------------------------------");
 
@@ -146,6 +148,18 @@ initial begin
         $display("Limit: %0d", limit);
         $fdisplay(tracefd, "Limit: %0d", limit);
     end
+
+    // Load memory contents.
+    if (! $value$plusargs("load=%s", octfile)) begin
+        $display("----- Load option required -----");
+        $display("Options:");
+        $display("    +load=NAME        Load code into main memory");
+        $display("    +limit=NUM        Limit execution to a number of cycles (default %0d)", limit);
+        $display("    +dump             Dump waveforms as output.vcd");
+        $display("");
+        $finish(1);
+    end
+    load_oct(octfile);
 
     // Start with reset active
     clk = 1;
@@ -169,6 +183,71 @@ end
 task message(input string msg);
     $display("*** %s", msg);
     $fdisplay(tracefd, "(%0d) *** %s", ctime, msg);
+endtask
+
+//
+// Load memory contents from *.oct file.
+//
+task load_oct(input string filename);
+    int fd, i, count, lm, lop, laddr, rm, rop, raddr;
+    string line, key;
+    logic [47:0] word;
+
+    // Open file with code.
+    fd = $fopen(filename, "r");
+    if (fd == 0) begin
+        $error("%s: Cannot open", filename);
+        $finish(1);
+    end
+
+    // Read hex code.
+    count = 0;
+    while ($fgets(line, fd)) begin
+        if (line[0] == "#")
+            continue;
+
+        if (line[0] == "i") begin
+            // i 00001 02 24 00000 01 010 0007
+            if ($sscanf(line, "%c %o %o %o %o %o %o %o", key, i, lm, lop, laddr, rm, rop, raddr) != 8) begin
+                $display("Bad line in OCT file: %s", line);
+                if (tracefd)
+                    $fdisplay(tracefd, "Bad line in OCT file: %s", line);
+                $finish(1);
+            end
+            word[47:44] = lm;
+            if (lop[4]) begin
+                word[43:39] = lop;
+                word[38:24] = laddr;
+            end else begin
+                word[43:36] = lop;
+                word[35:24] = laddr;
+            end
+            word[23:20] = rm;
+            if (rop[4]) begin
+                word[19:15] = rop;
+                word[14:0]  = raddr;
+            end else begin
+                word[19:12] = rop;
+                word[11:0]  = raddr;
+            end
+            //$fdisplay(tracefd, "i %05o: %016o", i, word);
+            prom.mem[i] = word;
+        end else begin
+            if ($sscanf(line, "%c %o %o", key, i, word) != 3) begin
+                $display("Bad line in OCT file: %s", line);
+                if (tracefd)
+                    $fdisplay(tracefd, "Bad line in OCT file: %s", line);
+                $finish(1);
+            end
+            //$fdisplay(tracefd, "d %05o: %016o", i, word);
+            ram.mem[i] = word;
+        end
+        count += 1;
+    end
+    $fclose(fd);
+    $display("Load %0d words from %s", count, filename);
+    if (tracefd)
+        $fdisplay(tracefd, "Load %0d words from %s", count, filename);
 endtask
 
 // Get time at the rising edge of the clock.
