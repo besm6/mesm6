@@ -29,7 +29,7 @@ microcode.v:    mesm6_microcode.sv $(INCLUDES)
 		vsim -c -l gen.log -do 'run; quit' gendata +nowarn3116
 
 run:            work
-		vsim -c -l run.log -do 'run 0.1us; quit' testbench +load=../test/pult-prog-1/pprog01.oct +dump +nowarn3116 | tee run.log
+		vsim -c -l run.log -do 'run -all; quit' testbench +load=../test/pult-prog-1/pprog01.oct +dump +nowarn3116 | tee run.log
 
 view:
 		gtkwave output.vcd cpu.gtkw &

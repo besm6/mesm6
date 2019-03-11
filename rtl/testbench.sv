@@ -144,10 +144,10 @@ initial begin
     // Limit the simulation by specified number of cycles.
     if (! $value$plusargs("limit=%d", limit)) begin
         // Default limit value.
-        limit = 100000;
-        $display("Limit: %0d", limit);
-        $fdisplay(tracefd, "Limit: %0d", limit);
+        limit = 99;
     end
+    $display("Limit: %0d", limit);
+    $fdisplay(tracefd, "Limit: %0d", limit);
 
     // Load memory contents.
     if (! $value$plusargs("load=%s", octfile)) begin
@@ -171,10 +171,7 @@ initial begin
 
     // Run until limit.
     gettimeofday(t0, null);
-    #limit begin
-        message("Time Limit Exceeded");
-        $finish;
-    end
+    #limit terminate("Time Limit Exceeded");
 end
 
 //
@@ -277,6 +274,16 @@ always @(negedge clk) begin
             $fdisplay(tracefd, "(%0d) *** Clear reset", ctime);
             old_reset = 0;
         end else begin
+            // Check for magic opcodes.
+            if (uop[`P_DECODE] && cpu.opcode == 'o33312345) begin
+                // stop 12345(6) - success.
+                terminate("Test PASS");
+            end
+            if (uop[`P_DECODE] && cpu.opcode == 'o13376543) begin
+                // stop 76543(2) - failure.
+                terminate("Test FAIL");
+            end
+
             if (tracelevel > 1) begin
                 // Print last executed micro-instruction
                 print_uop();
@@ -514,7 +521,7 @@ task print_changed_regs();
     };
 
     // PC
-    if (tracelevel > 2 && cpu.pc !== old_pc) begin
+    if (tracelevel >= 2 && cpu.pc !== old_pc) begin
         $fdisplay(tracefd, "(%0d)        Write PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
         old_pc = cpu.pc;
     end

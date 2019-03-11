@@ -8,3 +8,7 @@ $(TEST).oct: $(TEST).bemsh $(BEMSH)
 
 clean:
 	rm -f $(TEST).b6 $(TEST).lst $(TEST).dump
+
+run:    $(TEST).oct
+	$(MAKE) -C../../rtl work
+	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct
