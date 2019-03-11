@@ -1,0 +1,29 @@
+*
+* 27 - MTJ, J+M, VTM, UTM
+*
+t27     nop
+        utc     -13
+        vtm     14(2)
+        ita     2
+        aex     i1
+        u1a     error
+        vtm     15(2)
+        utm     -15(2)
+        ita     2
+        u1a     error
+        vtm     1(3)
+        j+m     2(3)
+        ita     2
+        aex     i1
+        u1a     error
+        ita     3
+        aex     i1
+        u1a     error
+        mtj     2(3)
+        ita     2
+        aex     i1
+        u1a     error
+        ita     3
+        aex     i1
+        u1a     error
+        vjm     newtest(13)

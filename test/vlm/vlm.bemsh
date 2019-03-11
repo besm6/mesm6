@@ -1,0 +1,103 @@
+*
+* 23 - проверка команды VLM:
+*
+t23     nop
+        vtm     -9(2)
+        vtm     -10(3)
+a       utm     1(3)
+        vlm     a(2)
+        v1m     fail(2)
+        v1m     fail(3)
+        vlm     fail(2)         ; а что при "0"
+        v1m     fail(2)
+        стоп    '12345'(6)      ; временно, пока XTA не работает
+*
+* слабое место: короткий цикл
+*
+        xta     cful
+        vtm     -1023(14)
+b       atx     ws+1023(14)
+        vlm     b(14)
+        xta
+        vtm     -1023(15)
+c       arx     ws+1023(15)
+        vlm     c(15)
+        aex     cful
+        u1a     fail
+        vtm     -1023(14)
+        vtm     -1023(13)
+d       arx     ws+1023(14)
+        vlm     d(14)
+        aex     cful
+        u1a     fail
+e       arx     ws+1023(13)
+        vlm     e(13)
+        aex     cful
+        u1a     fail
+        vtm     -1023(12)
+        vtm     -1023(11)
+f       arx     ws+1023(12)
+        vlm     f(12)
+        aex     cful
+        u1a     fail
+g       arx     ws+1023(11)
+        vlm     g(11)
+        aex     cful
+        u1a     fail
+        vtm     -1023(10)
+        vtm     -1023(9)
+h       arx     ws+1023(10)
+        vlm     h(10)
+        aex     cful
+        u1a     fail
+i       arx     ws+1023(9)
+        vlm     i(9)
+        aex     cful
+        u1a     fail
+        vtm     -1023(8)
+        vtm     -1023(7)
+j       arx     ws+1023(8)
+        vlm     j(8)
+        aex     cful
+        u1a     fail
+k       arx     ws+1023(7)
+        vlm     k(7)
+        aex     cful
+        u1a     fail
+        vtm     -1023(6)
+        vtm     -1023(5)
+l       arx     ws+1023(6)
+        vlm     l(6)
+        aex     cful
+        u1a     fail
+m       arx     ws+1023(5)
+        vlm     m(5)
+        aex     cful
+        u1a     fail
+        vtm     -1023(4)
+        vtm     -1023(3)
+n       arx     ws+1023(4)
+        vlm     n(4)
+        aex     cful
+        u1a     fail
+o       arx     ws+1023(3)
+        vlm     o(3)
+        aex     cful
+        u1a     fail
+        vtm     -1023(2)
+p       arx     ws+1023(2)
+        vlm     p(2)
+        aex     cful
+        u1a     fail
+        vtm     -1023(1)
+q       arx     ws+1023(1)
+        vlm     q(1)
+        aex     cful
+        u1a     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cful    vlm     '77777'(15)
+        vlm     '77777'(15)
+ws      пам     1030

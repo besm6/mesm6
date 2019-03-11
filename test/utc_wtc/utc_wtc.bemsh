@@ -1,0 +1,44 @@
+*
+* 25 - проверка команд UTC, WTC:
+*
+t25     nop
+        utc     -1
+        vtm     (3)
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+:       utc     -1
+:       vtm     (3)
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+:       wtc     см1
+        vtm     (3)
+        vzm     error(3)
+        utm     1(3)
+:       v1m     error(3)
+        wtc     см1
+:       vtm     (3)
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+        utc     -7
+        utc     8
+        vtm     -2(3)
+        vzm     error(3)
+        utm     1(3)
+        v1m     error(3)
+        wtc     см1
+        utc     8
+        vtm     -6(3)
+        utm     -1(3)
+        v1m     error(3)
+        vtm     -1(3)
+:       wtc     chess+1(3)
+        vtm     (4)
+        ita     4
+        aex     chess+1(3)
+        asn     64-33
+        u1a     error
+        vlm     *-3(3)
+        vjm     newtest(13)
