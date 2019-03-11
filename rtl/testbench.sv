@@ -435,7 +435,7 @@ task print_changed_regs();
     };
 
     // PC
-    if (cpu.pc !== old_pc) begin
+    if (tracelevel > 2 && cpu.pc !== old_pc) begin
         $fdisplay(tracefd, "(%0d)        Write PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
         old_pc = cpu.pc;
     end

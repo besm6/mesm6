@@ -132,7 +132,7 @@ assign opcode = (pc[0] == 0) ? opcode_cache[47:24]
                              : opcode_cache[23:0];
 
 // Full address.
-assign Vaddr = (C & {15{c_active}}) + op_addr;
+assign Vaddr = op_addr + (c_active ? C : 15'd0);
 
 // Executive address.
 assign Uaddr = Mi + (sel_j_add ? Mj : Vaddr);
