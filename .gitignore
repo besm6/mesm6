@@ -1,4 +1,4 @@
-output.trace
+output*.trace
 output.vcd
 run.log
 gen.log

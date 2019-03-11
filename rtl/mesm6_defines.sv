@@ -87,7 +87,7 @@
 `define P_SEL_MW                21  // M[i] write address multiplexor (2 bits)
 `define P_W_M                   23  // write M[i] (from alu-out)
 `define P_SEL_MR                24  // M read address multiplexor (2 bits)
-`define P_M_USE                 26  // use M[i] for Uaddr
+`define P_M_NONZERO             26  // microcode branch if M[i] is non-zero
 `define P_SEL_PC                27  // PC multiplexor (3 bits)
 `define P_SEL_ADDR              30  // addr-out multiplexor between Uaddr and M[i]
 `define P_SEL_J_ADD             31  // use M[j] for Uaddr instead of Vaddr

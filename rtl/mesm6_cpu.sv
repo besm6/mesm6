@@ -77,7 +77,7 @@ reg  [15:1] pc_cached;              // cached PC
 reg  [47:0] opcode_cache;           // cached instruction word
 
 wire [23:0] opcode;                 // opcode being processed
-wire [14:0] Vaddr;                  // full address (opcode.addr + C)
+reg  [14:0] Vaddr;                  // full address (opcode.addr + C)
 wire [14:0] Uaddr;                  // executive address (opcode.addr + C + M[i])
 wire [14:0] Mi;                     // output of M[i] read
 wire [14:0] Mj;                     // output of M[j] read
@@ -96,7 +96,6 @@ wire        sel_addr;               // mux for data address
 wire        sel_j_add;              // use M[j] for Uaddr instead of Vaddr
 wire        sel_c;                  // use memory output for C instead of Uaddr
 wire        clear_c;                // clear C flag
-wire        m_use;                  // use M[i] for Uaddr
 wire        w_pc;                   // write PC
 wire        w_m;                    // write M[i]
 wire        w_acc;                  // write A (from ALU result)
@@ -131,8 +130,13 @@ assign dbus_output = acc;           // only A can be written to memory
 assign opcode = (pc[0] == 0) ? opcode_cache[47:24]
                              : opcode_cache[23:0];
 
-// Full address.
-assign Vaddr = op_addr + (c_active ? C : 15'd0);
+// Full address: latch it on decode.
+always @(posedge clk) begin
+    if (uop[`P_DECODE]) begin
+        Vaddr <= c_active ? op_addr + C
+                          : op_addr;
+    end
+end
 
 // Executive address.
 assign Uaddr = Mi + (sel_j_add ? Mj : Vaddr);
@@ -307,7 +311,6 @@ assign sel_acc    = uop[`P_SEL_ACC+2:`P_SEL_ACC];
 assign sel_md     = uop[`P_SEL_MD+2:`P_SEL_MD];
 assign sel_mw     = uop[`P_SEL_MW+1:`P_SEL_MW];
 assign sel_mr     = uop[`P_SEL_MR+1:`P_SEL_MR];
-assign m_use      = uop[`P_M_USE];
 assign sel_pc     = uop[`P_SEL_PC+2:`P_SEL_PC];
 assign sel_addr   = uop[`P_SEL_ADDR];
 assign sel_j_add  = uop[`P_SEL_J_ADD];
@@ -329,6 +332,7 @@ assign enter_interrupt = uop[`P_ENTER_INT] & ~busy;
 wire   cond_op_not_cached = uop[`P_OP_NOT_CACHED];  // conditional: true if opcode not cached
 wire   cond_acc_zero      = uop[`P_A_ZERO];         // conditional: true if A is zero
 wire   cond_m_zero        = uop[`P_M_ZERO];         // conditional: true if M[i] is zero
+wire   cond_m_nonzero     = uop[`P_M_NONZERO];      // conditional: true if M[i] is non-zero
 wire   cond_acc_neg       = uop[`P_A_NEG];          // conditional: true if A is negative
 wire   decode             = uop[`P_DECODE];         // decode means jumps to apropiate microcode based on besm6 opcode
 wire   uncond_branch      = uop[`P_BRANCH];         // unconditional jump inside microcode
@@ -338,6 +342,7 @@ wire branch = (cond_op_not_cached & ~is_op_cached) |
               (cond_acc_zero & acc_is_zero) |
               (cond_acc_neg & acc_is_neg) |
               (cond_m_zero & Mi_is_zero) |
+              (cond_m_nonzero & !Mi_is_zero) |
               uncond_branch;
 
 // Busy signal for microcode sequencer.

@@ -393,8 +393,8 @@ task print_uop();
         0: "I",      1: "IMM",     2: "VA",  3: "UA"
     };
     static string pc_name[8] = '{
-        0: "REG",   1: "IMM", 2: "VA", 3: "UA",
-        4: "PLUS1", 5: "?5",  6: "?6", 7: "?7"
+        0: "UA",    1: "VA",  2: "REG", 3: "IMM",
+        4: "PLUS1", 5: "?5",  6: "?6",  7: "?7"
     };
 
     logic [`UPC_BITS-1:0] imm;
@@ -405,7 +405,6 @@ task print_uop();
     logic [1:0] sel_mr;
     logic [2:0] sel_pc;
     logic       w_m;
-    logic       m_use;
     logic       sel_addr;
     logic       sel_j_add;
     logic       sel_c_mem;
@@ -421,6 +420,7 @@ task print_uop();
     logic       cond_a_zero;
     logic       cond_a_neg;
     logic       cond_m_zero;
+    logic       cond_m_nonzero;
     logic       branch;
     logic       clear_c;
     logic       enter_interrupt;
@@ -435,7 +435,6 @@ task print_uop();
     assign sel_mr             = uop[`P_SEL_MR+1:`P_SEL_MR];
     assign sel_pc             = uop[`P_SEL_PC+2:`P_SEL_PC];
     assign w_m                = uop[`P_W_M];
-    assign m_use              = uop[`P_M_USE];
     assign sel_addr           = uop[`P_SEL_ADDR];
     assign sel_j_add          = uop[`P_SEL_J_ADD];
     assign sel_c_mem          = uop[`P_SEL_C_MEM];
@@ -451,6 +450,7 @@ task print_uop();
     assign cond_a_zero        = uop[`P_A_ZERO];
     assign cond_a_neg         = uop[`P_A_NEG];
     assign cond_m_zero        = uop[`P_M_ZERO];
+    assign cond_m_nonzero     = uop[`P_M_NONZERO];
     assign branch             = uop[`P_BRANCH];
     assign clear_c            = uop[`P_CLEAR_C];
     assign enter_interrupt    = uop[`P_ENTER_INT];
@@ -461,20 +461,19 @@ task print_uop();
 
     if (sel_pc == `SEL_PC_IMM || sel_mr == `SEL_MR_IMM ||
         sel_mw == `SEL_MW_IMM || cond_op_not_cached ||
-        cond_a_zero || cond_m_zero || cond_a_neg || branch)
+        cond_a_zero || cond_m_zero || cond_m_nonzero || cond_a_neg || branch)
         $fwrite(tracefd, " imm=%0d", imm);
     if (alu_op) $fwrite(tracefd, " alu=%0s",  op_name[alu_op]);
     if (w_a)    $fwrite(tracefd, " acc=%0s", acc_name[sel_acc]);
     if (w_m)    $fwrite(tracefd, " md=%0s",  md_name[sel_md]);
     if (w_m)    $fwrite(tracefd, " mw=%0s",  mw_name[sel_mw]);
-    if (sel_addr || m_use || sel_pc == `SEL_PC_REG ||
+    if (sel_addr || sel_pc == `SEL_PC_REG ||
         sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG ||
         sel_md == `SEL_MD_REG_PLUS1 || sel_md == `SEL_MD_REG_MINUS1)
         $fwrite(tracefd, " mr=%0s",  mr_name[sel_mr]);
     if (w_pc) $fwrite(tracefd, " pc=%0s",  pc_name[sel_pc]);
 
     if (w_m)                $fwrite(tracefd, " w_m");
-    if (m_use)              $fwrite(tracefd, " m_use");
     if (sel_addr)           $fwrite(tracefd, " sel_addr");
     if (sel_j_add)          $fwrite(tracefd, " sel_j_add");
     if (sel_c_mem)          $fwrite(tracefd, " sel_c_mem");
@@ -490,6 +489,7 @@ task print_uop();
     if (cond_a_zero)        $fwrite(tracefd, " cond_a_zero");
     if (cond_a_neg)         $fwrite(tracefd, " cond_a_neg");
     if (cond_m_zero)        $fwrite(tracefd, " cond_m_zero");
+    if (cond_m_nonzero)     $fwrite(tracefd, " cond_m_nonzero");
     if (branch)             $fwrite(tracefd, " branch");
     if (clear_c)            $fwrite(tracefd, " clear_c");
     if (enter_interrupt)    $fwrite(tracefd, " enter_interrupt");
