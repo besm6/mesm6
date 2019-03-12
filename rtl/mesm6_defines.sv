@@ -32,13 +32,13 @@
 `define SEL_ACC_Y               4   // Y register
 
 // M[i] read index selector
-`define SEL_MR_I                0
+`define SEL_MR_REG              0
 `define SEL_MR_IMM              1
 `define SEL_MR_VA               2
 `define SEL_MR_UA               3
 
 // M[i] write index selector
-`define SEL_MW_I                0
+`define SEL_MW_REG              0
 `define SEL_MW_IMM              1
 `define SEL_MW_VA               2
 `define SEL_MW_UA               3

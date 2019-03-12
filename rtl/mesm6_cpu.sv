@@ -77,8 +77,9 @@ reg  [15:1] pc_cached;              // cached PC
 reg  [47:0] opcode_cache;           // cached instruction word
 
 wire [23:0] opcode;                 // opcode being processed
-reg  [14:0] Vaddr;                  // full address (opcode.addr + C)
+reg  [14:0] Vaddr;                  // full address, latched (opcode.addr + C)
 wire [14:0] Uaddr;                  // executive address (opcode.addr + C + M[i])
+reg  [3:0]  m_index;                // index of M register, latched
 wire [14:0] Mi;                     // output of M[i] read
 wire [14:0] Mj;                     // output of M[j] read
 
@@ -135,6 +136,7 @@ always @(posedge clk) begin
     if (uop[`P_DECODE]) begin
         Vaddr <= c_active ? op_addr + C
                           : op_addr;
+        m_index <= op_ir;
     end
 end
 
@@ -173,7 +175,7 @@ always @(posedge clk) begin
               (sel_pc == `SEL_PC_REG)   ? {Mi, 1'b0} :      // M[i]
               (sel_pc == `SEL_PC_PLUS1) ? pc + 1 :          // pc + 1
               (sel_pc == `SEL_PC_VA)    ? {Vaddr, 1'b0} :   // addr + C
-                                          {Uaddr, 1'b0};    // addr + C + M[i]
+                        /*SEL_PC_UA*/     {Uaddr, 1'b0};    // addr + C + M[i]
 end
 
 //--------------------------------------------------------------
@@ -201,7 +203,7 @@ always @(posedge clk) begin
                (sel_acc == `SEL_ACC_REG) ? Mi :         // M[i]
                (sel_acc == `SEL_ACC_RR)  ? R :          // R register
                (sel_acc == `SEL_ACC_Y)   ? Y :          // Y register
-                                           alu_r;       // from ALU
+                          /*SEL_ACC_ALU*/  alu_r;       // from ALU
 end
 
 // alu results over A register instead of alu result
@@ -225,12 +227,12 @@ end
 wire [14:0] m_ra = (sel_mr == `SEL_MR_IMM) ? uop_imm :      // constant
                    (sel_mr == `SEL_MR_VA)  ? Vaddr :        // addr + C
                    (sel_mr == `SEL_MR_UA)  ? Uaddr :        // addr + C + M[i]
-                                             op_ir;         // opcode[24:21]
+                             /*SEL_MR_REG*/  m_index;       // opcode[24:21]
 // Write address.
 wire [14:0] m_wa = (sel_mw == `SEL_MW_IMM) ? uop_imm :      // constant
                    (sel_mw == `SEL_MW_VA)  ? Vaddr :        // addr + C
                    (sel_mw == `SEL_MW_UA)  ? Uaddr :        // addr + C + M[i]
-                                             op_ir;         // opcode[24:21]
+                             /*SEL_MW_REG*/  m_index;       // opcode[24:21]
 // Read results.
 assign Mi = M[m_ra];
 assign Mj = M[Vaddr];
