@@ -46,12 +46,11 @@
 // M[i] write data selector
 `define SEL_MD_PC               0
 `define SEL_MD_A                1
-`define SEL_MD_ALU              2
-`define SEL_MD_REG              3
-`define SEL_MD_REG_PLUS1        4
-`define SEL_MD_REG_MINUS1       5
-`define SEL_MD_VA               6
-`define SEL_MD_UA               7
+`define SEL_MD_REG              2
+`define SEL_MD_REG_PLUS1        3
+`define SEL_MD_REG_MINUS1       4
+`define SEL_MD_VA               5
+`define SEL_MD_UA               6
 
 // PC source selector
 `define SEL_PC_UA               0   // from Uaddr

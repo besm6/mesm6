@@ -5,6 +5,7 @@ module mesm6_alu(
     input  wire [47:0]              alu_a,      // parameter A
     input  wire [47:0]              alu_b,      // parameter B
     output reg  [47:0]              alu_r,      // computed result
+    output reg  [47:0]              alu_y,      // least significant bits
     input  wire [`ALU_OP_WIDTH-1:0] alu_op,     // ALU operation
     input  wire                     clk,        // clock for syncronous multicycle operations
     output reg                      done        // done signal for alu operation
@@ -16,6 +17,8 @@ wire [47:0] b_offset = { {38{1'b0}}, ~alu_b[4], alu_b[3:0], 2'b0 };
 wire [47:0] b_value =
     (alu_op == `ALU_PLUS_OFFSET) ? b_offset     // B offset
                                  : alu_b;       // by default, ALU_B as is
+
+assign alu_y = 0;   // TODO
 
 // ----- alu operation selection -----
 always @(alu_a or alu_b or alu_op or b_value)

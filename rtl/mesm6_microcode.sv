@@ -19,10 +19,9 @@
 
 `define MD_PC                   (`SEL_MD_PC << `P_SEL_MD)
 `define MD_A                    (`SEL_MD_A << `P_SEL_MD)
-`define MD_ALU                  (`SEL_MD_ALU << `P_SEL_MD)
 `define MD_REG                  (`SEL_MD_REG << `P_SEL_MD)
 `define MD_REG_PLUS1            (`SEL_MD_REG_PLUS1 << `P_SEL_MD)
-`define MD_REG_MINUS1           (`SEL_MD_REG_PLUS1 << `P_SEL_MD)
+`define MD_REG_MINUS1           (`SEL_MD_REG_MINUS1 << `P_SEL_MD)
 `define MD_VA                   (`SEL_MD_VA << `P_SEL_MD)
 `define MD_UA                   (`SEL_MD_UA << `P_SEL_MD)
 
