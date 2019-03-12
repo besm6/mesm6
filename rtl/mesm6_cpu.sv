@@ -71,7 +71,6 @@ wire [14:0] M13= M[13];
 wire [14:0] M14= M[14];
 wire [14:0] M15= M[15];
 reg  [14:0] C;                      // C: address modifier
-reg         c_active;               // C modifier is active
 reg  [5:0]  R;                      // R: rounding mode register
 reg  [15:1] pc_cached;              // cached PC
 reg  [47:0] opcode_cache;           // cached instruction word
@@ -96,7 +95,7 @@ wire  [2:0] sel_acc;                // mux for A write data
 wire        sel_addr;               // mux for data address
 wire        sel_j_add;              // use M[j] for Uaddr instead of Vaddr
 wire        sel_c_mem;              // use memory output for C instead of Uaddr
-wire        clear_c;                // clear C flag
+wire        c_active;               // use C register
 wire        w_pc;                   // write PC
 wire        w_m;                    // write M[i]
 wire        w_acc;                  // write A (from ALU result)
@@ -185,13 +184,6 @@ always @(posedge clk) begin
     if (w_c & ~busy)
         C <= sel_c_mem ? dbus_input :   // from memory
                          Uaddr;         // addr + C + M[i]
-end
-
-always @(posedge clk) begin
-    if (w_c & ~busy)
-        c_active <= 1;                  // C modifier is active
-    else if (clear_c | w_pc)
-        c_active <= 0;                  // deactivate C modifier
 end
 
 //--------------------------------------------------------------
@@ -326,7 +318,7 @@ assign w_acc      = uop[`P_W_A] & ~busy;
 assign w_c        = uop[`P_W_C] & ~busy;
 assign w_y        = uop[`P_W_Y] & ~busy;
 assign w_pc       = uop[`P_W_PC] & ~busy;
-assign clear_c    = uop[`P_CLEAR_C];
+assign c_active   = uop[`P_C_ACTIVE];
 
 assign exit_interrupt  = uop[`P_EXIT_INT]  & ~busy;
 assign enter_interrupt = uop[`P_ENTER_INT] & ~busy;

@@ -77,7 +77,7 @@
 
 // Dedicated microcode addresses
 `define UADDR_RESET             0   // start from zero
-`define UADDR_INTERRUPT         20  // defined by mesm6_microcode.sv at runtime
+`define UADDR_INTERRUPT         22  // defined by mesm6_microcode.sv at runtime
 
 // Micro-instruction fields
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level
@@ -104,7 +104,7 @@
 `define P_A_NEG                 42  // microcode branch if a is negative a[31]=1
 `define P_A_ZERO                43  // microcode branch if a is zero
 `define P_BRANCH                44  // microcode inconditional branch to address
-`define P_CLEAR_C               45  // clear C register flag
+`define P_C_ACTIVE              45  // clear C register flag
 `define P_ENTER_INT             46  // set interrupt flag (enter interrupt)
 `define P_EXIT_INT              47  // clear interrupt flag (exit from interrupt)
 `define P_W_PC                  48  // write pc (from alu-out)

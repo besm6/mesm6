@@ -50,7 +50,7 @@
 `define W_OPCODE                (1 << `P_W_OPCODE)
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
-`define CLEAR_C                 (1 << `P_CLEAR_C)
+`define C_ACTIVE                (1 << `P_C_ACTIVE)
 `define J_ADD                   (1 << `P_SEL_J_ADD)
 `define C_MEM                   (1 << `P_SEL_C_MEM)
 
@@ -67,8 +67,8 @@
 `define BRANCHIF_M_NONZERO(addr)    (1 << `P_M_NONZERO | (addr) << `P_IMM)
 
 // microcode common operations
-`define GO_FETCH_OR_DECODE      (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE | `CLEAR_C) // fetch and decode current PC opcode
-`define GO_FETCH_OR_DECODE_C    (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE) // fetch and decode current PC opcode
+`define GO_FETCH_OR_DECODE      (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE) // fetch and decode current PC opcode
+`define GO_FETCH_OR_DECODE_C    (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch_c) | `DECODE | `C_ACTIVE) // fetch and decode current PC opcode
 
 module gendata();
 
@@ -78,6 +78,7 @@ reg [`UPC_BITS-1:0] stab[64];
 reg [`UPC_BITS-1:0] ltab[16];
 
 reg [`UPC_BITS-1:0] uaddr_fetch;
+reg [`UPC_BITS-1:0] uaddr_fetch_c;
 
 int c, n, fd, ret;
 
@@ -117,7 +118,7 @@ if (`UADDR_RESET != c) begin
     print_message();
     $display("`define UADDR_RESET %0d", c);
 end
-op(`MD_A | `MW_IMM(0) | `W_M | `CLEAR_C);               // m0 = 0, C = 0
+op(`MD_A | `MW_IMM(0) | `W_M);                          // m0 = 0
 op(`ACC_REG | `MR_IMM(0) | `W_A);                       // acc = 0
 op(`MD_A | `MW_IMM(1) | `W_M);                          // m1 = 0
 op(`MD_A | `MW_IMM(2) | `W_M);                          // m2 = 0
@@ -146,6 +147,10 @@ op(`PC_IMM(`RESET_VECTOR) | `W_PC | `EXIT_INTERRUPT);   // pc = RESET_VECTOR, en
 uaddr_fetch = c;
 op(`MEM_FETCH | `W_OPCODE);                                 // opcode_cache = mem[pc]
 op(`DECODE);                                                // decode jump to microcode
+
+uaddr_fetch_c = c;
+op(`MEM_FETCH | `W_OPCODE);                                 // opcode_cache = mem[pc]
+op(`DECODE | `C_ACTIVE);                                    // decode jump to microcode
 
 //--------------------------------------------------------------
 // Interrupt request.
