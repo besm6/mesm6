@@ -227,7 +227,7 @@ task load_oct(input string filename);
                 word[19:12] = rop;
                 word[11:0]  = raddr;
             end
-            $fdisplay(tracefd, "i %05o: %016o", i, word);
+            //$fdisplay(tracefd, "i %05o: %016o", i, word);
             prom.mem[i] = word;
         end else begin
             if ($sscanf(line, "%c %o %o %o %o %o", key, i, lm, laddr, rm, raddr) != 6) begin
@@ -240,7 +240,7 @@ task load_oct(input string filename);
             word[35:24] = laddr;
             word[23:12] = rm;
             word[11:0]  = raddr;
-            $fdisplay(tracefd, "d %05o: %016o", i, word);
+            //$fdisplay(tracefd, "d %05o: %016o", i, word);
             ram.mem[i] = word;
         end
         count += 1;

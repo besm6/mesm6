@@ -170,293 +170,223 @@ op(`GO_FETCH_OR_DECODE);
 // Opcodes 000-077.
 //
 opcode('o000);  // ATX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o001);  // STX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o002);  // MOD
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o003);  // XTS
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o004);  // A+X
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o005);  // A-X
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o006);  // X-A
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o007);  // AMX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o010);  // XTA
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o011);  // AAX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o012);  // AEX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o013);  // ARX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o014);  // AVX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o015);  // AOX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o016);  // A/X
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o017);  // A*X
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o020);  // APX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o021);  // AUX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o022);  // ACX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o023);  // ANX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o024);  // E+X
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o025);  // E-X
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o026);  // ASX
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o027);  // XTR
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o030);  // RTE
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o031);  // YTA
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o032);  // 032
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o033);  // EXT
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o034);  // E+N
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o035);  // E-N
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o036);  // ASN
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o037);  // NTR
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o040);  // ATI
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o041);  // STI
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o042);  // ITA
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o043);  // ITS
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o044);  // MTJ
-op(`MW_VA | `MD_REG | `W_M | `PC_PLUS1 | `W_PC);            // m[j] = m[i]; pc = pc + 1
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`MW_VA | `MD_REG | `W_M | `GO_FETCH_OR_DECODE);          // m[j] = m[i]; pc_cached ? decode else fetch,decode
 
 opcode('o045);  // J+M
-op(`MW_VA | `MD_UA | `J_ADD | `W_M | `PC_PLUS1 | `W_PC);    // m[j] = Mi + Mj; pc = pc + 1
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`MW_VA | `MD_UA | `J_ADD | `W_M | `GO_FETCH_OR_DECODE);  // m[j] = Mi + Mj; pc_cached ? decode else fetch,decode
 
 opcode('o046);  // E46
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o047);  // E47
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o050);  // E50
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o051);  // E51
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o052);  // E52
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o053);  // E53
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o054);  // E54
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o055);  // E55
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o056);  // E56
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o057);  // E57
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o060);  // E60
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o061);  // E61
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o062);  // E62
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o063);  // E63
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o064);  // E64
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o065);  // E65
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o066);  // E66
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o067);  // E67
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o070);  // E70
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o071);  // E71
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o072);  // E72
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o073);  // E73
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o074);  // E74
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o075);  // E75
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o076);  // E76
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o077);  // E77
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 //--------------------------------------------------------------
 // Opcodes 20-37.
 opcode('o200);  // E20
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o210);  // E21
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o220);  // UTC
-op(`PC_PLUS1 | `W_PC | `W_C);                               // pc = pc + 1; C = Uaddr
+op(`W_C);                                                   // C = Uaddr
 op(`GO_FETCH_OR_DECODE_C);                                  // pc_cached ? decode else fetch,decode
 
 opcode('o230);  // WTC
-op(`PC_PLUS1 | `W_PC | `MEM_R | `C_MEM | `W_C);             // pc = pc + 1; C = memory[Uaddr]
+op(`MEM_R | `C_MEM | `W_C);                                 // C = memory[Uaddr]
 op(`GO_FETCH_OR_DECODE_C);                                  // pc_cached ? decode else fetch,decode
 
 opcode('o240);  // VTM
-op(`MW_REG | `MD_VA | `W_M | `PC_PLUS1 | `W_PC);            // m[i] = Vaddr; pc = pc + 1
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`MW_REG | `MD_VA | `W_M | `GO_FETCH_OR_DECODE);          // pc_cached ? decode else fetch,decode
 
 opcode('o250);  // UTM
-op(`MW_REG | `MD_UA | `W_M | `PC_PLUS1 | `W_PC);            // m[i] = Uaddr; pc = pc + 1
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`MW_REG | `MD_UA | `W_M | `GO_FETCH_OR_DECODE);          // m[i] = Uaddr; pc_cached ? decode else fetch,decode
 
 opcode('o260);  // UZA
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o270);  // UIA
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o300);  // UJ
@@ -468,31 +398,28 @@ op(`MW_REG | `MD_PC1 | `W_M | `PC_VA | `W_PC);              // m[i] = pc+1; pc =
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o320);  // IJ
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o330);  // STOP
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o340);  // VZM
-op(`BRANCHIF_M_ZERO(c+2) | `PC_PLUS1 | `W_PC);              // pc = pc + 1; if (m[i]==0) goto +2
+op(`BRANCHIF_M_ZERO(c+2));                                  // if (m[i]==0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 op(`PC_VA | `W_PC);                                         // pc = Vaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o350);  // VIM
-op(`BRANCHIF_M_NONZERO(c+2) | `PC_PLUS1 | `W_PC);           // pc = pc + 1; if (m[i]!=0) goto +2
+op(`BRANCHIF_M_NONZERO(c+2));                               // if (m[i]!=0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 op(`PC_VA | `W_PC);                                         // pc = Vaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o360);  // E36
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o370);  // VLM
-op(`BRANCHIF_M_NONZERO(c+2) | `PC_PLUS1 | `W_PC);           // pc = pc + 1; if (m[i]!=0) goto +2
+op(`BRANCHIF_M_NONZERO(c+2));                               // if (m[i]!=0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 op(`MW_REG | `MD_REG_PLUS1 | `W_M | `PC_VA | `W_PC);        // pc = Vaddr; m[i] += 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
