@@ -170,6 +170,7 @@ wire [14:0] Mj;                     // output of M[j] read
 reg         gie;                    // global interrupt enable
 
 // Opcode fields.
+wire [3:0]  op_ir    = opcode[23:20];   // index register
 wire        op_lflag = opcode[19];      // long format versus short format flag
 wire [3:0]  op_lcmd  = opcode[18:15];   // long format instruction: 020-037
 wire [5:0]  op_scmd  = opcode[17:12];   // short format instruction: 000-077
@@ -194,7 +195,7 @@ always @(posedge clk) begin
     if (decode) begin
         Vaddr <= c_active ? op_addr + C         // address modified by C
                           : op_addr;            // address field
-        reg_index <= opcode[23:20];             // index register
+        reg_index <= op_ir;                     // index register
     end
 end
 
@@ -285,12 +286,12 @@ wire [14:0] M15 = M[15];
 wire [14:0] m_ra = (sel_mr == `SEL_MR_IMM) ? uop_imm :      // constant
                    (sel_mr == `SEL_MR_VA)  ? Vaddr :        // addr + C
                    (sel_mr == `SEL_MR_UA)  ? Uaddr :        // addr + C + M[i]
-                             /*SEL_MR_REG*/  reg_index;     // opcode[24:21]
+                             /*SEL_MR_REG*/  reg_index;     // opcode[24:21] latched
 // Write address.
 wire [14:0] m_wa = (sel_mw == `SEL_MW_IMM) ? uop_imm :      // constant
                    (sel_mw == `SEL_MW_VA)  ? Vaddr :        // addr + C
                    (sel_mw == `SEL_MW_UA)  ? Uaddr :        // addr + C + M[i]
-                             /*SEL_MW_REG*/  reg_index;     // opcode[24:21]
+                             /*SEL_MW_REG*/  reg_index;     // opcode[24:21] latched
 // Read results.
 assign Mi = M[m_ra];
 assign Mj = M[Vaddr];
