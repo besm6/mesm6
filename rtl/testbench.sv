@@ -257,8 +257,11 @@ always @(posedge clk) begin
     upc = cpu.upc;
     uop = cpu.uop;
     busy = cpu.busy;
-    if (~reset & ~cpu.busy)
+    if (~reset & ~cpu.busy) begin
         uinstr_count++;
+        if (cpu.decode)
+            instr_count++;
+    end
 end
 
 //
@@ -340,19 +343,23 @@ task terminate(input string message);
 
     usec = (t1.usec - t0.usec) + (t1.sec - t0.sec) * 1000000;
     $display("   Elapsed time: %0d seconds", usec / 1000000);
+    $display("   System clock: %0d ticks", ctime);
     $display("      Simulated: %0d instructions, %0d micro-instructions",
         instr_count, uinstr_count);
     if (usec > 0)
-        $display("Simulation rate: %.1f instructions/sec, %.0f micro-instructions/sec",
+        $display("Simulation rate: %.1f kHz, %.0f instructions/sec, %.0f micro-instructions/sec",
+            1000.0 * ctime / usec,
             1000000.0 * instr_count / usec,
             1000000.0 * uinstr_count / usec);
 
     if (tracefd) begin
         $fdisplay(tracefd, "   Elapsed time: %0d seconds", usec / 1000000);
+        $fdisplay(tracefd, "   System clock: %0d ticks", ctime);
         $fdisplay(tracefd, "      Simulated: %0d instructions, %0d micro-instructions",
             instr_count, uinstr_count);
         if (usec > 0)
-            $fdisplay(tracefd, "Simulation rate: %.1f instructions/sec, %.0f micro-instructions/sec",
+            $fdisplay(tracefd, "Simulation rate: %.1f kHz, %.0f instructions/sec, %.0f micro-instructions/sec",
+                1000.0 * ctime / usec,
                 1000000.0 * instr_count / usec,
                 1000000.0 * uinstr_count / usec);
     end
