@@ -4,41 +4,53 @@
 t25     nop
         utc     -1
         vtm     (3)
-        vzm     error(3)
+        vzm     fail(3)
         utm     1(3)
-        v1m     error(3)
-:       utc     -1
-:       vtm     (3)
-        vzm     error(3)
+        v1m     fail(3)
+a       utc     -1
+b       vtm     (3)
+        vzm     fail(3)
         utm     1(3)
-        v1m     error(3)
-:       wtc     см1
+        v1m     fail(3)
+c       wtc     mmask
         vtm     (3)
-        vzm     error(3)
+        vzm     fail(3)
         utm     1(3)
-:       v1m     error(3)
-        wtc     см1
-:       vtm     (3)
-        vzm     error(3)
+d       v1m     fail(3)
+        wtc     mmask
+e       vtm     (3)
+        vzm     fail(3)
         utm     1(3)
-        v1m     error(3)
+        v1m     fail(3)
         utc     -7
         utc     8
         vtm     -2(3)
-        vzm     error(3)
+        vzm     fail(3)
         utm     1(3)
-        v1m     error(3)
-        wtc     см1
+        v1m     fail(3)
+        wtc     mmask
         utc     8
         vtm     -6(3)
         utm     -1(3)
-        v1m     error(3)
+        v1m     fail(3)
         vtm     -1(3)
-:       wtc     chess+1(3)
+*
+        wtc     chess+1(3)
         vtm     (4)
-        ita     4
-        aex     chess+1(3)
-        asn     64-33
-        u1a     error
-        vlm     *-3(3)
-        vjm     newtest(13)
+        mtj     5(4)
+        utm     -'25252'(5)
+        v1m     fail(5)
+        utm     1(3)
+*
+        wtc     chess+1(3)
+        vtm     (4)
+        mtj     5(4)
+        utm     -'52525'(5)
+        v1m     fail(5)
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+mmask   конд    b'77777'
+chess   конд    b'5252525252525252'
+        конд    b'2525252525252525'

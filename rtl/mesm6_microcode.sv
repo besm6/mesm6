@@ -46,11 +46,13 @@
 `define W_M                     (1 << `P_W_M)
 `define W_PC                    (1 << `P_W_PC)
 `define W_A                     (1 << `P_W_A)
+`define W_C                     (1 << `P_W_C)
 `define W_OPCODE                (1 << `P_W_OPCODE)
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
 `define CLEAR_C                 (1 << `P_CLEAR_C)
 `define J_ADD                   (1 << `P_SEL_J_ADD)
+`define C_MEM                   (1 << `P_SEL_C_MEM)
 
 `define MEM_FETCH               (1 << `P_FETCH)
 `define MEM_R                   (1 << `P_MEM_R)
@@ -65,7 +67,8 @@
 `define BRANCHIF_M_NONZERO(addr)    (1 << `P_M_NONZERO | (addr) << `P_IMM)
 
 // microcode common operations
-`define GO_FETCH_OR_DECODE      (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE) // fetch and decode current PC opcode
+`define GO_FETCH_OR_DECODE      (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE | `CLEAR_C) // fetch and decode current PC opcode
+`define GO_FETCH_OR_DECODE_C    (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE) // fetch and decode current PC opcode
 
 module gendata();
 
@@ -428,12 +431,12 @@ op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o220);  // UTC
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`PC_PLUS1 | `W_PC | `W_C);                               // pc = pc + 1; C = Uaddr
+op(`GO_FETCH_OR_DECODE_C);                                  // pc_cached ? decode else fetch,decode
 
 opcode('o230);  // WTC
-op(`PC_PLUS1 | `W_PC);                                      // pc = pc + 1
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`PC_PLUS1 | `W_PC | `MEM_R | `C_MEM | `W_C);             // pc = pc + 1; C = memory[Uaddr]
+op(`GO_FETCH_OR_DECODE_C);                                  // pc_cached ? decode else fetch,decode
 
 opcode('o240);  // VTM
 op(`MW_REG | `MD_VA | `W_M | `PC_PLUS1 | `W_PC);            // m[i] = Vaddr; pc = pc + 1

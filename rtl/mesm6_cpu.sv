@@ -95,7 +95,7 @@ wire  [2:0] sel_md;                 // mux for M[i] write data
 wire  [2:0] sel_acc;                // mux for A write data
 wire        sel_addr;               // mux for data address
 wire        sel_j_add;              // use M[j] for Uaddr instead of Vaddr
-wire        sel_c;                  // use memory output for C instead of Uaddr
+wire        sel_c_mem;              // use memory output for C instead of Uaddr
 wire        clear_c;                // clear C flag
 wire        w_pc;                   // write PC
 wire        w_m;                    // write M[i]
@@ -170,7 +170,7 @@ mesm6_alu alu(
 // PC: program counter.
 //
 always @(posedge clk) begin
-    if (w_pc)
+    if (w_pc & ~busy)
         pc <= (sel_pc == `SEL_PC_IMM)   ? {uop_imm, 1'b0} : // constant
               (sel_pc == `SEL_PC_REG)   ? {Mi, 1'b0} :      // M[i]
               (sel_pc == `SEL_PC_PLUS1) ? pc + 1 :          // pc + 1
@@ -182,16 +182,16 @@ end
 // C address modifier.
 //
 always @(posedge clk) begin
-    if (w_c)
-        C <= sel_c ? dbus_output :      // from memory
-                     Uaddr;             // addr + C + M[i]
+    if (w_c & ~busy)
+        C <= sel_c_mem ? dbus_input :   // from memory
+                         Uaddr;         // addr + C + M[i]
 end
 
 always @(posedge clk) begin
-    if (clear_c)
-        c_active <= 0;                  // deactivate C modifier
-    else if (w_c)
+    if (w_c & ~busy)
         c_active <= 1;                  // C modifier is active
+    else if (clear_c | w_pc)
+        c_active <= 0;                  // deactivate C modifier
 end
 
 //--------------------------------------------------------------
@@ -316,7 +316,7 @@ assign sel_mr     = uop[`P_SEL_MR+1:`P_SEL_MR];
 assign sel_pc     = uop[`P_SEL_PC+2:`P_SEL_PC];
 assign sel_addr   = uop[`P_SEL_ADDR];
 assign sel_j_add  = uop[`P_SEL_J_ADD];
-assign sel_c      = uop[`P_SEL_C_MEM];
+assign sel_c_mem  = uop[`P_SEL_C_MEM];
 assign ibus_fetch = uop[`P_FETCH];
 assign dbus_read  = uop[`P_MEM_R];
 assign dbus_write = uop[`P_MEM_W];

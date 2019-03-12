@@ -3,8 +3,8 @@
 #
 # All tests.
 #
-tests="uj vtm_vzm_v1m j+m_utm vlm"
-#tests+="utc_wtc vjm mtj"
+tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc"
+#tests+="vjm mtj"
 
 #
 # Delete log file from previous run.

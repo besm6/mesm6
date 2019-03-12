@@ -212,7 +212,7 @@ task load_oct(input string filename);
                 $finish(1);
             end
             word[47:44] = lm;
-            if (lop[4]) begin
+            if (line[11] != "0") begin
                 word[43:39] = lop;
                 word[38:24] = laddr;
             end else begin
@@ -220,23 +220,27 @@ task load_oct(input string filename);
                 word[35:24] = laddr;
             end
             word[23:20] = rm;
-            if (rop[4]) begin
+            if (line[23] != "0") begin
                 word[19:15] = rop;
                 word[14:0]  = raddr;
             end else begin
                 word[19:12] = rop;
                 word[11:0]  = raddr;
             end
-            //$fdisplay(tracefd, "i %05o: %016o", i, word);
+            $fdisplay(tracefd, "i %05o: %016o", i, word);
             prom.mem[i] = word;
         end else begin
-            if ($sscanf(line, "%c %o %o", key, i, word) != 3) begin
+            if ($sscanf(line, "%c %o %o %o %o %o", key, i, lm, laddr, rm, raddr) != 6) begin
                 $display("Bad line in OCT file: %s", line);
                 if (tracefd)
                     $fdisplay(tracefd, "Bad line in OCT file: %s", line);
                 $finish(1);
             end
-            //$fdisplay(tracefd, "d %05o: %016o", i, word);
+            word[47:36] = lm;
+            word[35:24] = laddr;
+            word[23:12] = rm;
+            word[11:0]  = raddr;
+            $fdisplay(tracefd, "d %05o: %016o", i, word);
             ram.mem[i] = word;
         end
         count += 1;
@@ -545,7 +549,7 @@ task print_changed_regs();
     end
 
     // C register
-    if (cpu.C !== old_C) begin
+    if (cpu.C !== old_C || (uop[`P_W_C] & ~busy)) begin
         $fdisplay(tracefd, "(%0d)        Write C = %o", ctime, cpu.C);
         old_C = cpu.C;
     end
@@ -622,7 +626,7 @@ task print_insn();
 
     // Instruction name
     $fwrite(tracefd, " %s ", cpu.op_lflag ? long_name[cpu.op_lcmd] :
-                                       short_name[cpu.op_scmd]);
+                                           short_name[cpu.op_scmd]);
 
     // Address
     if (cpu.op_addr != 0) begin
