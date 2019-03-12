@@ -278,16 +278,6 @@ always @(negedge clk) begin
             $fdisplay(tracefd, "(%0d) *** Clear reset", ctime);
             old_reset = 0;
         end else begin
-            // Check for magic opcodes.
-            if (uop[`P_DECODE] && cpu.opcode == 'o33312345) begin
-                // stop 12345(6) - success.
-                terminate("Test PASS");
-            end
-            if (uop[`P_DECODE] && cpu.opcode == 'o13376543) begin
-                // stop 76543(2) - failure.
-                terminate("Test FAIL");
-            end
-
             if (tracelevel > 1) begin
                 // Print last executed micro-instruction
                 print_uop();
@@ -300,8 +290,7 @@ always @(negedge clk) begin
             print_ext_bus();
 
             // Print BESM instruction
-            if (!reset)
-                print_insn();
+            print_insn();
 
             if (cpu.irq)
                 $fdisplay(tracefd, "(%0d) *** Interrupt", ctime);
@@ -637,6 +626,16 @@ task print_insn();
     if (cpu.op_ir != 0)
         $fwrite(tracefd, "(%0d)", cpu.op_ir);
     $fdisplay(tracefd, "");
+
+    // Check for magic opcodes.
+    if (cpu.opcode == 'o33312345) begin
+        // stop 12345(6) - success.
+        terminate("Test PASS");
+    end
+    if (cpu.opcode == 'o13376543) begin
+        // stop 76543(2) - failure.
+        terminate("Test FAIL");
+    end
 endtask
 
 endmodule

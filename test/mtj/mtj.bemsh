@@ -4,26 +4,31 @@
 t27     nop
         utc     -13
         vtm     14(2)
-        ita     2
-        aex     i1
-        u1a     error
+        utm     -1(2)
+        v1m     fail(2)
+        utm     1(2)
+*
         vtm     15(2)
         utm     -15(2)
-        ita     2
-        u1a     error
+        v1m     fail(2)
+*
         vtm     1(3)
         j+m     2(3)
-        ita     2
-        aex     i1
-        u1a     error
-        ita     3
-        aex     i1
-        u1a     error
+        utm     -1(2)
+        v1m     fail(2)
+        utm     1(2)
+*
+        utm     -1(3)
+        v1m     fail(3)
+        utm     1(3)
+*
         mtj     2(3)
-        ita     2
-        aex     i1
-        u1a     error
-        ita     3
-        aex     i1
-        u1a     error
-        vjm     newtest(13)
+        utm     -1(2)
+        v1m     fail(2)
+        utm     1(2)
+*
+        utm     -1(3)
+        v1m     fail(3)
+*
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
