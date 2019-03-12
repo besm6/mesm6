@@ -17,7 +17,7 @@
 `define MW_VA                   (`SEL_MW_VA << `P_SEL_MW)
 `define MW_UA                   (`SEL_MW_UA << `P_SEL_MW)
 
-`define MD_PC1                  (`SEL_MD_PC1 << `P_SEL_MD)
+`define MD_PC                   (`SEL_MD_PC << `P_SEL_MD)
 `define MD_A                    (`SEL_MD_A << `P_SEL_MD)
 `define MD_ALU                  (`SEL_MD_ALU << `P_SEL_MD)
 `define MD_REG                  (`SEL_MD_REG << `P_SEL_MD)
@@ -394,7 +394,7 @@ op(`PC_UA | `W_PC);                                         // pc = Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o310);  // VJM
-op(`MW_REG | `MD_PC1 | `W_M | `PC_VA | `W_PC);              // m[i] = pc+1; pc = Vaddr
+op(`MW_REG | `MD_PC | `W_M | `PC_VA | `W_PC);               // m[i] = pc; pc = Vaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o320);  // IJ

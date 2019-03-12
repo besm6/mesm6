@@ -310,7 +310,7 @@ assign Mi_is_zero = (Mi == 0);
 always @(posedge clk) begin
     if (w_m)
         M[m_wa] <= (m_wa == 0)                    ? 0 :         // M[0]
-                   (sel_md == `SEL_MD_PC1)        ? pc[15:1] + 1 : // PC
+                   (sel_md == `SEL_MD_PC)         ? pc[15:1] :  // PC
                    (sel_md == `SEL_MD_A)          ? acc :       // accumulator
                    (sel_md == `SEL_MD_ALU)        ? alu_r :     // from ALU
                    (sel_md == `SEL_MD_REG)        ? Mi :        // M[i]

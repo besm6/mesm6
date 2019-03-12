@@ -3,7 +3,7 @@
 #
 # All tests.
 #
-tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc"
+tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc vjm"
 #tests+="vjm mtj"
 
 #

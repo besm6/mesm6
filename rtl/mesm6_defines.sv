@@ -44,7 +44,7 @@
 `define SEL_MW_UA               3
 
 // M[i] write data selector
-`define SEL_MD_PC1              0
+`define SEL_MD_PC               0
 `define SEL_MD_A                1
 `define SEL_MD_ALU              2
 `define SEL_MD_REG              3
