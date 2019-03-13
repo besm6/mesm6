@@ -153,6 +153,15 @@ op(`MEM_FETCH | `W_OPCODE);                                 // opcode_cache = me
 op(`DECODE | `C_ACTIVE);                                    // decode jump to microcode
 
 //--------------------------------------------------------------
+// No operation.
+//
+if (`UADDR_NOP != c) begin
+    print_message();
+    $display("`define UADDR_NOP %0d", c);
+end
+op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+
+//--------------------------------------------------------------
 // Interrupt request.
 //
 //    sp = sp - 1

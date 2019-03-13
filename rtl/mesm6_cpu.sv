@@ -177,8 +177,16 @@ wire [14:0] op_addr  =                  // address field
                 op_lflag ? opcode[14:0]
                          : {{3{opcode[18]}}, opcode[11:0]};
 
-assign uentry = op_lflag ? entry16[op_lcmd] :   // entry for long format opcode
-                           entry64[op_scmd];    // entry for short format opcode
+wire op_utc0 = (opcode == 'o02200000) &         // utc 0(0)
+               !c_active;
+wire op_xta0 = ((opcode == 'o00100000) |        // xta 0(0)
+                (opcode == 'o00420000)) &       // ita 0(0)
+               !c_active;
+
+assign uentry = op_utc0 ? `UADDR_NOP :          // fast utc 0(0)
+                op_xta0 ? `UADDR_NOP :          // fast xta 0(0) or ita 0(0)
+               op_lflag ? entry16[op_lcmd] :    // entry for long format opcode
+                          entry64[op_scmd];     // entry for short format opcode
 
 // memory addr / write ports
 assign ibus_addr   = pc[15:1];
@@ -256,6 +264,8 @@ always @(posedge clk) begin
                (sel_acc == `SEL_ACC_RR)  ? R :          // R register
                (sel_acc == `SEL_ACC_Y)   ? Y :          // Y register
                           /*SEL_ACC_ALU*/  alu_result;  // from ALU
+    else if (decode & op_xta0)
+        acc <= 0;
 end
 
 // Status of accumulator.
