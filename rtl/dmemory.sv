@@ -39,12 +39,13 @@ timeunit 1ns / 1ps;
 logic [47:0] mem[32*1024];              // main RAM 32k words
 
 always @(posedge clk) begin
-    if (i_read) begin
-        o_data <= mem[i_addr];          // memory load
+    if (i_read) begin                   // memory load
+        o_data <= (i_addr == 0) ? '0
+                                : mem[i_addr];
     end
 
-    if (i_write) begin
-        mem[i_addr] <= i_data;          // memory store
+    if (i_write) begin                  // memory store
+        mem[i_addr] <= i_data;
     end
 
     o_done <= i_read | i_write;

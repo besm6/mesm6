@@ -99,9 +99,9 @@
 `define P_MEM_W                 38  // request memory write
 `define P_W_A                   39  // write accumulator (from alu-out)
 `define P_W_C                   40  // write C register
-`define P_W_Y                   41  // write Y register
-`define P_A_NEG                 42  // microcode branch if a is negative a[31]=1
-`define P_A_ZERO                43  // microcode branch if a is zero
+`define P_A_NONZERO             41  // microcode branch if acc is zero
+`define P_A_NEG                 42  // microcode branch if acc is negative (acc[41] = 1)
+`define P_A_ZERO                43  // microcode branch if acc is zero
 `define P_BRANCH                44  // microcode inconditional branch to address
 `define P_C_ACTIVE              45  // clear C register flag
 `define P_ENTER_INT             46  // set interrupt flag (enter interrupt)

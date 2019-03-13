@@ -1,0 +1,20 @@
+*
+* Test for instructions XTA, UZA, UIA.
+*
+start   start   '1'
+        xta     zero
+        uza     ok
+        uj      fail
+ok      u1a     fail
+        u1a     fail
+        xta     one
+        uza     fail
+        uza     fail
+        u1a     pass
+fail    стоп    '76543'(2)
+pass    стоп    '12345'(6)
+*-------------------------
+align   пам     1024
+zero    конд    b'0'
+one     конд    b'1'
+        fin

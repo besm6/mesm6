@@ -3,7 +3,7 @@
 #
 # All tests.
 #
-tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc vjm mtj"
+tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc vjm mtj xta_uza_u1a atx"
 
 #
 # Delete log file from previous run.
@@ -28,6 +28,7 @@ do
     fi
 
     echo ==== >> run.log
+    rm -f $dir/output.trace
     make -C$dir run >> run.log
     make_status=$?
 

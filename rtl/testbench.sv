@@ -416,8 +416,8 @@ task print_uop();
     logic       mem_w;
     logic       w_a;
     logic       w_c;
-    logic       w_y;
     logic       cond_a_zero;
+    logic       cond_a_nonzero;
     logic       cond_a_neg;
     logic       cond_m_zero;
     logic       cond_m_nonzero;
@@ -446,8 +446,8 @@ task print_uop();
     assign mem_w              = uop[`P_MEM_W];
     assign w_a                = uop[`P_W_A];
     assign w_c                = uop[`P_W_C];
-    assign w_y                = uop[`P_W_Y];
     assign cond_a_zero        = uop[`P_A_ZERO];
+    assign cond_a_nonzero     = uop[`P_A_NONZERO];
     assign cond_a_neg         = uop[`P_A_NEG];
     assign cond_m_zero        = uop[`P_M_ZERO];
     assign cond_m_nonzero     = uop[`P_M_NONZERO];
@@ -461,7 +461,7 @@ task print_uop();
 
     if (sel_pc == `SEL_PC_IMM || sel_mr == `SEL_MR_IMM ||
         sel_mw == `SEL_MW_IMM || cond_op_not_cached ||
-        cond_a_zero || cond_m_zero || cond_m_nonzero || cond_a_neg || branch)
+        cond_a_zero || cond_a_nonzero || cond_m_zero || cond_m_nonzero || cond_a_neg || branch)
         $fwrite(tracefd, " imm=%0d", imm);
     if (alu_op) $fwrite(tracefd, " alu=%0s",  op_name[alu_op]);
     if (w_a)    $fwrite(tracefd, " acc=%0s", acc_name[sel_acc]);
@@ -485,8 +485,8 @@ task print_uop();
     if (mem_w)              $fwrite(tracefd, " mem_w");
     if (w_a)                $fwrite(tracefd, " w_a");
     if (w_c)                $fwrite(tracefd, " w_c");
-    if (w_y)                $fwrite(tracefd, " w_y");
     if (cond_a_zero)        $fwrite(tracefd, " cond_a_zero");
+    if (cond_a_nonzero)     $fwrite(tracefd, " cond_a_nonzero");
     if (cond_a_neg)         $fwrite(tracefd, " cond_a_neg");
     if (cond_m_zero)        $fwrite(tracefd, " cond_m_zero");
     if (cond_m_nonzero)     $fwrite(tracefd, " cond_m_nonzero");

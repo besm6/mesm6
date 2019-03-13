@@ -73,7 +73,6 @@ wire   c_active     = uop[`P_C_ACTIVE];             // use C register
 wire   w_pc         = uop[`P_W_PC] & ~busy;         // write PC
 wire   w_m          = uop[`P_W_M] & ~busy;          // write M[i]
 wire   w_acc        = uop[`P_W_A] & ~busy;          // write A (from ALU result)
-wire   w_y          = uop[`P_W_Y] & ~busy;          // write Y
 wire   w_c          = uop[`P_W_C] & ~busy;          // write C
 wire   w_opcode     = uop[`P_W_OPCODE] & ~busy;     // write OPCODE (opcode cache)
 
@@ -82,6 +81,7 @@ wire   enter_interrupt = uop[`P_ENTER_INT] & ~busy; // disable interrupts
 
 wire   cond_op_not_cached = uop[`P_OP_NOT_CACHED];  // conditional: true if opcode not cached
 wire   cond_acc_zero      = uop[`P_A_ZERO];         // conditional: true if A is zero
+wire   cond_acc_nonzero   = uop[`P_A_NONZERO];      // conditional: true if A is non-zero
 wire   cond_m_zero        = uop[`P_M_ZERO];         // conditional: true if M[i] is zero
 wire   cond_m_nonzero     = uop[`P_M_NONZERO];      // conditional: true if M[i] is non-zero
 wire   cond_acc_neg       = uop[`P_A_NEG];          // conditional: true if A is negative
@@ -101,10 +101,9 @@ wire   alu_done;
 
 // Branch flag: sum of all conditionals and unconditionals.
 wire branch = (cond_op_not_cached & ~is_op_cached) |
-              (cond_acc_zero & acc_is_zero) |
+              (cond_acc_zero & acc_is_zero) | (cond_acc_nonzero & !acc_is_zero) |
               (cond_acc_neg & acc_is_neg) |
-              (cond_m_zero & Mi_is_zero) |
-              (cond_m_nonzero & !Mi_is_zero) |
+              (cond_m_zero & Mi_is_zero) | (cond_m_nonzero & !Mi_is_zero) |
               uncond_branch;
 
 // Busy signal for microcode sequencer.
