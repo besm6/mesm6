@@ -69,6 +69,7 @@ wire [2:0] sel_acc  = uop[`P_SEL_ACC+2:`P_SEL_ACC]; // mux for A write data
 wire   sel_addr     = uop[`P_SEL_ADDR];             // mux for data address
 wire   sel_j_add    = uop[`P_SEL_J_ADD];            // use M[j] for Uaddr instead of Vaddr
 wire   sel_c_mem    = uop[`P_SEL_C_MEM];            // use memory output for C instead of Uaddr
+wire   sel_alu_mem  = uop[`P_SEL_ALU_MEM];          // use memory output for ALU input B instead of Uaddr
 wire   c_active     = uop[`P_C_ACTIVE];             // use C register
 wire   w_pc         = uop[`P_W_PC] & ~busy;         // write PC
 wire   w_m          = uop[`P_W_M] & ~busy;          // write M[i]
@@ -215,9 +216,8 @@ assign Uaddr = Mi + (sel_j_add ? Mj : Vaddr);
 wire [47:0] alu_b;
 wire [47:0] alu_result;
 
-// alu inputs multiplexors
-// constant in microcode is sign extended (in order to implement substractions like adds)
-assign alu_b = dbus_input;
+// alu B input multiplexor
+assign alu_b = sel_alu_mem ? dbus_input : Uaddr;
 
 mesm6_alu alu(
     .alu_a      (acc),

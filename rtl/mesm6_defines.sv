@@ -72,7 +72,7 @@
 
 // Microcode memory settings
 `define UPC_BITS                9   // microcode address width
-`define UOP_BITS                50  // microcode opcode width
+`define UOP_BITS                51  // microcode opcode width
 
 // Dedicated microcode addresses
 `define UADDR_RESET             0   // start from zero
@@ -109,3 +109,4 @@
 `define P_EXIT_INT              47  // clear interrupt flag (exit from interrupt)
 `define P_W_PC                  48  // write pc (from alu-out)
 `define P_M_ZERO                49  // microcode branch if M[i] is zero
+`define P_SEL_ALU_MEM           50  // use memory output for ALU input B instead of Uaddr
