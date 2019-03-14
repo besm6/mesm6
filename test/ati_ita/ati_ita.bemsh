@@ -1,0 +1,23 @@
+*
+* Test for instructions ATI, ITA.
+*
+start   start   '1'
+        xta
+        vtm     -1(2)
+        ati     2
+        v1m     fail(2)
+        xta     cful
+        ati     2
+        vzm     fail(2)
+        xta
+        ita     2
+        ati     3
+        vzm     fail(3)
+        utm     1(3)
+        v1m     fail(3)
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cful    конд    b'7777777777777777'
+        fin

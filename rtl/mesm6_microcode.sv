@@ -9,8 +9,8 @@
 
 `define MR_REG                  (`SEL_MR_REG << `P_SEL_MR)
 `define MR_IMM(val)             (`SEL_MR_IMM << `P_SEL_MR | (val) << `P_IMM)
-`define MR_VADDR                (`SEL_MR_VADDR << `P_SEL_MR)
-`define MR_UADDR                (`SEL_MR_UADDR << `P_SEL_MR)
+`define MR_VA                   (`SEL_MR_VA << `P_SEL_MR)
+`define MR_UA                   (`SEL_MR_UA << `P_SEL_MR)
 
 `define MW_REG                  (`SEL_MW_REG << `P_SEL_MW)
 `define MW_IMM(val)             (`SEL_MW_IMM << `P_SEL_MW | (val) << `P_IMM)
@@ -277,12 +277,14 @@ opcode('o037);  // NTR
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o040);  // ATI
+op(`MW_UA | `MD_A | `W_M | `GO_FETCH_OR_DECODE);            // m[Uaddr] = A; pc_cached ? decode else fetch,decode
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o041);  // STI
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o042);  // ITA
+op(`ACC_REG | `MR_UA | `W_A);                               // acc = m[j]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o043);  // ITS
