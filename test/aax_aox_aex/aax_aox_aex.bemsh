@@ -1,0 +1,23 @@
+*
+* 40 - AAX, AOX, AEX
+*
+t40     nop
+        xta     cful
+        aax
+        u1a     error
+        xta     cful
+        aax     cful
+        aex     cful
+        u1a     error
+        xta     chess
+        aax     chess
+        aex     chess
+        u1a     error
+        xta     chess
+        aax     chess+1
+        u1a     error
+        xta     chess
+        aox     chess+1
+        aex     cful
+        u1a     error
+        vjm     newtest(13)

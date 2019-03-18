@@ -1,0 +1,17 @@
+*
+* 42 - ARX
+*
+t42     nop
+        xta     i11
+        arx     i1
+        aex     i12
+        u1a     error
+        xta     cful
+        arx     i1
+        aex     i1
+        u1a     error
+        xta     cful
+        arx     cful
+        aex     cful
+        u1a     error
+        vjm     newtest(13)

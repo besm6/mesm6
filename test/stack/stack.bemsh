@@ -1,0 +1,213 @@
+*
+* 30:39 - магазинное обращение
+* ===============================
+* 30: 15 ATX   31: XTS   32: ITS
+* 33: 15 XTA   34: SТХ   35: STI
+* 36: 15 ATX а      37: 15 XTA а
+* 38: 15 WTC        3а: 15 АОР (разные)
+*
+t30     nop
+        atx     ws
+        atx     ws+1
+        atx     ws+2
+        vtm     ws+1(15)
+        xta     cful
+        atx     (15)
+        utm     -2-ws(15)
+        vjm     chstake(13)
+*
+t31     nop
+        vtm     ws(15)
+        xta
+        xts     cful
+        xts
+        xts
+        utm     -3-ws(15)
+        vjm     chstake(13)
+*
+t32     nop
+        vtm     ws(15)
+        ita
+        its
+        xta     cful
+        its
+        its
+        utm     -3-ws(15)
+        vjm     chstake(13)
+*
+t36     nop
+        vtm     ws-1(15)
+        xta
+        atx     1(15)
+        atx     3(15)
+        xta     cful
+        utc     2
+        atx     (15)
+        utm     1-ws(15)
+        vjm     chstake(13)
+*
+t33     nop
+        xta
+        atx     ws+1
+        vtm     ws+3(15)
+        xta     (15)
+        ati     2
+        asn     64+24
+        ati     3
+        xta     (15)
+        ati     4
+        asn     64+24
+        ati     5
+        xta     (15)
+        ati     6
+        asn     64+32
+        ati     7
+        vjm     chst2e(13)
+*
+t34     nop
+        vtm     ws+3(15)
+        stx     ws+4
+        ati     2
+        asn     64+32
+        ati     3
+        stx     ws+4
+        ati     4
+        asn     64+32
+        ati     5
+        stx     ws+4
+        ati     6
+        asn     64+32
+        ati     7
+        vjm     chst2e(13)
+*
+t35     nop
+        vtm     ws+3(15)
+        sti     6
+        ati     6
+        asn     64+32
+        sti     7
+        ati     4
+        asn     64+32
+        sti     5
+        ati     2
+        asn     64+32
+        ati     3
+        vjm     chst2e(13)
+*
+t37     nop
+        vtm     ws+3(15)
+        utc     -1
+        xta     (15)
+        ati     6
+        asn     64+32
+        ati     7
+        xta     -2(15)
+        ati     4
+        asn     64+32
+        ati     5
+        xta     -3(15)
+        ati     2
+        asn     64+32
+        ati     3
+        utm     -3(15)
+        vjm     chst2e(13)
+*
+t38     nop
+        vtm     1(4)
+        vtm     -1(7)
+        vtm     -1(3)
+        vtm     ws+3(15)
+        wtc     (15)
+        vtm     (6)
+        wtc     (15)
+        vtm     (4)
+        wtc     (15)
+        vtm     (2)
+        vjm     chst2e(13)
+        vtm     ws(15)
+        xta     i1
+        xts
+        xts     i2
+        xts     i3
+        wtc     -2(15)
+        vtm     (2)
+        v1m     error(2)
+        utm     -3-ws(15)
+        v1m     error(15)
+*
+* ранее забытые команды:
+*
+t3а     nop
+        vtm     ws(15)
+        xta     chess
+        xts     chess+1
+        aax     (15)
+        u1a     error
+        xta     chess
+        xts     chess+1
+        arx     (15)
+        xts     chess
+        xts     chess+1
+        aox     (15)
+        aex     (15)
+        u1a     error
+        xta     chess
+        xts     chess+1
+        xts     cful
+        apx     (15)
+        aux     (15)
+        aex     chess
+        u1a     error
+        xts     cful
+        acx     (15)
+        aex     i48
+        u1a     error
+        xts     cful
+        anx     (15)
+        aex     i1
+        u1a     error
+        xta     cful
+        atx     (15)
+        asx     (15)
+        u1a     error
+        vjm     newtest(13)
+*------------------------
+chstake v1m     error(15)
+        xta     ws
+        ati     2
+        v1m     error(2)
+        asn     64+24
+        ati     2
+        v1m     error(2)
+        xta     ws+2
+        ati     2
+        v1m     error(2)
+        asn     64+24
+        ati     2
+        v1m     error(2)
+        xta     ws+1
+        ati     2
+        asn     64+24
+        ati     3
+        utm     1(2)
+        v1m     error(2)
+        utm     1(3)
+        v1m     error(3)
+        xta     ufsl1
+        atx     ws
+        atx     ws+1
+        atx     ws+2
+        uj      (13)
+chst2e  utm     -ws(15)
+        v1m     error(15)
+        utm     -1(2)
+        v1m     error(2)
+        utm     1(3)
+        v1m     error(3)
+        v1m     error(4)
+        v1m     error(5)
+        utm     -1(6)
+        v1m     error(6)
+        utm     1(7)
+        v1m     error(7)
+        uj      (13)

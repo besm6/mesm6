@@ -1,0 +1,50 @@
+*
+* 47 - А+Х, А-Х, Х-А
+*
+t47     nop
+        ntr     3
+        vtm     64(14)
+        ita     14
+        a-x     i65
+        uza     error
+        a+x     i1
+        u1a     error
+        aox
+        u1a     error
+        xta     i2
+        x-a     i1
+        a-x     iм1
+        u1a     error
+        aox
+        u1a     error
+        xta     i2
+        xts     i1
+        xts     i2
+        xts     i3
+        a-x     (15)            ; 3-2=1
+        u1a     error
+        a+x     (15)            ; 1+1 = 2
+        x-a     (15)            ; 2-2 = 0
+        u1a     error
+        aox
+        u1a     error
+        xta     cdu40l          ; 64
+        a-x     cdu42l          ; 66
+        uza     error
+        a+x     c848u           ; 2.
+        u1a     error
+        aox
+        uza     error
+        aex     cdu             ; i0
+        u1a     error
+        ntr     2
+        xta     c848u           ; 2.
+        xts     c84cu           ; 3.
+        xts     c848u           ; 2.
+        xts     c84cu           ; 3.
+        a+x     (15)            ; 3+2
+        a-x     (15)            ; 5-3
+        x-a     (15)            ; 2-2
+        u1a     error
+        aox
+        vjm     newtest(13)

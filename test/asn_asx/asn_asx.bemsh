@@ -1,0 +1,42 @@
+*
+* 45 - ASN, ASX
+*
+t45     nop
+        vtm     -48(12)
+        vtm     48(11)
+tsft1e  xta     c8u
+        asn     64-1(11)
+        anx
+        its     11
+        aex     (15)
+        u1a     error
+        utm     -1(11)
+        vlm     tsft1e(12)
+        vtm     -48(12)
+        vtm     48(11)
+tsft2e  xta     i1
+        asn     64-48(11)
+        anx
+        its     11
+        aex     (15)
+        u1a     error
+        utm     -1(11)
+        vlm     tsft2e(12)
+        xta     cful
+        asx     cful
+        u1a     error
+        xta     chess+1
+        asx     c0ful
+        aex     chess
+        u1a     error
+        xta     cful            ; а что
+        asn     64-12           ; попадет
+        yta                     ; в рмр
+        aex     cfff            ; при
+        u1a     error           ; сдвигах ?
+        xta     cful
+        asn     64+4
+        yta
+        aex     cfu
+        u1a     error
+        vjm     newtest(13)

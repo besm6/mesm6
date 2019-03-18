@@ -1,0 +1,22 @@
+*
+* 43 - APX, AUX
+*
+t43     nop
+        xta     chess
+        apx     cful
+        aux     c0ful
+        aex     chess+1
+        u1a     error
+        xta     chess
+        apx     chess+1
+        u1a     error
+        xta     chess
+        apx     chess
+        aux     chess+1
+        aex     chess+1
+        u1a     error
+        xta     cful
+        aux     chess+1
+        aex     chess+1
+        u1a     error
+        vjm     newtest(13)

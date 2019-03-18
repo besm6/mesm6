@@ -11,8 +11,6 @@ module mesm6_alu(
     output reg                      done    // flag: alu operation finished
 );
 
-assign y = 0;   // TODO
-
 // Internal cycle count.
 reg [3:0] count;
 
@@ -34,32 +32,36 @@ always @(posedge clk) begin
         `ALU_AND: begin
                 // AAX: one cycle.
                 result <= a & b;
+                y <= '0;
                 done <= 1;
             end
 
         `ALU_OR: begin
                 // AOX: one cycle.
                 result <= a | b;
+                y <= '0;
                 done <= 1;
             end
 
         `ALU_XOR: begin
                 // AEX: one cycle.
                 result <= a ^ b;
+                y <= a;
                 done <= 1;
             end
 
         `ALU_ADD_CARRY_AROUND: begin
                 // ARX: one cycle.
                 result <= sum[47:0] + sum[48];
+                y <= '0;
                 done <= 1;
             end
 
-        //TODO:`ALU_SHIFT
-        //TODO:`ALU_PACK
-        //TODO:`ALU_UNPACK
-        //TODO:`ALU_COUNT
-        //TODO:`ALU_CLZ
+        //TODO:`ALU_SHIFT   y <= acc >> (48-n);
+        //TODO:`ALU_PACK    y <= '0;
+        //TODO:`ALU_UNPACK  y <= '0;
+        //TODO:`ALU_COUNT   y <= acc;
+        //TODO:`ALU_CLZ     y <= acc << (n+1);
         //TODO:`ALU_FADD
         //TODO:`ALU_FSUB
         //TODO:`ALU_FREVSUB
@@ -69,8 +71,6 @@ always @(posedge clk) begin
         //TODO:`ALU_SUBEXP
         //TODO:`ALU_FMUL
         //TODO:`ALU_FDIV
-        default:
-            result <= a;
         endcase
     end
 end

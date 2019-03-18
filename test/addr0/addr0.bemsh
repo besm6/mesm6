@@ -1,0 +1,31 @@
+*
+* 2a, 2b - проверка мат.адреса 0
+*          и модификатора 0:
+*
+t2а     nop
+        vtm     -1(2)
+        ita     2
+        atx
+:       xta                     ; слева
+        ati     2
+        v1m     error(2)
+        vtm     -1(2)
+        ita     2
+:       atx
+        xta                     ; справа
+        ati     2
+        v1m     error(2)
+t2b     nop
+        vtm     -1(2)
+        ita     2
+        ati
+:       ita                     ; слева
+        ati     2
+        v1m     error(2)
+        vtm     -1(2)
+        ita     2
+:       ati
+        ita                     ; справа
+        ati     2
+        v1m     error(2)
+        vjm     newtest(13)

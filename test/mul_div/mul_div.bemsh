@@ -1,0 +1,38 @@
+*
+* 48  - А*Х, А/Х
+*
+t48     nop
+        ntr     3
+        xta     cdu5l
+        a*x     c5udl           ; 13/2**64
+        atx     (15)
+        yta     64
+        stx     ws
+        aex     cau
+        u1a     error
+        xta     ws
+        aex     cau41l          ; 65/2**24
+        u1a     error
+        xta     c5u5l           ; 5/2**64
+        a*x     cim13           ; = -65
+        atx     (15)
+        yta     64
+        stx     ws
+        aex     ca1ufs
+        u1a     error
+        xta     ws
+        e+n     64+24
+        aex     cd0fsbf         ; -65!-
+        u1a     error
+        ntr     2
+        xta     c848u           ; 2.
+        a*x     c84cu           ; 3.
+        atx     ws
+        aex     c84cu           ; 3.
+        aex     c02u
+        u1a     error           ; !=6
+        xta     ws              ; восст. а=6.
+        a/x     c84cu           ; 3.
+        aex     c848u           ; 2.
+        u1a     error
+        vjm     newtest(13)

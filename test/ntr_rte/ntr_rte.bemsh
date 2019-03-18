@@ -1,0 +1,82 @@
+*
+* 2с - работа с регистром режима
+*      UZA, U1A, XTR, NTR, RТЕ, УТА
+*
+t2с     nop
+        vtm     63(2)
+        vtm     -63(3)
+lt0c2c  ntr     (2)
+        rte     63
+        atx     ws
+        its     2
+        asn     64-41
+        aex     (15)
+        u1a     error
+        u1a     error
+        xtr
+        rte     63
+        uza     error
+        aox
+        u1a     error
+        xtr     ws
+        rte     63
+        its     2
+        asn     64-41
+        aex     (15)
+        u1a     error
+        u1a     error
+*
+        vtm     ws+1(15)
+        xtr     (15)
+        vtm     mst(15)
+        rte     63
+        its     2
+        asn     64-41
+        aex     (15)
+        u1a     error
+        utm     -1(2)
+        vlm     lt0c2c(3)
+*
+        ntr     63
+        rte     @21
+        aex     е42х
+        u1a     error
+        ntr     0
+        uza     error
+:       u1a     *+1
+        uj      error
+:       ntr     (7)             ; лог.гр.
+        u1a     error
+        ntr     (11)            ; гр.умн.
+        uza     error
+        aox
+        u1a     error
+        ntr     19              ; гр.слож.
+        u1a     error
+        xta     cful
+        uza     error
+        ntr     11
+        u1a     error
+        ntr     19
+        uza     error
+*
+        ntr     24              ; гс+гу=гс
+        uza     error
+        ntr     (12)            ; гу+гл=гу
+        u1a     error
+        xta     i1
+        ntr     20              ; гс+гл=гс
+        u1a     error
+        xta     cful
+        aex
+        xta
+        yta
+        aex     cful
+        u1a     error
+        arx                         ; должна
+        uza     error               ; получиться
+        arx     cful                ; гр.умн.
+        u1a     error
+        aax     cful                ; лог.гр.
+        uza     error
+        vjm     newtest(13)

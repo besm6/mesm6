@@ -1,0 +1,42 @@
+*
+* 44 - ACX, ANX
+*
+t44     nop
+        acx
+        u1a     error
+        xta     cful
+        acx
+        aex     i48
+        u1a     error
+        xta     chess+1
+        acx     iм24
+        aex     i1
+        u1a     error
+        vtm     -48(12)
+        vtm     48(11)
+        xta     i1
+tanxe   v1m     *+1(11)
+        xta
+:       atx     ws
+        anx
+        its     11
+        aex     (15)
+        u1a     error
+        xta     ws
+        asn     64-1
+        its     11
+        aax     i7
+        aox     (15)
+        utm     -1(11)
+        vlm     tanxe(12)
+        xta
+        anx     cful
+        aex     cful
+        u1a     error
+        vtm     @201(14)
+        ita     (14)            ; проверка
+        anx     cful            ; засылки
+        yta
+        aex     c008u           ; остатка
+        u1a     error           ; в рмр
+        vjm     newtest(13)
