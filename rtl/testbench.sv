@@ -371,11 +371,12 @@ endtask
 // Print micro-instruction.
 //
 task print_uop();
-    static string op_name[16] = '{
-        0: "A",    1: "B",     2: "A+B",  3: "A+Boff",
-        4: "A&B",  5: "A|B",   6: "~A",   7: "?7",
-        8: "?8",   9: "?9",    10:"?10",  11:"?11",
-        12:"?12",  13:"?13",   14:"?14",  15:"?15",
+    static string op_name[32] = '{
+        0: "A",        1: "A&B",      2: "A|B",      3: "A^B",
+        4: "A<<B",     5: "A++B",     6: "A.pack.B", 7: "A.unpack.B",
+        8: ".count.A", 9: ".clz.A",   10:"A+B",      11:"A-B",
+        12:"B-A",      13:"A.sign.B", 14:"?14",      15:"A+.exp.B",
+        16:"A+.exp.B", 17:"A*B",      18:"A/B",      19:"?19",
         default: "???"
     };
     static string acc_name[8] = '{
@@ -408,6 +409,7 @@ task print_uop();
     logic       sel_addr;
     logic       r_add;
     logic       sel_c_mem;
+    logic       sel_alu_mem;
     logic       cond_op_not_cached;
     logic       fetch;
     logic       w_opcode;
@@ -438,6 +440,7 @@ task print_uop();
     assign sel_addr           = uop[`P_SEL_ADDR];
     assign r_add              = uop[`P_R_ADD];
     assign sel_c_mem          = uop[`P_SEL_C_MEM];
+    assign sel_alu_mem        = uop[`P_SEL_ALU_MEM];
     assign cond_op_not_cached = uop[`P_OP_NOT_CACHED];
     assign fetch              = uop[`P_FETCH];
     assign w_opcode           = uop[`P_W_OPCODE];
@@ -475,7 +478,8 @@ task print_uop();
     if (w_m)                $fwrite(tracefd, " w_m");
     if (sel_addr)           $fwrite(tracefd, " sel_addr");
     if (r_add)              $fwrite(tracefd, " r_add");
-    if (sel_c_mem)          $fwrite(tracefd, " sel_c_mem");
+    if (sel_c_mem)          $fwrite(tracefd, " c_mem");
+    if (sel_alu_mem)        $fwrite(tracefd, " alu_mem");
     if (cond_op_not_cached) $fwrite(tracefd, " cond_op_not_cached");
     if (fetch)              $fwrite(tracefd, " fetch");
     if (w_opcode)           $fwrite(tracefd, " w_opcode");
@@ -527,13 +531,17 @@ task print_changed_regs();
 
     // Accumulator
     if (cpu.acc !== old_acc) begin
-        $fdisplay(tracefd, "(%0d)        Write A = %o", ctime, cpu.acc);
+        $fdisplay(tracefd, "(%0d)        Write A = %o %o %o %o",
+            ctime, cpu.acc[47:36], cpu.acc[35:24],
+            cpu.acc[23:12], cpu.acc[11:0]);
         old_acc = cpu.acc;
     end
 
     // Y register
     if (cpu.Y !== old_Y) begin
-        $fdisplay(tracefd, "(%0d)        Write Y = %o", ctime, cpu.Y);
+        $fdisplay(tracefd, "(%0d)        Write Y = %o %o %o %o",
+            ctime, cpu.Y[47:36], cpu.Y[35:24],
+            cpu.Y[23:12], cpu.Y[11:0]);
         old_Y = cpu.Y;
     end
 
@@ -574,17 +582,17 @@ endtask
 task print_ext_bus();
     if (ibus_rd & ibus_done && tracelevel > 1)
         $fdisplay(tracefd, "(%0d)        Memory Fetch [%o] = %o %o %o %o",
-            ctime, ibus_addr, ibus_input[47:36], ibus_input[36:24],
+            ctime, ibus_addr, ibus_input[47:36], ibus_input[35:24],
             ibus_input[23:12], ibus_input[11:0]);
 
     if (dbus_wr & dbus_done)
         $fdisplay(tracefd, "(%0d)        Memory Store [%o] = %o %o %o %o",
-            ctime, dbus_addr, dbus_output[47:36], dbus_output[36:24],
+            ctime, dbus_addr, dbus_output[47:36], dbus_output[35:24],
             dbus_output[23:12], dbus_output[11:0]);
 
     else if (dbus_rd & dbus_done)
         $fdisplay(tracefd, "(%0d)        Memory Load [%o] = %o %o %o %o",
-            ctime, dbus_addr, dbus_input[47:36], dbus_input[36:24],
+            ctime, dbus_addr, dbus_input[47:36], dbus_input[35:24],
             dbus_input[23:12], dbus_input[11:0]);
 endtask
 

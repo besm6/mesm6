@@ -27,46 +27,58 @@
 // Accumulator source selector
 `define SEL_ACC_ALU             0   // from ALU
 `define SEL_ACC_MEM             1   // from memory
-`define SEL_ACC_REG             2   // M[i]
+`define SEL_ACC_REG             2   // M[r]
 `define SEL_ACC_RR              3   // R register
 `define SEL_ACC_Y               4   // Y register
 
-// M[i] read index selector
-`define SEL_MR_REG              0
-`define SEL_MR_IMM              1
-`define SEL_MR_VA               2
-`define SEL_MR_UA               3
+// M[r] read index selector
+`define SEL_MR_REG              0   // opcode[24:21]
+`define SEL_MR_IMM              1   // immediate constant
+`define SEL_MR_VA               2   // addr + C
+`define SEL_MR_UA               3   // addr + C + M[i]
 
-// M[i] write index selector
-`define SEL_MW_REG              0
-`define SEL_MW_IMM              1
-`define SEL_MW_VA               2
-`define SEL_MW_UA               3
+// M[] write index selector
+`define SEL_MW_REG              0   // opcode[24:21]
+`define SEL_MW_IMM              1   // immediate constant
+`define SEL_MW_VA               2   // addr + C
+`define SEL_MW_UA               3   // addr + C + M[i]
 
-// M[i] write data selector
-`define SEL_MD_PC               0
-`define SEL_MD_A                1
-`define SEL_MD_REG              2
-`define SEL_MD_REG_PLUS1        3
-`define SEL_MD_REG_MINUS1       4
-`define SEL_MD_VA               5
-`define SEL_MD_UA               6
+// M[] write data selector
+`define SEL_MD_PC               0   // PC
+`define SEL_MD_A                1   // accumulator
+`define SEL_MD_REG              2   // M[r]
+`define SEL_MD_REG_PLUS1        3   // M[r] + 1
+`define SEL_MD_REG_MINUS1       4   // M[r] - 1
+`define SEL_MD_VA               5   // addr + C
+`define SEL_MD_UA               6   // addr + C + M[i]
 
 // PC source selector
-`define SEL_PC_UA               0   // from Uaddr
-`define SEL_PC_VA               1   // from Vaddr
-`define SEL_PC_REG              2   // from M[i]
-`define SEL_PC_IMM              3   // from immediate
+`define SEL_PC_UA               0   // addr + C + M[i]
+`define SEL_PC_VA               1   // addr + C
+`define SEL_PC_REG              2   // M[i]
+`define SEL_PC_IMM              3   // immediate constant
 `define SEL_PC_PLUS1            4   // pc + 1
 
 // ALU operations
-`define ALU_NOP                 0   // r = a
-`define ALU_NOP_B               1   // r = b
-`define ALU_PLUS                2   // r = a + b
-`define ALU_PLUS_OFFSET         3   // r = a + { 27'b0, ~b[4], b[3:0] }
-`define ALU_AND                 4   // r = a AND b
-`define ALU_OR                  5   // r = a OR b
-`define ALU_NOT                 6   // r = NOT a
+`define ALU_NOP                 0   // result = a
+`define ALU_AND                 1   // result = a & b
+`define ALU_OR                  2   // result = a | b
+`define ALU_XOR                 3   // result = a ^ b
+`define ALU_SHIFT               4   // result = a << b
+`define ALU_ADD_CARRY_AROUND    5   // result = a48 + b48 + carry
+`define ALU_PACK                6   // result = a packed by mask b
+`define ALU_UNPACK              7   // result = a unpacked by mask b
+`define ALU_COUNT               8   // result = count ones in a
+`define ALU_CLZ                 9   // result = count leading zeroes in a
+`define ALU_FADD                10  // result = a + b (float)
+`define ALU_FSUB                11  // result = a - b (float)
+`define ALU_FREVSUB             12  // result = b - a (float)
+`define ALU_FSUBABS             13  // result = |a| - |b| (float)
+`define ALU_FSIGN               14  // result = -a (float)
+`define ALU_ADDEXP              15  // result = add exponents
+`define ALU_SUBEXP              16  // result = subtract exponents
+`define ALU_FMUL                17  // result = a * b (float)
+`define ALU_FDIV                18  // result = a / b (float)
 
 `define ALU_OP_WIDTH            6   // alu operation is 6 bits
 

@@ -1,22 +1,26 @@
 `timescale 1ns / 1ps
 `include "mesm6_defines.sv"
 
+// Accumulator source selector
 `define ACC_ALU                 (`SEL_ACC_ALU << `P_SEL_ACC)
 `define ACC_MEM                 (`SEL_ACC_MEM << `P_SEL_ACC)
 `define ACC_REG                 (`SEL_ACC_REG << `P_SEL_ACC)
 `define ACC_RR                  (`SEL_ACC_RR << `P_SEL_ACC)
 `define ACC_Y                   (`SEL_ACC_Y << `P_SEL_ACC)
 
+// M[r] read index selector
 `define MR_REG                  (`SEL_MR_REG << `P_SEL_MR)
 `define MR_IMM(val)             (`SEL_MR_IMM << `P_SEL_MR | (val) << `P_IMM)
 `define MR_VA                   (`SEL_MR_VA << `P_SEL_MR)
 `define MR_UA                   (`SEL_MR_UA << `P_SEL_MR)
 
+// M[] write index selector
 `define MW_REG                  (`SEL_MW_REG << `P_SEL_MW)
 `define MW_IMM(val)             (`SEL_MW_IMM << `P_SEL_MW | (val) << `P_IMM)
 `define MW_VA                   (`SEL_MW_VA << `P_SEL_MW)
 `define MW_UA                   (`SEL_MW_UA << `P_SEL_MW)
 
+// M[] write data selector
 `define MD_PC                   (`SEL_MD_PC << `P_SEL_MD)
 `define MD_A                    (`SEL_MD_A << `P_SEL_MD)
 `define MD_REG                  (`SEL_MD_REG << `P_SEL_MD)
@@ -28,20 +32,35 @@
 `define ADDR_M(i)               (1 << `P_SEL_ADDR | `MR_IMM(i))
 `define ADDR_SP                 `ADDR_M(15)
 
+// PC source selector
 `define PC_REG                  (`SEL_PC_REG << `P_SEL_PC)
 `define PC_IMM(val)             (`SEL_PC_IMM << `P_SEL_PC | (val) << `P_IMM)
 `define PC_VA                   (`SEL_PC_VA << `P_SEL_PC)
 `define PC_UA                   (`SEL_PC_UA << `P_SEL_PC)
 `define PC_PLUS1                (`SEL_PC_PLUS1 << `P_SEL_PC)
 
-`define NOP                     (`ALU_NOP << `P_ALU)                // 4 bits
-`define NOP_B                   (`ALU_NOP_B << `P_ALU)
-`define PLUS                    (`ALU_PLUS << `P_ALU)
+// ALU operations
+`define NOP                     (`ALU_NOP << `P_ALU)
 `define AND                     (`ALU_AND << `P_ALU)
 `define OR                      (`ALU_OR << `P_ALU)
-`define NOT                     (`ALU_NOT << `P_ALU)
-`define PLUS_OFFSET             (`ALU_PLUS_OFFSET << `P_ALU)
+`define XOR                     (`ALU_XOR << `P_ALU)
+`define SHIFT                   (`ALU_SHIFT << `P_ALU)
+`define ADD_CARRY_AROUND        (`ALU_ADD_CARRY_AROUND << `P_ALU)
+`define PACK                    (`ALU_PACK << `P_ALU)
+`define UNPACK                  (`ALU_UNPACK << `P_ALU)
+`define COUNT                   (`ALU_COUNT << `P_ALU)
+`define CLZ                     (`ALU_CLZ << `P_ALU)
+`define FADD                    (`ALU_FADD << `P_ALU)
+`define FSUB                    (`ALU_FSUB << `P_ALU)
+`define FREVSUB                 (`ALU_FREVSUB << `P_ALU)
+`define FSUBABS                 (`ALU_FSUBABS << `P_ALU)
+`define FSIGN                   (`ALU_FSIGN << `P_ALU)
+`define ADDEXP                  (`ALU_ADDEXP << `P_ALU)
+`define SUBEXP                  (`ALU_SUBEXP << `P_ALU)
+`define FMUL                    (`ALU_FMUL << `P_ALU)
+`define FDIV                    (`ALU_FDIV << `P_ALU)
 
+// Other micro-instruction fields
 `define W_M                     (1 << `P_W_M)
 `define W_PC                    (1 << `P_W_PC)
 `define W_A                     (1 << `P_W_A)
@@ -52,12 +71,13 @@
 `define C_ACTIVE                (1 << `P_C_ACTIVE)
 `define R_ADD                   (1 << `P_R_ADD)
 `define C_MEM                   (1 << `P_SEL_C_MEM)
-
+`define ALU_MEM                 (1 << `P_SEL_ALU_MEM)
 `define MEM_FETCH               (1 << `P_FETCH)
 `define MEM_R                   (1 << `P_MEM_R)
 `define MEM_W                   (1 << `P_MEM_W)
+`define DECODE                  (1 << `P_DECODE)
 
-`define DECODE                      (1 << `P_DECODE)
+// Branches
 `define BRANCH(addr)                (1 << `P_BRANCH | (addr) << `P_IMM)
 `define BRANCHIF_OP_NOT_CACHED(a)   (1 << `P_OP_NOT_CACHED | (a) << `P_IMM)
 `define BRANCHIF_A_ZERO(addr)       (1 << `P_A_ZERO | (addr) << `P_IMM)
@@ -66,9 +86,9 @@
 `define BRANCHIF_M_ZERO(addr)       (1 << `P_M_ZERO | (addr) << `P_IMM)
 `define BRANCHIF_M_NONZERO(addr)    (1 << `P_M_NONZERO | (addr) << `P_IMM)
 
-// microcode common operations
-`define GO_FETCH_OR_DECODE      (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE) // fetch and decode current PC opcode
-`define GO_FETCH_OR_DECODE_C    (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch_c) | `DECODE | `C_ACTIVE) // fetch and decode current PC opcode
+// Fetch and decode current PC opcode: without and with C modifier active
+`define GO_FETCH_OR_DECODE      (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE)
+`define GO_FETCH_OR_DECODE_C    (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch_c) | `DECODE | `C_ACTIVE)
 
 module gendata();
 
@@ -211,9 +231,13 @@ opcode('o011);  // AAX
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o012);  // AEX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `XOR | `ACC_ALU | `W_A);                      // a ^= x
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o013);  // ARX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `ADD_CARRY_AROUND | `ACC_ALU | `W_A);         // a += x with carry around
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o014);  // AVX

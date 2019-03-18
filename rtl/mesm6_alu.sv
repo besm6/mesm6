@@ -2,36 +2,77 @@
 `include "mesm6_defines.sv"
 
 module mesm6_alu(
-    input  wire [47:0]              alu_a,      // parameter A
-    input  wire [47:0]              alu_b,      // parameter B
-    output reg  [47:0]              alu_r,      // computed result
-    output reg  [47:0]              alu_y,      // least significant bits
-    input  wire [`ALU_OP_WIDTH-1:0] alu_op,     // ALU operation
-    input  wire                     clk,        // clock for syncronous multicycle operations
-    output reg                      done        // done signal for alu operation
+    input  wire [47:0]              a,      // parameter A
+    input  wire [47:0]              b,      // parameter B
+    output reg  [47:0]              result, // computed result
+    output reg  [47:0]              y,      // least significant bits
+    input  wire [`ALU_OP_WIDTH-1:0] op,     // ALU operation
+    input  wire                     clk,    // clock for syncronous multicycle operations
+    output reg                      done    // flag: alu operation finished
 );
 
-// ALU_B is an offset if ALU_PLUS_OFFSET operation
-wire [47:0] b_offset = { {38{1'b0}}, ~alu_b[4], alu_b[3:0], 2'b0 };
+assign y = 0;   // TODO
 
-wire [47:0] b_value =
-    (alu_op == `ALU_PLUS_OFFSET) ? b_offset     // B offset
-                                 : alu_b;       // by default, ALU_B as is
+// Internal cycle count.
+reg [3:0] count;
 
-assign alu_y = 0;   // TODO
+// 49-bit sum
+wire [48:0] sum = a + b;
 
 // ----- alu operation selection -----
-always @(alu_a or alu_b or alu_op or b_value)
-begin
-    done <= 1;        // default alu operations are 1 cycle
-    case (alu_op)
-    `ALU_NOP        : alu_r <= alu_a;
-    `ALU_NOP_B      : alu_r <= alu_b;
-    `ALU_AND        : alu_r <= alu_a & alu_b;
-    `ALU_OR         : alu_r <= alu_a | alu_b;
-    `ALU_NOT        : alu_r <= ~alu_a;
-    default         : alu_r <= alu_a + b_value;
-    endcase
+always @(posedge clk) begin
+    if (op == `ALU_NOP) begin
+        // No operation: reset count and done flag.
+        done <= 0;
+        count <= 0;
+
+    end else if (~done) begin
+        // Perform the operation.
+        count <= count + 1;
+
+        case (op)
+        `ALU_AND: begin
+                // AAX: one cycle.
+                result <= a & b;
+                done <= 1;
+            end
+
+        `ALU_OR: begin
+                // AOX: one cycle.
+                result <= a | b;
+                done <= 1;
+            end
+
+        `ALU_XOR: begin
+                // AEX: one cycle.
+                result <= a ^ b;
+                done <= 1;
+            end
+
+        `ALU_ADD_CARRY_AROUND: begin
+                // ARX: one cycle.
+                result <= sum[47:0] + sum[48];
+                done <= 1;
+            end
+
+        //TODO:`ALU_SHIFT
+        //TODO:`ALU_PACK
+        //TODO:`ALU_UNPACK
+        //TODO:`ALU_COUNT
+        //TODO:`ALU_CLZ
+        //TODO:`ALU_FADD
+        //TODO:`ALU_FSUB
+        //TODO:`ALU_FREVSUB
+        //TODO:`ALU_FSUBABS
+        //TODO:`ALU_FSIGN
+        //TODO:`ALU_ADDEXP
+        //TODO:`ALU_SUBEXP
+        //TODO:`ALU_FMUL
+        //TODO:`ALU_FDIV
+        default:
+            result <= a;
+        endcase
+    end
 end
 
 endmodule

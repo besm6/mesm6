@@ -110,7 +110,7 @@ wire branch = (cond_op_not_cached & ~is_op_cached) |
 // Busy signal for microcode sequencer.
 assign busy = ((dbus_read | dbus_write) & ~dbus_done) |
               (ibus_fetch & ~ibus_done) |
-              ~alu_done;
+              ((alu_op != `ALU_NOP) & ~alu_done);
 
 // Next microcode PC address.
 wire [`UPC_BITS-1:0] upc_next = reset ? `UADDR_RESET - 1 :  // reset vector
@@ -220,13 +220,13 @@ wire [47:0] alu_result;
 assign alu_b = sel_alu_mem ? dbus_input : Uaddr;
 
 mesm6_alu alu(
-    .alu_a      (acc),
-    .alu_b      (alu_b),
-    .alu_r      (alu_result),
-    .alu_y      (Y),
-    .alu_op     (alu_op),
-    .clk        (clk),
-    .done       (alu_done)
+    .a      (acc),
+    .b      (alu_b),
+    .result (alu_result),
+    .y      (Y),
+    .op     (alu_op),
+    .clk    (clk),
+    .done   (alu_done)
 );
 
 //--------------------------------------------------------------
