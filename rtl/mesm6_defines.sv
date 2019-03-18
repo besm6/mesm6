@@ -90,7 +90,7 @@
 `define P_M_NONZERO             26  // microcode branch if M[i] is non-zero
 `define P_SEL_PC                27  // PC multiplexor (3 bits)
 `define P_SEL_ADDR              30  // addr-out multiplexor between Uaddr and M[i]
-`define P_SEL_J_ADD             31  // use M[j] for Uaddr instead of Vaddr
+`define P_R_ADD                 31  // use Mr for Uaddr instead of Vaddr
 `define P_SEL_C_MEM             32  // use memory output for C instead of Uaddr
 `define P_OP_NOT_CACHED         33  // microcode branch if byte[pc] is not cached at opcode
 `define P_FETCH                 34  // request instruction fetch

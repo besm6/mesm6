@@ -406,7 +406,7 @@ task print_uop();
     logic [2:0] sel_pc;
     logic       w_m;
     logic       sel_addr;
-    logic       sel_j_add;
+    logic       r_add;
     logic       sel_c_mem;
     logic       cond_op_not_cached;
     logic       fetch;
@@ -436,7 +436,7 @@ task print_uop();
     assign sel_pc             = uop[`P_SEL_PC+2:`P_SEL_PC];
     assign w_m                = uop[`P_W_M];
     assign sel_addr           = uop[`P_SEL_ADDR];
-    assign sel_j_add          = uop[`P_SEL_J_ADD];
+    assign r_add              = uop[`P_R_ADD];
     assign sel_c_mem          = uop[`P_SEL_C_MEM];
     assign cond_op_not_cached = uop[`P_OP_NOT_CACHED];
     assign fetch              = uop[`P_FETCH];
@@ -467,15 +467,14 @@ task print_uop();
     if (w_a)    $fwrite(tracefd, " acc=%0s", acc_name[sel_acc]);
     if (w_m)    $fwrite(tracefd, " md=%0s",  md_name[sel_md]);
     if (w_m)    $fwrite(tracefd, " mw=%0s",  mw_name[sel_mw]);
-    if (sel_addr || sel_pc == `SEL_PC_REG ||
-        sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG ||
+    if (r_add || sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG ||
         sel_md == `SEL_MD_REG_PLUS1 || sel_md == `SEL_MD_REG_MINUS1)
         $fwrite(tracefd, " mr=%0s",  mr_name[sel_mr]);
     if (w_pc) $fwrite(tracefd, " pc=%0s",  pc_name[sel_pc]);
 
     if (w_m)                $fwrite(tracefd, " w_m");
     if (sel_addr)           $fwrite(tracefd, " sel_addr");
-    if (sel_j_add)          $fwrite(tracefd, " sel_j_add");
+    if (r_add)              $fwrite(tracefd, " r_add");
     if (sel_c_mem)          $fwrite(tracefd, " sel_c_mem");
     if (cond_op_not_cached) $fwrite(tracefd, " cond_op_not_cached");
     if (fetch)              $fwrite(tracefd, " fetch");

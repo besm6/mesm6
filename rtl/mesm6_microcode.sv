@@ -50,7 +50,7 @@
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
 `define C_ACTIVE                (1 << `P_C_ACTIVE)
-`define J_ADD                   (1 << `P_SEL_J_ADD)
+`define R_ADD                   (1 << `P_R_ADD)
 `define C_MEM                   (1 << `P_SEL_C_MEM)
 
 `define MEM_FETCH               (1 << `P_FETCH)
@@ -284,17 +284,19 @@ opcode('o041);  // STI
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o042);  // ITA
-op(`ACC_REG | `MR_UA | `W_A);                               // acc = m[j]
+op(`ACC_REG | `MR_UA | `W_A);                               // acc = m[r]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o043);  // ITS
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o044);  // MTJ
-op(`MW_VA | `MD_REG | `W_M | `GO_FETCH_OR_DECODE);          // m[j] = m[i]; pc_cached ? decode else fetch,decode
+op(`MR_REG | `MW_VA | `MD_REG | `W_M |                      // m[r] = m[i]; pc_cached ? decode else fetch,decode
+    `GO_FETCH_OR_DECODE);
 
 opcode('o045);  // J+M
-op(`MW_VA | `MD_UA | `J_ADD | `W_M | `GO_FETCH_OR_DECODE);  // m[j] = Mi + Mj; pc_cached ? decode else fetch,decode
+op(`MR_VA | `MW_VA | `MD_UA | `R_ADD | `W_M |               // m[r] = m[i] + m[r]; pc_cached ? decode else fetch,decode
+    `GO_FETCH_OR_DECODE);
 
 opcode('o046);  // E46
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
@@ -440,7 +442,7 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 opcode('o370);  // VLM
 op(`BRANCHIF_M_NONZERO(c+2));                               // if (m[i]!=0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
-op(`MW_REG | `MD_REG_PLUS1 | `W_M | `PC_VA | `W_PC);        // pc = Vaddr; m[i] += 1
+op(`MR_REG | `MW_REG | `MD_REG_PLUS1 | `W_M | `PC_VA | `W_PC); // pc = Vaddr; m[i] += 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 // --------------------- END OF MICROCODE PROGRAM --------------------------

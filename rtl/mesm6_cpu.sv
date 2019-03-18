@@ -67,10 +67,10 @@ wire [2:0] sel_md   = uop[`P_SEL_MD+2:`P_SEL_MD];   // mux for M[i] write data
 wire [2:0] sel_acc  = uop[`P_SEL_ACC+2:`P_SEL_ACC]; // mux for A write data
 
 wire   sel_addr     = uop[`P_SEL_ADDR];             // mux for data address
-wire   sel_j_add    = uop[`P_SEL_J_ADD];            // use M[j] for Uaddr instead of Vaddr
 wire   sel_c_mem    = uop[`P_SEL_C_MEM];            // use memory output for C instead of Uaddr
 wire   sel_alu_mem  = uop[`P_SEL_ALU_MEM];          // use memory output for ALU input B instead of Uaddr
 wire   c_active     = uop[`P_C_ACTIVE];             // use C register
+wire   r_add        = uop[`P_R_ADD];                // use Mr for Uaddr instead of Vaddr
 wire   w_pc         = uop[`P_W_PC] & ~busy;         // write PC
 wire   w_m          = uop[`P_W_M] & ~busy;          // write M[i]
 wire   w_acc        = uop[`P_W_A] & ~busy;          // write A (from ALU result)
@@ -164,8 +164,8 @@ wire [23:0] opcode;                 // opcode being processed
 reg  [14:0] Vaddr;                  // full address, latched (opcode.addr + C)
 wire [14:0] Uaddr;                  // executive address (opcode.addr + C + M[i])
 reg  [3:0]  reg_index;              // index of M register, latched
-wire [14:0] Mi;                     // output of M[i] read
-wire [14:0] Mj;                     // output of M[j] read
+wire [14:0] Mi;                     // output of M[reg_index] read
+wire [14:0] Mr;                     // output of M[m_ra] read
 
 reg         gie;                    // global interrupt enable
 
@@ -208,7 +208,7 @@ always @(posedge clk) begin
 end
 
 // Executive address.
-assign Uaddr = Mi + (sel_j_add ? Mj : Vaddr);
+assign Uaddr = Mi + (r_add ? Mr : Vaddr);
 
 //--------------------------------------------------------------
 // ALU instantiation.
@@ -260,7 +260,7 @@ end
 always @(posedge clk) begin
     if (w_acc)
         acc <= (sel_acc == `SEL_ACC_MEM) ? dbus_input : // from memory
-               (sel_acc == `SEL_ACC_REG) ? Mi :         // M[i]
+               (sel_acc == `SEL_ACC_REG) ? Mr :         // M[m_ra]
                (sel_acc == `SEL_ACC_RR)  ? R :          // R register
                (sel_acc == `SEL_ACC_Y)   ? Y :          // Y register
                           /*SEL_ACC_ALU*/  alu_result;  // from ALU
@@ -302,8 +302,8 @@ wire [14:0] m_wa = (sel_mw == `SEL_MW_IMM) ? uop_imm :      // constant
                    (sel_mw == `SEL_MW_UA)  ? Uaddr :        // addr + C + M[i]
                              /*SEL_MW_REG*/  reg_index;     // opcode[24:21] latched
 // Read results.
-assign Mi = M[m_ra];
-assign Mj = M[Vaddr];
+assign Mi = M[reg_index];
+assign Mr = M[m_ra];
 assign Mi_is_zero = (Mi == 0);
 
 always @(posedge clk) begin
@@ -311,9 +311,9 @@ always @(posedge clk) begin
         M[m_wa] <= (m_wa == 0)                    ? 0 :         // M[0]
                    (sel_md == `SEL_MD_PC)         ? pc[15:1] :  // PC
                    (sel_md == `SEL_MD_A)          ? acc :       // accumulator
-                   (sel_md == `SEL_MD_REG)        ? Mi :        // M[i]
-                   (sel_md == `SEL_MD_REG_PLUS1)  ? Mi + 1 :    // M[i]
-                   (sel_md == `SEL_MD_REG_MINUS1) ? Mi - 1 :    // M[i]
+                   (sel_md == `SEL_MD_REG)        ? Mr :        // M[m_ra]
+                   (sel_md == `SEL_MD_REG_PLUS1)  ? Mr + 1 :    // M[m_ra] + 1
+                   (sel_md == `SEL_MD_REG_MINUS1) ? Mr - 1 :    // M[m_ra] - 1
                    (sel_md == `SEL_MD_VA)         ? Vaddr :     // addr + C
                              /*SEL_MD_UA*/          Uaddr;      // addr + C + M[i]
 end
