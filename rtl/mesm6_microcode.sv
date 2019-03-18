@@ -40,7 +40,6 @@
 `define PC_PLUS1                (`SEL_PC_PLUS1 << `P_SEL_PC)
 
 // ALU operations
-`define NOP                     (`ALU_NOP << `P_ALU)
 `define AND                     (`ALU_AND << `P_ALU)
 `define OR                      (`ALU_OR << `P_ALU)
 `define XOR                     (`ALU_XOR << `P_ALU)
@@ -228,6 +227,8 @@ op(`MEM_R | `ACC_MEM | `W_A);                               // A = memory[Uaddr]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o011);  // AAX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `AND | `ACC_ALU | `W_A);                      // a &= x
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o012);  // AEX
@@ -244,6 +245,8 @@ opcode('o014);  // AVX
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o015);  // AOX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `OR | `ACC_ALU | `W_A);                       // a |= x
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o016);  // A/X
