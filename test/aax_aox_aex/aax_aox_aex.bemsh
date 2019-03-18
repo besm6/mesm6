@@ -1,23 +1,30 @@
 *
-* 40 - AAX, AOX, AEX
+* Test for instructions AAX, AOX, AEX.
 *
-t40     nop
+start   start   '1'
         xta     cful
         aax
-        u1a     error
+        u1a     fail
         xta     cful
         aax     cful
         aex     cful
-        u1a     error
+        u1a     fail
         xta     chess
         aax     chess
         aex     chess
-        u1a     error
+        u1a     fail
         xta     chess
         aax     chess+1
-        u1a     error
+        u1a     fail
         xta     chess
         aox     chess+1
         aex     cful
-        u1a     error
-        vjm     newtest(13)
+        u1a     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cful    конд    b'7777777777777777'
+chess   конд    b'5252525252525252'
+        конд    b'2525252525252525'
+        fin

@@ -1,17 +1,25 @@
 *
-* 42 - ARX
+* Test for ARX instruction.
 *
-t42     nop
+start   start   '1'
         xta     i11
         arx     i1
         aex     i12
-        u1a     error
+        u1a     fail
         xta     cful
         arx     i1
         aex     i1
-        u1a     error
+        u1a     fail
         xta     cful
         arx     cful
         aex     cful
-        u1a     error
-        vjm     newtest(13)
+        u1a     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cful    конд    b'7777777777777777'
+i1      конд    a(1)
+i11     конд    a(11)
+i12     конд    a(12)
+        fin

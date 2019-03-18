@@ -4,6 +4,18 @@
 # All tests.
 #
 tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc vjm mtj xta_uza_u1a atx ati_ita"
+tests+=" aax_aox_aex arx"
+
+# TODO:
+#addr0
+#stack
+#ntr_rte
+#a+x_a-x_x-a
+#asn_asx
+#acx_anx
+#apx_aux
+#e+n_e-n_e+x_e-x
+#mul_div
 
 #
 # Delete log file from previous run.
