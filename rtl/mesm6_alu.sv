@@ -51,10 +51,18 @@ always @(posedge clk) begin
             end
 
         `ALU_ADD_CARRY_AROUND: begin
-                // ARX: one cycle.
-                result <= sum[47:0] + sum[48];
-                y <= '0;
-                done <= 1;
+                // ARX: two cycles.
+                case (count)
+                 0: begin
+                        result <= sum[47:0];
+                        y <= '0;
+                    end
+                 1: begin
+                        if (sum[48])
+                            result <= result + 1;
+                        done <= 1;
+                    end
+                endcase
             end
 
         //TODO:`ALU_SHIFT   y <= acc >> (48-n);
