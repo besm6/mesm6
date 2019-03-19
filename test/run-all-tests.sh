@@ -4,7 +4,7 @@
 # All tests.
 #
 tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc vjm mtj xta_uza_u1a atx ati_ita"
-tests+=" aax_aox_aex arx its sti"
+tests+=" aax_aox_aex arx its sti xts stx"
 
 # TODO:
 #addr0

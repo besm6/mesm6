@@ -1,8 +1,7 @@
 *
-* 30:39 - магазинное обращение
+* магазинное обращение
 * ===============================
-* 30: 15 ATX   31: XTS
-* 33: 15 XTA   34: SТХ
+* 30: 15 ATX        33: 15 XTA
 * 36: 15 ATX а      37: 15 XTA а
 * 38: 15 WTC        3а: 15 АОР (разные)
 *
@@ -14,15 +13,6 @@ t30     nop
         xta     cful
         atx     (15)
         utm     -2-ws(15)
-        vjm     chstake(13)
-*
-t31     nop
-        vtm     ws(15)
-        xta
-        xts     cful
-        xts
-        xts
-        utm     -3-ws(15)
         vjm     chstake(13)
 *
 t36     nop
@@ -49,22 +39,6 @@ t33     nop
         asn     64+24
         ati     5
         xta     (15)
-        ati     6
-        asn     64+32
-        ati     7
-        vjm     chst2e(13)
-*
-t34     nop
-        vtm     ws+3(15)
-        stx     ws+4
-        ati     2
-        asn     64+32
-        ati     3
-        stx     ws+4
-        ati     4
-        asn     64+32
-        ati     5
-        stx     ws+4
         ati     6
         asn     64+32
         ati     7

@@ -202,12 +202,18 @@ op(`MEM_W);                                                 // memory[Uaddr] = A
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o001);  // STX
+op(`MEM_W);                                                 // memory[Uaddr] = A
+op(`MR_IMM(15) | `MW_IMM(15) | `MD_REG_MINUS1 | `W_M);      // m[15] = m[15] - 1
+op(`MEM_R | `ADDR_SP | `ACC_MEM | `W_A);                    // A = memory[m15]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o002);  // MOD
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o003);  // XTS
+op(`MEM_W | `ADDR_SP);                                      // memory[m15] = A;
+op(`MR_IMM(15) | `MW_IMM(15) | `MD_REG_PLUS1 | `W_M);       // m[15] = m[15] + 1
+op(`MEM_R | `ACC_MEM | `W_A);                               // A = memory[Uaddr]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o004);  // A+X

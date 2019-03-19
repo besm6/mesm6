@@ -1,0 +1,39 @@
+*
+* Test for instruction XTS.
+*
+start   start   '1'
+        vtm     ws(15)
+        ita     15
+        aex     cful
+        ati     14
+*
+        xta     c11
+        xts     c22
+        xts     c33
+        xts
+        j+m     15(14)
+        utm     1-3(15)
+*
+        v1m     fail(15)
+        xta     ws
+        aex     c11
+        u1a     fail
+*
+        xta     ws+1
+        aex     c22
+        u1a     fail
+*
+        xta     ws+2
+        aex     c33
+        u1a     fail
+*
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cful    конд    b'7777777777777777'
+c11     конд    b'11'
+c22     конд    b'22'
+c33     конд    b'33'
+ws      пам     3
+        fin
