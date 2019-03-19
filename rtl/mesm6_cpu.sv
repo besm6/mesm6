@@ -191,7 +191,7 @@ assign uentry = op_utc0 ? `UADDR_NOP :          // fast utc 0(0)
 
 // memory addr / write ports
 assign ibus_addr   = pc[15:1];
-assign dbus_addr   = sel_addr ? Mi : Uaddr;
+assign dbus_addr   = sel_addr ? Mr : Uaddr;
 assign dbus_output = acc;                       // only A can be written to memory
 
 // select left or right opcode from the cached opcode word

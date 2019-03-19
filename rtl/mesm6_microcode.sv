@@ -305,17 +305,16 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 
 opcode('o040);  // ATI
 op(`MW_UA | `MD_A | `W_M | `GO_FETCH_OR_DECODE);            // m[Uaddr] = A; pc_cached ? decode else fetch,decode
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o041);  // STI
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o042);  // ITA
-op(`ACC_REG | `MR_UA | `W_A);                               // acc = m[r]
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`ACC_REG | `MR_UA | `W_A | `GO_FETCH_OR_DECODE);         // acc = m[r]; pc_cached ? decode else fetch,decode
 
 opcode('o043);  // ITS
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`MEM_W | `ADDR_SP | `MR_IMM(15) | `MW_IMM(15) | `MD_REG_PLUS1 | `W_M); // memory[m15] = A; m[15] = m[15] + 1
+op(`ACC_REG | `MR_UA | `W_A | `GO_FETCH_OR_DECODE);         // acc = m[r]; pc_cached ? decode else fetch,decode
 
 opcode('o044);  // MTJ
 op(`MR_REG | `MW_VA | `MD_REG | `W_M |                      // m[r] = m[i]; pc_cached ? decode else fetch,decode
