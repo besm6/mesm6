@@ -65,10 +65,27 @@ always @(posedge clk) begin
                 endcase
             end
 
-        //TODO:`ALU_SHIFT   y <= acc >> (48-n);
+        `ALU_SHIFT: begin
+                // ASX, ASN: one cycle.
+                if (b[47]) begin
+                    // shift right
+                    {result, y} <= {a, 48'b0} >> b[46:41];
+                end else begin
+                    // shift left
+                    {y, result} <= {48'b0, a} << (6'd64-b[64:41]);
+                end
+                done <= 1;
+            end
+
+        'ALU_COUNT: begin
+                // The "popcount" part of the ACX instruction: one cycle.
+                // To implement the ACX instruction, the ALU_ARX uop must follow.
+                result <= $countones(a);
+                done <= 1;
+        end
+
         //TODO:`ALU_PACK    y <= '0;
         //TODO:`ALU_UNPACK  y <= '0;
-        //TODO:`ALU_COUNT   y <= acc;
         //TODO:`ALU_CLZ     y <= acc << (n+1);
         //TODO:`ALU_FADD
         //TODO:`ALU_FSUB
