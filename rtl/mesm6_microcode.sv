@@ -307,6 +307,9 @@ opcode('o040);  // ATI
 op(`MW_UA | `MD_A | `W_M | `GO_FETCH_OR_DECODE);            // m[Uaddr] = A; pc_cached ? decode else fetch,decode
 
 opcode('o041);  // STI
+op(`MW_UA | `MD_A | `W_M);                                  // m[Uaddr] = A
+op(`MR_IMM(15) | `MW_IMM(15) | `MD_REG_MINUS1 | `W_M);      // m[15] = m[15] - 1
+op(`MEM_R | `ADDR_SP | `ACC_MEM | `W_A);                    // A = memory[m15]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o042);  // ITA
