@@ -100,9 +100,12 @@ bit old_reset = 0;                      // Previous state of reset
 //
 // Last fetch address
 //
-logic [`UPC_BITS-1:0] upc;  // last PC
-logic [`UOP_BITS-1:0] uop;  // last micro-instruction
-logic                 busy; // last busy signal
+logic [`UPC_BITS-1:0] upc;      // last micro-PC
+logic [`UOP_BITS-1:0] uop;      // last micro-instruction
+logic                 busy;     // last busy signal
+logic [23:0]          opcode;   // last besm opcode
+logic [15:0]          pc;       // last PC
+logic                 fetch;    // new opcode obtained
 
 //
 // Import standard C function gettimeofday().
@@ -257,10 +260,15 @@ always @(posedge clk) begin
     upc = cpu.upc;
     uop = cpu.uop;
     busy = cpu.busy;
+    fetch = 0;
     if (~reset & ~cpu.busy) begin
         uinstr_count++;
-        if (cpu.decode)
+        if (cpu.decode & ~cpu.branch) begin
+            fetch = 1;
+            pc = cpu.pc;
+            opcode = cpu.opcode;
             instr_count++;
+        end
     end
 end
 
@@ -293,17 +301,11 @@ always @(negedge clk) begin
             print_ext_bus();
 
             // Print BESM instruction
-            print_insn();
+            if (fetch)
+                print_insn();
 
             if (cpu.irq)
                 $fdisplay(tracefd, "(%0d) *** Interrupt", ctime);
-
-            // Get data from fetch stage
-            //int_flag_x = cpu.int_flag;
-            //tkk_x = cpu.tkk;
-            //cb_x = cpu.cb;
-
-            //->instruction_retired;
         end
     end
 
@@ -320,11 +322,6 @@ always @(negedge clk) begin
             $fdisplay(tracefd, "(%0d) *** Unknown address: ibus_addr=%h", ctime, cpu.ibus_addr);
         terminate("Fatal Error!");
     end
-
-    //TODO
-    //if (!cpu.run) begin
-    //    cpu_halted();
-    //end
 end
 
 //
@@ -614,39 +611,41 @@ task print_insn();
         48:"*60", 49:"*61", 50:"*62", 51:"*63", 52:"*64", 53:"*65", 54:"*66", 55:"*67",
         56:"*70", 57:"*71", 58:"*72", 59:"*73", 60:"*74", 61:"*75", 62:"*76", 63:"*77"
     };
-
-    // Only when MAP=ME and jump taken, and not UTC.
-    if (!cpu.decode || cpu.branch)
-        return;
+    automatic logic [3:0]  op_ir    = opcode[23:20];
+    automatic logic        op_lflag = opcode[19];
+    automatic logic [3:0]  op_lcmd  = opcode[18:15];
+    automatic logic [5:0]  op_scmd  = opcode[17:12];
+    automatic logic [14:0] op_addr  = op_lflag ? opcode[14:0]
+                                               : {{3{opcode[18]}}, opcode[11:0]};
 
     // Print BESM instruction.
-    $fwrite(tracefd, "(%0d) %05o: %o", ctime, cpu.pc[15:1], cpu.opcode);
+    $fwrite(tracefd, "(%0d) %05o: %o", ctime, pc[15:1], opcode);
 
-    if ($isunknown(cpu.opcode)) begin
+    if ($isunknown(opcode)) begin
         $fdisplay(tracefd, " *** Unknown");
         return;
     end
 
     // Instruction name
-    $fwrite(tracefd, " %s ", cpu.op_lflag ? long_name[cpu.op_lcmd] :
-                                           short_name[cpu.op_scmd]);
+    $fwrite(tracefd, " %s ", op_lflag ? long_name[op_lcmd] :
+                                       short_name[op_scmd]);
 
     // Address
-    if (cpu.op_addr != 0) begin
-        $fwrite(tracefd, "%0o", cpu.op_addr);
+    if (op_addr != 0) begin
+        $fwrite(tracefd, "%0o", op_addr);
     end
 
     // Register
-    if (cpu.op_ir != 0)
-        $fwrite(tracefd, "(%0d)", cpu.op_ir);
+    if (op_ir != 0)
+        $fwrite(tracefd, "(%0d)", op_ir);
     $fdisplay(tracefd, "");
 
     // Check for magic opcodes.
-    if (cpu.opcode == 'o33312345) begin
+    if (opcode == 'o33312345) begin
         // stop 12345(6) - success.
         terminate("Test PASS");
     end
-    if (cpu.opcode == 'o13376543) begin
+    if (opcode == 'o13376543) begin
         // stop 76543(2) - failure.
         terminate("Test FAIL");
     end
