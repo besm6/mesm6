@@ -217,8 +217,8 @@ wire [47:0] alu_b;
 wire [47:0] alu_result;
 
 // alu B input multiplexor
-assign alu_b = sel_alu_mem ? dbus_input : Uaddr;
-
+assign alu_b = sel_alu_mem ? dbus_input
+                           : {Uaddr[6:0], 41'd0};
 mesm6_alu alu(
     .a      (acc),
     .b      (alu_b),

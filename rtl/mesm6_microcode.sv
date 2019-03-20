@@ -280,6 +280,8 @@ opcode('o025);  // E-X
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o026);  // ASX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `SHIFT | `ACC_ALU | `W_A);                    // a <<= x
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o027);  // XTR
@@ -289,6 +291,7 @@ opcode('o030);  // RTE
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o031);  // YTA
+op(`ACC_Y | `W_A);                                          // a <<= y
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o032);  // 032
@@ -304,6 +307,7 @@ opcode('o035);  // E-N
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o036);  // ASN
+op(`SHIFT | `ACC_ALU | `W_A);                               // a <<= Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o037);  // NTR
