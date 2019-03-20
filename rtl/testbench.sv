@@ -508,23 +508,17 @@ endtask
 // Print changed state at architectural level
 //
 task print_changed_regs();
+    static string ir_name[16] = '{
+        0:"M[0]",   1:"M[1]",   2:"M[2]",   3:"M[3]",
+        4:"M[4]",   5:"M[5]",   6:"M[6]",   7:"M[7]",
+        8:"M[8]",   9:"M[9]",  10:"M[10]", 11:"M[11]",
+       12:"M[12]", 13:"M[13]", 14:"M[14]", 15:"SP"
+    };
     static logic [15:0] old_pc;
     static logic [47:0] old_acc, old_Y;
     static logic  [5:0] old_R;
     static logic [14:0] old_M[16], old_C;
     static logic        old_gie;
-    static string ir_name[16] = '{
-        0:"M0",     1:"M1",     2:"M2",     3:"M3",
-        4:"M4",     5:"M5",     6:"M6",     7:"M7",
-        8:"M10",    9:"M11",    10:"M12",   11:"M13",
-        12:"M14",   13:"M15",   14:"M16",   15:"SP"
-    };
-
-    // PC
-    if (tracelevel >= 2 && cpu.pc !== old_pc) begin
-        $fdisplay(tracefd, "(%0d)        Write PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
-        old_pc = cpu.pc;
-    end
 
     // Accumulator
     if (cpu.acc !== old_acc) begin
@@ -569,6 +563,12 @@ task print_changed_regs();
     if (cpu.gie !== old_gie) begin
         $fdisplay(tracefd, "(%0d)        Write GIE = %o", ctime, cpu.gie);
         old_gie = cpu.gie;
+    end
+
+    // PC
+    if (tracelevel >= 2 && cpu.pc !== old_pc) begin
+        $fdisplay(tracefd, "(%0d)        Write PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
+        old_pc = cpu.pc;
     end
 
 endtask
