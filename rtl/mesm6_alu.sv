@@ -72,12 +72,12 @@ always @(posedge clk) begin
                     {result, y} <= {a, 48'b0} >> b[46:41];
                 end else begin
                     // shift left
-                    {y, result} <= {48'b0, a} << (6'd64-b[64:41]);
+                    {y, result} <= {48'b0, a} << (6'd64 - b[46:41]);
                 end
                 done <= 1;
             end
 
-        'ALU_COUNT: begin
+        `ALU_COUNT: begin
                 // The "popcount" part of the ACX instruction: one cycle.
                 // To implement the ACX instruction, the ALU_ARX uop must follow.
                 result <= $countones(a);
