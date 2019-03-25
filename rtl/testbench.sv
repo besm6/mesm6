@@ -150,7 +150,8 @@ initial begin
         limit = 99;
     end
     $display("Limit: %0d", limit);
-    $fdisplay(tracefd, "Limit: %0d", limit);
+    if (tracefd)
+        $fdisplay(tracefd, "Limit: %0d", limit);
 
     // Load memory contents.
     if (! $value$plusargs("load=%s", octfile)) begin
@@ -182,7 +183,8 @@ end
 //
 task message(input string msg);
     $display("*** %s", msg);
-    $fdisplay(tracefd, "(%0d) *** %s", ctime, msg);
+    if (tracefd)
+        $fdisplay(tracefd, "(%0d) *** %s", ctime, msg);
 endtask
 
 //
@@ -307,6 +309,16 @@ always @(negedge clk) begin
             if (cpu.irq)
                 $fdisplay(tracefd, "(%0d) *** Interrupt", ctime);
         end
+    end
+
+    // Check for magic opcodes.
+    if (fetch && opcode == 'o33312345) begin
+        // stop 12345(6) - success.
+        terminate("Test PASS");
+    end
+    if (fetch && opcode == 'o13376543) begin
+        // stop 76543(2) - failure.
+        terminate("Test FAIL");
     end
 
     if ((cpu.dbus_read | cpu.dbus_write) && $isunknown(cpu.dbus_addr)) begin
@@ -639,16 +651,6 @@ task print_insn();
     if (op_ir != 0)
         $fwrite(tracefd, "(%0d)", op_ir);
     $fdisplay(tracefd, "");
-
-    // Check for magic opcodes.
-    if (opcode == 'o33312345) begin
-        // stop 12345(6) - success.
-        terminate("Test PASS");
-    end
-    if (opcode == 'o13376543) begin
-        // stop 76543(2) - failure.
-        terminate("Test FAIL");
-    end
 endtask
 
 endmodule
