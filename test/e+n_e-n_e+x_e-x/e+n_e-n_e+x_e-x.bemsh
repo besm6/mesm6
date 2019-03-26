@@ -1,8 +1,8 @@
 *
-* 46 - Е+N, Е-N, Е+Х, Е-Х
+* Test for instructions Е+N, Е-N, Е+Х, Е-Х.
 *
-t46     nop
-        vtm     -@7e(12)
+start   start   '1'
+        vtm     -'176'(12)
         xta     cfe8u
         atx     ws
 l76е    xta     ws
@@ -11,12 +11,12 @@ l76е    xta     ws
         asn     64+41
         ati     14
         j+m     14(12)
-        v1m     error(14)
+        v1m     fail(14)
         vlm     l76е(12)
         xta     ws
         e-n     64+1
-        uza     error
-        vtm     -@7e(12)
+        uza     fail
+        vtm     -'176'(12)
         xta     c008u
         atx     ws
         vtm     -1(11)
@@ -26,11 +26,19 @@ l761е   xta     ws
         asn     64+41
         ati     14
         j+m     14(11)
-        v1m     error(14)
+        v1m     fail(14)
         utm     -1(11)
         vlm     l761е(12)
         xta     ws
         e+x     c008u
         aex     c7e8u
-        u1a     error
-        vjm     newtest(13)
+        u1a     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cfe8u   конд    b'7750000000000000'
+c008u   конд    b'0010000000000000'
+c7e8u   конд    b'3750000000000000'
+ws      пам     1
+        fin

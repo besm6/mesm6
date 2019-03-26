@@ -29,7 +29,7 @@ t22     nop
         vtm     1(2)
         vtm     -15(3)
         uj      *+2
-:       j+m     2(2)            ; сдвиг "1" влево
+:       j+m     2(2)            , сдвиг "1" влево
         utm     1(3)
 :       v1m     *-1(2)
         v1m     error(3)
@@ -44,7 +44,7 @@ t23     nop
         vlm     *(2)
         v1m     error(2)
         v1m     error(3)
-:       vlm     error(2)        ; а что при "0"
+:       vlm     error(2)        , а что при "0"
         v1m     error(2)
 *
 * слабое место: короткий цикл
@@ -196,10 +196,10 @@ t25     nop
 * 26 - проверка команды VJM:
 *
 t26     nop
-        vjm     t26_1(2)        ; справа
+        vjm     t26_1(2)        , справа
 t26_1   utm     -t26_1(2)
         v1m     error(2)
-:       vjm     t26_2(2)        ; слева
+:       vjm     t26_2(2)        , слева
 t26_2   utm     -t26_2(2)
         v1m     error(2)
 :       vjm     *+2(2)
@@ -249,26 +249,26 @@ t2а     nop
         vtm     -1(2)
         ita     2
         atx
-:       xta                     ; слева
+:       xta                     , слева
         ati     2
         v1m     error(2)
         vtm     -1(2)
         ita     2
 :       atx
-        xta                     ; справа
+        xta                     , справа
         ati     2
         v1m     error(2)
 t2b     nop
         vtm     -1(2)
         ita     2
         ati
-:       ita                     ; слева
+:       ita                     , слева
         ati     2
         v1m     error(2)
         vtm     -1(2)
         ita     2
 :       ati
-        ita                     ; справа
+        ita                     , справа
         ati     2
         v1m     error(2)
         vjm     newtest(13)
@@ -319,13 +319,13 @@ lt0c2c  ntr     (2)
         uza     error
 :       u1a     *+1
         uj      error
-:       ntr     (7)             ; лог.гр.
+:       ntr     (7)             , лог.гр.
         u1a     error
-        ntr     (11)            ; гр.умн.
+        ntr     (11)            , гр.умн.
         uza     error
         aox
         u1a     error
-        ntr     19              ; гр.слож.
+        ntr     19              , гр.слож.
         u1a     error
         xta     cful
         uza     error
@@ -334,12 +334,12 @@ lt0c2c  ntr     (2)
         ntr     19
         uza     error
 *
-        ntr     24              ; гс+гу=гс
+        ntr     24              , гс+гу=гс
         uza     error
-        ntr     (12)            ; гу+гл=гу
+        ntr     (12)            , гу+гл=гу
         u1a     error
         xta     i1
-        ntr     20              ; гс+гл=гс
+        ntr     20              , гс+гл=гс
         u1a     error
         xta     cful
         aex
@@ -347,11 +347,11 @@ lt0c2c  ntr     (2)
         yta
         aex     cful
         u1a     error
-        arx                         ; должна
-        uza     error               ; получиться
-        arx     cful                ; гр.умн.
+        arx                         , должна
+        uza     error               , получиться
+        arx     cful                , гр.умн.
         u1a     error
-        aax     cful                ; лог.гр.
+        aax     cful                , лог.гр.
         uza     error
         vjm     newtest(13)
 *
@@ -600,7 +600,7 @@ t44     nop
         aex     i48
         u1a     error
         xta     chess+1
-        acx     iм24
+        acx     im24
         aex     i1
         u1a     error
         vtm     -48(12)
@@ -625,11 +625,11 @@ tanxe   v1m     *+1(11)
         aex     cful
         u1a     error
         vtm     @201(14)
-        ita     (14)            ; проверка
-        anx     cful            ; засылки
+        ita     (14)            , проверка
+        anx     cful            , засылки
         yta
-        aex     c008u           ; остатка
-        u1a     error           ; в рмр
+        aex     c008u           , остатка
+        u1a     error           , в рмр
         vjm     newtest(13)
 *
 * 45 - ASN, ASX
@@ -662,11 +662,11 @@ tsft2e  xta     i1
         asx     c0ful
         aex     chess
         u1a     error
-        xta     cful            ; а что
-        asn     64-12           ; попадет
-        yta                     ; в рмр
-        aex     cfff            ; при
-        u1a     error           ; сдвигах ?
+        xta     cful            , а что
+        asn     64-12           , попадет
+        yta                     , в рмр
+        aex     cfff            , при
+        u1a     error           , сдвигах ?
         xta     cful
         asn     64+4
         yta
@@ -724,7 +724,7 @@ t47     nop
         u1a     error
         xta     i2
         x-a     i1
-        a-x     iм1
+        a-x     im1
         u1a     error
         aox
         u1a     error
@@ -732,30 +732,30 @@ t47     nop
         xts     i1
         xts     i2
         xts     i3
-        a-x     (15)            ; 3-2=1
+        a-x     (15)            , 3-2=1
         u1a     error
-        a+x     (15)            ; 1+1 = 2
-        x-a     (15)            ; 2-2 = 0
-        u1a     error
-        aox
-        u1a     error
-        xta     cdu40l          ; 64
-        a-x     cdu42l          ; 66
-        uza     error
-        a+x     c848u           ; 2.
+        a+x     (15)            , 1+1 = 2
+        x-a     (15)            , 2-2 = 0
         u1a     error
         aox
+        u1a     error
+        xta     cdu40l          , 64
+        a-x     cdu42l          , 66
         uza     error
-        aex     cdu             ; i0
+        a+x     c848u           , 2.
+        u1a     error
+        aox
+        uza     error
+        aex     cdu             , i0
         u1a     error
         ntr     2
-        xta     c848u           ; 2.
-        xts     c84cu           ; 3.
-        xts     c848u           ; 2.
-        xts     c84cu           ; 3.
-        a+x     (15)            ; 3+2
-        a-x     (15)            ; 5-3
-        x-a     (15)            ; 2-2
+        xta     c848u           , 2.
+        xts     c84cu           , 3.
+        xts     c848u           , 2.
+        xts     c84cu           , 3.
+        a+x     (15)            , 3+2
+        a-x     (15)            , 5-3
+        x-a     (15)            , 2-2
         u1a     error
         aox
         vjm     newtest(13)
@@ -765,17 +765,17 @@ t47     nop
 t48     nop
         ntr     3
         xta     cdu5l
-        a*x     c5udl           ; 13/2**64
+        a*x     c5udl           , 13/2**64
         atx     (15)
         yta     64
         stx     ws
         aex     cau
         u1a     error
         xta     ws
-        aex     cau41l          ; 65/2**24
+        aex     cau41l          , 65/2**24
         u1a     error
-        xta     c5u5l           ; 5/2**64
-        a*x     cim13           ; = -65
+        xta     c5u5l           , 5/2**64
+        a*x     cim13           , = -65
         atx     (15)
         yta     64
         stx     ws
@@ -783,22 +783,22 @@ t48     nop
         u1a     error
         xta     ws
         e+n     64+24
-        aex     cd0fsbf         ; -65!-
+        aex     cd0fsbf         , -65!-
         u1a     error
         ntr     2
-        xta     c848u           ; 2.
-        a*x     c84cu           ; 3.
+        xta     c848u           , 2.
+        a*x     c84cu           , 3.
         atx     ws
-        aex     c84cu           ; 3.
+        aex     c84cu           , 3.
         aex     c02u
-        u1a     error           ; !=6
-        xta     ws              ; восст. а=6.
-        a/x     c84cu           ; 3.
-        aex     c848u           ; 2.
+        u1a     error           , !=6
+        xta     ws              , восст. а=6.
+        a/x     c84cu           , 3.
+        aex     c848u           , 2.
         u1a     error
         vjm     newtest(13)
 *--------------------------------------
-oldfin  uj      t51             ; *** в тест нового режима
+oldfin  uj      t51             , *** в тест нового режима
 *--------------------------------------
 *
 chstake v1m     error(15)
@@ -865,7 +865,7 @@ ufsl1   vlm     @fffff(15)
         atx     1
 c0ful   vlm     @fffff(7)
         vlm     @fffff(15)
-iм24    vlm     @fffff(15)
+im24    vlm     @fffff(15)
         vlm     @fffe8(15)
 c8u     atx     (8)
         atx
@@ -883,20 +883,20 @@ c7e8u   v1m     (7)
         atx
 i65     atx
         atx     65
-iм1     ntr     @ffff
+im1     ntr     @ffff
         vlm     @ffff(15)
 cdu40l  atx     (13)
         atx     @40
 cdu41l  atx     (13)
         atx     @41
 cdu42l  atx     (13)
-        atx     @42             ; 66
+        atx     @42             , 66
 cdu     atx     (13)
         atx
 c848u   xta     @7000(8)
-        atx                     ; 2.
+        atx                     , 2.
 c84cu   avx     @7000(8)
-        atx                     ; 3.
+        atx                     , 3.
 cdu5l   atx     (13)
         atx     5
 c5udl   atx     (5)
@@ -914,7 +914,7 @@ cim13   ntr     @fff(13)
 ca1ufs  ntr     @7fff(10)
         vlm     @7fff(15)
 cd0fsbf a*x     @fff(13)
-        vlm     @7fbf(15)       ; -65!-
+        vlm     @7fbf(15)       , -65!-
 chess   utm     @aaaaa(10)
         utm     @aaaaa(10)
         atx

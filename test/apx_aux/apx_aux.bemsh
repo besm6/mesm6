@@ -1,22 +1,31 @@
 *
-* 43 - APX, AUX
+* Test for instructions APX, AUX.
 *
-t43     nop
+start   start   '1'
         xta     chess
         apx     cful
         aux     c0ful
         aex     chess+1
-        u1a     error
+        u1a     fail
         xta     chess
         apx     chess+1
-        u1a     error
+        u1a     fail
         xta     chess
         apx     chess
         aux     chess+1
         aex     chess+1
-        u1a     error
+        u1a     fail
         xta     cful
         aux     chess+1
         aex     chess+1
-        u1a     error
-        vjm     newtest(13)
+        u1a     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cful    конд    b'7777777777777777'
+c0ful   vlm     '77777'(7)
+        vlm     '77777'(15)
+chess   конд    b'5252525252525252'
+        конд    b'2525252525252525'
+        fin

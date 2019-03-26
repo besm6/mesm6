@@ -1,50 +1,63 @@
 *
-* 47 - А+Х, А-Х, Х-А
+* Test for instructions А+Х, А-Х, Х-А.
 *
-t47     nop
+start   start   '1'
         ntr     3
         vtm     64(14)
         ita     14
         a-x     i65
-        uza     error
+        uza     fail
         a+x     i1
-        u1a     error
+        u1a     fail
         aox
-        u1a     error
+        u1a     fail
         xta     i2
         x-a     i1
-        a-x     iм1
-        u1a     error
+        a-x     im1
+        u1a     fail
         aox
-        u1a     error
+        u1a     fail
         xta     i2
         xts     i1
         xts     i2
         xts     i3
-        a-x     (15)            ; 3-2=1
-        u1a     error
-        a+x     (15)            ; 1+1 = 2
-        x-a     (15)            ; 2-2 = 0
-        u1a     error
+        a-x     (15)            , 3-2=1
+        u1a     fail
+        a+x     (15)            , 1+1 = 2
+        x-a     (15)            , 2-2 = 0
+        u1a     fail
         aox
-        u1a     error
-        xta     cdu40l          ; 64
-        a-x     cdu42l          ; 66
-        uza     error
-        a+x     c848u           ; 2.
-        u1a     error
+        u1a     fail
+        xta     cdu40l          , 64
+        a-x     cdu42l          , 66
+        uza     fail
+        a+x     c848u           , 2.
+        u1a     fail
         aox
-        uza     error
-        aex     cdu             ; i0
-        u1a     error
+        uza     fail
+        aex     cdu             , i0
+        u1a     fail
         ntr     2
-        xta     c848u           ; 2.
-        xts     c84cu           ; 3.
-        xts     c848u           ; 2.
-        xts     c84cu           ; 3.
-        a+x     (15)            ; 3+2
-        a-x     (15)            ; 5-3
-        x-a     (15)            ; 2-2
-        u1a     error
-        aox
-        vjm     newtest(13)
+        xta     c848u           , 2.
+        xts     c84cu           , 3.
+        xts     c848u           , 2.
+        xts     c84cu           , 3.
+        a+x     (15)            , 3+2
+        a-x     (15)            , 5-3
+        x-a     (15)            , 2-2
+        u1a     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+i1      конд    b'1'
+i2      конд    b'2'
+i3      конд    b'3'
+i65     конд    b'65'
+im1     конд    b'0137777777777777'
+cdu     конд    b'6400000000000000'
+cdu40l  конд    b'6400000000000100'
+cdu42l  конд    b'6400000000000102'     , 66
+c848u   конд    b'4110000000000000'     , 2.
+c84cu   конд    b'4114000000000000'     , 3.
+        fin

@@ -1,21 +1,35 @@
 *
-* магазинное обращение
-* ===============================
-* 30: 15 ATX        33: 15 XTA
-* 36: 15 ATX а      37: 15 XTA а
-* 38: 15 WTC        3а: 15 АОР (разные)
+* Test for instructions in stack mode:
+*       ATX (15)
+*       XTA (15)
+*       WTC (15)
+*       AAX (15)
+*       ACX (15)
+*       AEX (15)
+*       ANX (15)
+*       AOX (15)
+*       APX (15)
+*       ARX (15)
+*       ASX (15)
+*       AUX (15)
 *
-t30     nop
+* Test for ATX in stack mode:
+*
+        vtm     ws(10)
+        ita     10
+        aex     cful
+        ati     10
+*
         atx     ws
         atx     ws+1
         atx     ws+2
         vtm     ws+1(15)
         xta     cful
         atx     (15)
-        utm     -2-ws(15)
-        vjm     chstake(13)
+        j+m     15(10)
+        utm     1-2(15)         , -2-ws
+        vjm     check(13)
 *
-t36     nop
         vtm     ws-1(15)
         xta
         atx     1(15)
@@ -23,10 +37,12 @@ t36     nop
         xta     cful
         utc     2
         atx     (15)
-        utm     1-ws(15)
-        vjm     chstake(13)
+        j+m     15(10)
+        utm     2(15)           , 1-ws
+        vjm     check(13)
 *
-t33     nop
+* Test for XTA in stack mode:
+*
         xta
         atx     ws+1
         vtm     ws+3(15)
@@ -44,7 +60,6 @@ t33     nop
         ati     7
         vjm     chst2e(13)
 *
-t37     nop
         vtm     ws+3(15)
         utc     -1
         xta     (15)
@@ -62,7 +77,8 @@ t37     nop
         utm     -3(15)
         vjm     chst2e(13)
 *
-t38     nop
+* Test for WTC in stack mode:
+*
         vtm     1(4)
         vtm     -1(7)
         vtm     -1(3)
@@ -81,18 +97,19 @@ t38     nop
         xts     i3
         wtc     -2(15)
         vtm     (2)
-        v1m     error(2)
-        utm     -3-ws(15)
-        v1m     error(15)
+        v1m     fail(2)
+        j+m     15(10)
+        utm     1-3(15)         , -3-ws
+        v1m     fail(15)
 *
-* ранее забытые команды:
+* ALU instructions in stack mode:
+* AAX, ACX, AEX, ANX, AOX, APX, ARX, ASX, AUX
 *
-t3а     nop
         vtm     ws(15)
         xta     chess
         xts     chess+1
         aax     (15)
-        u1a     error
+        u1a     fail
         xta     chess
         xts     chess+1
         arx     (15)
@@ -100,64 +117,79 @@ t3а     nop
         xts     chess+1
         aox     (15)
         aex     (15)
-        u1a     error
+        u1a     fail
         xta     chess
         xts     chess+1
         xts     cful
         apx     (15)
         aux     (15)
         aex     chess
-        u1a     error
+        u1a     fail
         xts     cful
         acx     (15)
         aex     i48
-        u1a     error
+        u1a     fail
         xts     cful
         anx     (15)
         aex     i1
-        u1a     error
+        u1a     fail
         xta     cful
         atx     (15)
         asx     (15)
-        u1a     error
-        vjm     newtest(13)
+        u1a     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
 *------------------------
-chstake v1m     error(15)
+check v1m     fail(15)
         xta     ws
         ati     2
-        v1m     error(2)
+        v1m     fail(2)
         asn     64+24
         ati     2
-        v1m     error(2)
+        v1m     fail(2)
         xta     ws+2
         ati     2
-        v1m     error(2)
+        v1m     fail(2)
         asn     64+24
         ati     2
-        v1m     error(2)
+        v1m     fail(2)
         xta     ws+1
         ati     2
         asn     64+24
         ati     3
         utm     1(2)
-        v1m     error(2)
+        v1m     fail(2)
         utm     1(3)
-        v1m     error(3)
+        v1m     fail(3)
         xta     ufsl1
         atx     ws
         atx     ws+1
         atx     ws+2
         uj      (13)
-chst2e  utm     -ws(15)
-        v1m     error(15)
+chst2e  j+m     15(10)
+        utm     1(15)           , -ws
+        v1m     fail(15)
         utm     -1(2)
-        v1m     error(2)
+        v1m     fail(2)
         utm     1(3)
-        v1m     error(3)
-        v1m     error(4)
-        v1m     error(5)
+        v1m     fail(3)
+        v1m     fail(4)
+        v1m     fail(5)
         utm     -1(6)
-        v1m     error(6)
+        v1m     fail(6)
         utm     1(7)
-        v1m     error(7)
+        v1m     fail(7)
         uj      (13)
+*-------------------------
+align   пам     1024
+cful    конд    b'7777777777777777'
+chess   конд    b'5252525252525252'
+        конд    b'2525252525252525'
+i1      конд    b'1'
+i2      конд    b'2'
+i3      конд    b'3'
+i48     конд    b'60'
+ufsl1   vlm     '77777'(15)
+        atx     1
+ws      пам     1030
+        fin

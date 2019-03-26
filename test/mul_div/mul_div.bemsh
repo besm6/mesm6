@@ -1,38 +1,54 @@
 *
-* 48  - А*Х, А/Х
+* Test for instructions А*Х, А/Х.
 *
-t48     nop
+start   start   '1'
         ntr     3
         xta     cdu5l
-        a*x     c5udl           ; 13/2**64
+        a*x     c5udl           , 13/2**64
         atx     (15)
         yta     64
         stx     ws
         aex     cau
-        u1a     error
+        u1a     fail
         xta     ws
-        aex     cau41l          ; 65/2**24
-        u1a     error
-        xta     c5u5l           ; 5/2**64
-        a*x     cim13           ; = -65
+        aex     cau41l          , 65/2**24
+        u1a     fail
+        xta     c5u5l           , 5/2**64
+        a*x     cim13           , = -65
         atx     (15)
         yta     64
         stx     ws
         aex     ca1ufs
-        u1a     error
+        u1a     fail
         xta     ws
         e+n     64+24
-        aex     cd0fsbf         ; -65!-
-        u1a     error
+        aex     cd0fbf          , -65!-
+        u1a     fail
         ntr     2
-        xta     c848u           ; 2.
-        a*x     c84cu           ; 3.
+        xta     c848u           , 2.
+        a*x     c84cu           , 3.
         atx     ws
-        aex     c84cu           ; 3.
+        aex     c84cu           , 3.
         aex     c02u
-        u1a     error           ; !=6
-        xta     ws              ; восст. а=6.
-        a/x     c84cu           ; 3.
-        aex     c848u           ; 2.
-        u1a     error
-        vjm     newtest(13)
+        u1a     fail            , !=6
+        xta     ws              , восст. а=6.
+        a/x     c84cu           , 3.
+        aex     c848u           , 2.
+        u1a     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cdu5l   конд    b'6400000000000005'
+c5udl   конд    b'2400000000000015'
+cau     конд    b'5000000000000000'
+cau41l  конд    b'5000000000000101'
+c5u5l   конд    b'2400000000000005'
+cim13   конд    b'6437777777777763'
+ca1ufs  конд    b'5137777777777777'
+cd0fbf  конд    b'6417777777777677'
+c848u   конд    b'4110000000000000'
+c84cu   конд    b'4114000000000000'     , 3.
+c02u    конд    b'0040000000000000'
+ws      пам     1
+        fin

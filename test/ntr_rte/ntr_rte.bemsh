@@ -11,20 +11,20 @@ lt0c2c  ntr     (2)
         its     2
         asn     64-41
         aex     (15)
-        u1a     error
-        u1a     error
+        u1a     fail
+        u1a     fail
         xtr
         rte     63
-        uza     error
+        uza     fail
         aox
-        u1a     error
+        u1a     fail
         xtr     ws
         rte     63
         its     2
         asn     64-41
         aex     (15)
-        u1a     error
-        u1a     error
+        u1a     fail
+        u1a     fail
 *
         vtm     ws+1(15)
         xtr     (15)
@@ -33,50 +33,59 @@ lt0c2c  ntr     (2)
         its     2
         asn     64-41
         aex     (15)
-        u1a     error
+        u1a     fail
         utm     -1(2)
         vlm     lt0c2c(3)
 *
         ntr     63
-        rte     @21
-        aex     е42х
-        u1a     error
+        rte     '41'
+        aex     e42x
+        u1a     fail
         ntr     0
-        uza     error
-:       u1a     *+1
-        uj      error
-:       ntr     (7)             ; лог.гр.
-        u1a     error
-        ntr     (11)            ; гр.умн.
-        uza     error
+        uza     fail
+a       u1a     ok
+        uj      fail
+ok      ntr     (7)             , логическая группа
+        u1a     fail
+        ntr     (11)            , группа умножения
+        uza     fail
         aox
-        u1a     error
-        ntr     19              ; гр.слож.
-        u1a     error
+        u1a     fail
+        ntr     19              , группа сложения
+        u1a     fail
         xta     cful
-        uza     error
+        uza     fail
         ntr     11
-        u1a     error
+        u1a     fail
         ntr     19
-        uza     error
+        uza     fail
 *
-        ntr     24              ; гс+гу=гс
-        uza     error
-        ntr     (12)            ; гу+гл=гу
-        u1a     error
+        ntr     24              , гс+гу = гс
+        uza     fail
+        ntr     (12)            , гу+гл = гу
+        u1a     fail
         xta     i1
-        ntr     20              ; гс+гл=гс
-        u1a     error
+        ntr     20              , гс+гл = гс
+        u1a     fail
         xta     cful
         aex
         xta
         yta
         aex     cful
-        u1a     error
-        arx                         ; должна
-        uza     error               ; получиться
-        arx     cful                ; гр.умн.
-        u1a     error
-        aax     cful                ; лог.гр.
-        uza     error
-        vjm     newtest(13)
+        u1a     fail
+        arx                     , должна
+        uza     fail            , получиться
+        arx     cful            , группа умножения
+        u1a     fail
+        aax     cful            , логическая группа
+        uza     fail
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cful    конд    b'7777777777777777'
+i1      конд    b'1'
+e42x    конд    b'2040000000000000'
+mst     пам     40
+ws      пам     1030
+        fin

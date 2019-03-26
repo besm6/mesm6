@@ -1,27 +1,27 @@
 *
-* 44 - ACX, ANX
+* Test for instructions ACX, ANX.
 *
-t44     nop
+start   start   '1'
         acx
-        u1a     error
+        u1a     fail
         xta     cful
         acx
         aex     i48
-        u1a     error
+        u1a     fail
         xta     chess+1
-        acx     iм24
+        acx     im24
         aex     i1
-        u1a     error
+        u1a     fail
         vtm     -48(12)
         vtm     48(11)
         xta     i1
-tanxe   v1m     *+1(11)
+tanxe   v1m     nz(11)
         xta
-:       atx     ws
+nz      atx     ws
         anx
         its     11
         aex     (15)
-        u1a     error
+        u1a     fail
         xta     ws
         asn     64-1
         its     11
@@ -32,11 +32,24 @@ tanxe   v1m     *+1(11)
         xta
         anx     cful
         aex     cful
-        u1a     error
-        vtm     @201(14)
-        ita     (14)            ; проверка
-        anx     cful            ; засылки
+        u1a     fail
+        vtm     '1001'(14)
+        ita     (14)            , проверка
+        anx     cful            , засылки
         yta
-        aex     c008u           ; остатка
-        u1a     error           ; в рмр
-        vjm     newtest(13)
+        aex     c008u           , остатка
+        u1a     fail            , в РМР
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+cful    конд    b'7777777777777777'
+i1      конд    b'1'
+i7      конд    b'7'
+i48     конд    b'60'
+im24    конд    b'7777777777777750'
+c008u   конд    b'0010000000000000'
+chess   конд    b'5252525252525252'
+        конд    b'2525252525252525'
+ws      пам     1
+        fin
