@@ -305,11 +305,15 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 stack_mode('o020);      // APX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o020);          // APX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `PACK | `ACC_ALU | `W_A);                     // a = pack(a, x)
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 stack_mode('o021);      // AUX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o021);          // AUX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `UNPACK | `ACC_ALU | `W_A);                   // a = unpack(a, x)
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 stack_mode('o022);      // ACX in stack mode

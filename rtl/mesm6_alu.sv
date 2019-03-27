@@ -37,7 +37,7 @@ wire [47:0] adder_a =                       // mux at A input of adder
 wire [48:0] sum = adder_a + b;              // adder
 reg carry;                                  // carry bit, latched
 
-// ----- alu operation selection -----
+// ALU operation selection.
 always @(posedge clk) begin
     if (op == `ALU_NOP) begin
         // No operation: reset count and done flag.
@@ -111,8 +111,20 @@ always @(posedge clk) begin
                 done <= 1;
             end
 
-        //TODO:`ALU_PACK    y <= '0;
-        //TODO:`ALU_UNPACK  y <= '0;
+        `ALU_PACK: begin
+                // APX: one cycle.
+                result <= pack(a, b);
+                y <= '0;
+                done <= 1;
+            end
+
+        `ALU_UNPACK: begin
+                // AUX: one cycle.
+                result <= unpack(a, b);
+                y <= '0;
+                done <= 1;
+            end
+
         //TODO:`ALU_FADD
         //TODO:`ALU_FSUB
         //TODO:`ALU_FREVSUB
@@ -125,5 +137,38 @@ always @(posedge clk) begin
         endcase
     end
 end
+
+//
+// Pack value by mask.
+//
+function [47:0] pack(input [47:0] val, mask);
+    logic [47:0] result;
+    int i;
+
+    result = '0;
+    for (i=0; i<48; i++) begin
+        if (mask[i])
+            result = { val[i], result[47:1] };
+    end
+    return result;
+endfunction
+
+//
+// Unpack value by mask.
+//
+function [47:0] unpack(input [47:0] val, mask);
+    logic [47:0] result;
+    int i, k;
+
+    result = '0;
+    k = 47;
+    for (i=47; i>=0; i--) begin
+        if (mask[i]) begin
+            result[i] = val[k];
+            k--;
+        end
+    end
+    return result;
+endfunction
 
 endmodule
