@@ -215,12 +215,11 @@ op(`MEM_W);                                                 // memory[Uaddr] = A
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 stack_mode('o000);      // ATX in stack mode
-op(`MEM_W);                                                 // memory[Uaddr] = A (TODO: merge with next)
-op(`STACK_INCR);                                            // m[15] = m[15] + 1
+op(`MEM_W | `STACK_INCR);                                   // memory[Uaddr] = A; m[15] = m[15] + 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o001);          // STX
-op(`MEM_W);                                                 // memory[Uaddr] = A (TODO: merge with next)
+op(`MEM_W);                                                 // memory[Uaddr] = A
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 op(`MEM_R | `ADDR_SP | `ACC_MEM | `W_A);                    // A = memory[m15]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
