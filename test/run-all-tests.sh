@@ -7,13 +7,13 @@ tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc vjm mtj xta_uza_u1a atx ati_ita"
 tests+=" addr0 aax_aox_aex arx its sti xts stx asn_asx"
 
 # TODO:
-#stack - APX, AUX, ACX, ANX not implemented yet
-#ntr_rte
-#a+x_a-x_x-a
-#acx_anx
-#apx_aux
-#e+n_e-n_e+x_e-x
-#mul_div
+tests+=" acx_anx"
+tests+=" apx_aux"
+tests+=" stack" # APX, AUX, ACX, ANX not implemented yet
+tests+=" ntr_rte"
+tests+=" a+x_a-x_x-a"
+tests+=" e+n_e-n_e+x_e-x"
+tests+=" mul_div"
 
 #
 # Delete log file from previous run.
@@ -28,7 +28,7 @@ npassed=0
 nfailed=0
 for t in $tests
 do
-    echo -n "Run $t "
+    echo -n "Test $t "
     dir=$t
     tag=`basename $t`
 
@@ -52,7 +52,6 @@ do
         let nfailed++
     fi
 done
-echo "Done."
 echo "---"
 
 echo "Tests total: $ntests, passed: $npassed, failed: $nfailed"
