@@ -217,7 +217,7 @@ task load_oct(input string filename);
                 $finish(1);
             end
             word[47:44] = lm;
-            if (line[11] != "0") begin
+            if (line[11] == "2" || line[11] == "3") begin
                 word[43:39] = lop;
                 word[38:24] = laddr;
             end else begin
@@ -225,7 +225,7 @@ task load_oct(input string filename);
                 word[35:24] = laddr;
             end
             word[23:20] = rm;
-            if (line[23] != "0") begin
+            if (line[23] == "2" || line[23] == "3") begin
                 word[19:15] = rop;
                 word[14:0]  = raddr;
             end else begin

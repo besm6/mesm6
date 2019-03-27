@@ -7,7 +7,7 @@ tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc vjm mtj xta_uza_u1a atx ati_ita"
 tests+=" addr0 aax_aox_aex arx its sti xts stx asn_asx"
 
 # TODO:
-#stack
+#stack - APX, AUX, ACX, ANX not implemented yet
 #ntr_rte
 #a+x_a-x_x-a
 #acx_anx
