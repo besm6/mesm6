@@ -2,6 +2,7 @@
 * Test for instructions ACX, ANX.
 *
 start   start   '1'
+        ita
         acx
         u1a     fail
         xta     cful
@@ -12,10 +13,12 @@ start   start   '1'
         acx     im24
         aex     i1
         u1a     fail
+*
         vtm     -48(12)
         vtm     48(11)
+        vtm     ws+1(15)
         xta     i1
-tanxe   v1m     nz(11)
+loop    v1m     nz(11)
         xta
 nz      atx     ws
         anx
@@ -28,13 +31,14 @@ nz      atx     ws
         aax     i7
         aox     (15)
         utm     -1(11)
-        vlm     tanxe(12)
+        vlm     loop(12)
+*
         xta
         anx     cful
         aex     cful
         u1a     fail
         vtm     '1001'(14)
-        ita     (14)            , проверка
+        ita     14              , проверка
         anx     cful            , засылки
         yta
         aex     c008u           , остатка
@@ -51,5 +55,5 @@ im24    конд    b'7777777777777750'
 c008u   конд    b'0010000000000000'
 chess   конд    b'5252525252525252'
         конд    b'2525252525252525'
-ws      пам     1
+ws      пам     2
         fin

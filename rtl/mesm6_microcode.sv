@@ -315,11 +315,15 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 stack_mode('o022);      // ACX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o022);          // ACX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `COUNT | `ACC_ALU | `W_A);                    // a = countones(a) + x witn carry around
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 stack_mode('o023);      // ANX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o023);          // ANX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `CLZ | `ACC_ALU | `W_A);                      // a = clz(a) + x witn carry around
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 stack_mode('o024);      // E+X in stack mode

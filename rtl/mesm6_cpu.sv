@@ -270,7 +270,7 @@ always @(posedge clk) begin
                (sel_acc == `SEL_ACC_RR)  ? R :          // R register
                (sel_acc == `SEL_ACC_Y)   ? Y :          // Y register
                           /*SEL_ACC_ALU*/  alu_result;  // from ALU
-    else if (decode & op_xta0)
+    else if (decode & op_xta0 & ~branch)
         acc <= 0;
 end
 
