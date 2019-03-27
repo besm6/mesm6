@@ -334,6 +334,13 @@ always @(negedge clk) begin
             $fdisplay(tracefd, "(%0d) *** Unknown address: ibus_addr=%h", ctime, cpu.ibus_addr);
         terminate("Fatal Error!");
     end
+
+    if (cpu.decode && ~cpu.irq && $isunknown(cpu.uentry)) begin
+        $display("(%0d) Unknown address: cpu.uentry=%h", ctime, cpu.uentry);
+        if (tracefd)
+            $fdisplay(tracefd, "(%0d) *** Unknown address: cpu.uentry=%h", ctime, cpu.uentry);
+        terminate("Fatal Error!");
+    end
 end
 
 //
@@ -611,7 +618,7 @@ endtask
 task print_insn();
     static string long_name[16] = '{
         0:"20", 1:"21",   2:"utc", 3:"wtc",   4:"vtm",  5:"utm",  6:"uza", 7:"u1a",
-        8:"uj", 9:"vjm", 10:"ij",  11:"stop", 12:"vzm", 13:"vim", 14:"36", 15:"vlm"
+        8:"uj", 9:"vjm", 10:"ij",  11:"stop", 12:"vzm", 13:"v1m", 14:"36", 15:"vlm"
     };
     static string short_name[64] = '{
          0:"atx",  1:"stx",  2:"*02",  3:"xts",  4:"a+x",  5:"a-x",  6:"x-a",  7:"amx",

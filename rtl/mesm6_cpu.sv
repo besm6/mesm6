@@ -138,12 +138,12 @@ always @(posedge clk)
 //--------------------------------------------------------------
 // Tables of entry addresses per opcode.
 //
-logic [`UPC_BITS-1:0] entry16[16] = '{
+logic [`UPC_BITS-1:0] entry16[16*2] = '{
     `include "jumptab16.v"
     default: 0
 };
 
-logic [`UPC_BITS-1:0] entry64[64] = '{
+logic [`UPC_BITS-1:0] entry64[64*2] = '{
     `include "jumptab64.v"
     default: 0
 };
@@ -161,7 +161,8 @@ reg  [15:1] pc_cached;              // cached PC
 reg  [47:0] opcode_cache;           // cached instruction word
 
 wire [23:0] opcode;                 // opcode being processed
-reg  [14:0] Vaddr;                  // full address, latched (opcode.addr + C)
+wire [14:0] Vaddr_next;             // full address (opcode.addr + C)
+reg  [14:0] Vaddr;                  // full address, latched
 wire [14:0] Uaddr;                  // executive address (opcode.addr + C + M[i])
 reg  [3:0]  reg_index;              // index of M register, latched
 wire [14:0] Mi;                     // output of M[reg_index] read
@@ -184,10 +185,13 @@ wire op_xta0 = ((opcode == 'o00100000) |        // xta 0(0)
                 (opcode == 'o00420000)) &       // ita 0(0)
                !c_active;
 
+// Stack mode.
+wire stack_mode = (op_ir == 15) & (Vaddr_next == 0);
+
 assign uentry = op_utc0 ? `UADDR_NOP :          // fast utc 0(0)
                 op_xta0 ? `UADDR_NOP :          // fast xta 0(0) or ita 0(0)
-               op_lflag ? entry16[op_lcmd] :    // entry for long format opcode
-                          entry64[op_scmd];     // entry for short format opcode
+               op_lflag ? entry16[{op_lcmd,stack_mode}] :   // entry for long format opcode
+                          entry64[{op_scmd,stack_mode}];    // entry for short format opcode
 
 // memory addr / write ports
 assign ibus_addr   = pc[15:1];
@@ -199,10 +203,12 @@ assign opcode = (pc[0] == 0) ? opcode_cache[47:24]
                              : opcode_cache[23:0];
 
 // Full address: latch it on decode.
+assign Vaddr_next = c_active ? op_addr + C      // address modified by C
+                             : op_addr;         // address field
+
 always @(posedge clk) begin
     if (decode) begin
-        Vaddr <= c_active ? op_addr + C         // address modified by C
-                          : op_addr;            // address field
+        Vaddr <= Vaddr_next;                    // full address
         reg_index <= op_ir;                     // index register
     end
 end

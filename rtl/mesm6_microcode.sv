@@ -85,6 +85,10 @@
 `define BRANCHIF_M_ZERO(addr)       (1 << `P_M_ZERO | (addr) << `P_IMM)
 `define BRANCHIF_M_NONZERO(addr)    (1 << `P_M_NONZERO | (addr) << `P_IMM)
 
+// Stack increment and decrement
+`define STACK_INCR              (`MR_IMM(15) | `MW_IMM(15) | `MD_REG_PLUS1 | `W_M)
+`define STACK_DECR              (`MR_IMM(15) | `MW_IMM(15) | `MD_REG_MINUS1 | `W_M)
+
 // Fetch and decode current PC opcode: without and with C modifier active
 `define GO_FETCH_OR_DECODE      (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch) | `DECODE)
 `define GO_FETCH_OR_DECODE_C    (`BRANCHIF_OP_NOT_CACHED(uaddr_fetch_c) | `DECODE | `C_ACTIVE)
@@ -93,8 +97,10 @@ module gendata();
 
 reg [`UOP_BITS-1:0] memory[(1<<`UPC_BITS)-1:0];
 
-reg [`UPC_BITS-1:0] stab[64];
-reg [`UPC_BITS-1:0] ltab[16];
+bit [`UPC_BITS-1:0] stab[64];
+bit [`UPC_BITS-1:0] ltab[16];
+bit [`UPC_BITS-1:0] stab_stack[64];
+bit [`UPC_BITS-1:0] ltab_stack[16];
 
 reg [`UPC_BITS-1:0] uaddr_fetch;
 reg [`UPC_BITS-1:0] uaddr_fetch_c;
@@ -117,6 +123,13 @@ task opcode(integer op);
         ltab[op[6:3]] = c;
     else
         stab[op] = c;
+endtask
+
+task stack_mode(integer op);
+    if (op[7])
+        ltab_stack[op[6:3]] = c;
+    else
+        stab_stack[op] = c;
 endtask
 
 task print_message();
@@ -197,288 +210,335 @@ op(`GO_FETCH_OR_DECODE);
 //--------------------------------------------------------------
 // Opcodes 000-077.
 //
-opcode('o000);  // ATX
+opcode('o000);          // ATX
 op(`MEM_W);                                                 // memory[Uaddr] = A
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o001);  // STX
-op(`MEM_W);                                                 // memory[Uaddr] = A
-op(`MR_IMM(15) | `MW_IMM(15) | `MD_REG_MINUS1 | `W_M);      // m[15] = m[15] - 1
+stack_mode('o000);      // ATX in stack mode
+op(`MEM_W);                                                 // memory[Uaddr] = A (TODO: merge with next)
+op(`STACK_INCR);                                            // m[15] = m[15] + 1
+op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+
+opcode('o001);          // STX
+op(`MEM_W);                                                 // memory[Uaddr] = A (TODO: merge with next)
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
 op(`MEM_R | `ADDR_SP | `ACC_MEM | `W_A);                    // A = memory[m15]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o002);  // MOD
+opcode('o002);          // MOD
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o003);  // XTS
+opcode('o003);          // XTS
 op(`MEM_W | `ADDR_SP);                                      // memory[m15] = A;
-op(`MR_IMM(15) | `MW_IMM(15) | `MD_REG_PLUS1 | `W_M);       // m[15] = m[15] + 1
+op(`STACK_INCR);                                            // m[15] = m[15] + 1
 op(`MEM_R | `ACC_MEM | `W_A);                               // A = memory[Uaddr]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o004);  // A+X
+stack_mode('o004);      // A+X in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o004);          // A+X
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o005);  // A-X
+stack_mode('o005);      // A-X in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o005);          // A-X
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o006);  // X-A
+stack_mode('o006);      // X-A in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o006);          // X-A
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o007);  // AMX
+stack_mode('o007);      // AMX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o007);          // AMX
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o010);  // XTA
+stack_mode('o010);      // XTA in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o010);          // XTA
 op(`MEM_R | `ACC_MEM | `W_A);                               // A = memory[Uaddr]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o011);  // AAX
+stack_mode('o011);      // AAX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o011);          // AAX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `AND | `ACC_ALU | `W_A);                      // a &= x
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o012);  // AEX
+stack_mode('o012);      // AEX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o012);          // AEX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `XOR | `ACC_ALU | `W_A);                      // a ^= x
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o013);  // ARX
+stack_mode('o013);      // ARX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o013);          // ARX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `ADD_CARRY_AROUND | `ACC_ALU | `W_A);         // a += x with carry around
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o014);  // AVX
+stack_mode('o014);      // AVX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o014);          // AVX
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o015);  // AOX
+stack_mode('o015);      // AOX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o015);          // AOX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `OR | `ACC_ALU | `W_A);                       // a |= x
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o016);  // A/X
+stack_mode('o016);      // A/X in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o016);          // A/X
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o017);  // A*X
+stack_mode('o017);      // A*X in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o017);          // A*X
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o020);  // APX
+stack_mode('o020);      // APX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o020);          // APX
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o021);  // AUX
+stack_mode('o021);      // AUX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o021);          // AUX
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o022);  // ACX
+stack_mode('o022);      // ACX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o022);          // ACX
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o023);  // ANX
+stack_mode('o023);      // ANX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o023);          // ANX
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o024);  // E+X
+stack_mode('o024);      // E+X in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o024);          // E+X
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o025);  // E-X
+stack_mode('o025);      // E-X in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o025);          // E-X
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o026);  // ASX
+stack_mode('o026);      // ASX in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o026);          // ASX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `SHIFT | `ACC_ALU | `W_A);                    // a <<= x
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o027);  // XTR
+stack_mode('o027);      // XTR in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o027);          // XTR
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o030);  // RTE
+opcode('o030);          // RTE
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o031);  // YTA
+opcode('o031);          // YTA
 op(`ACC_Y | `W_A);                                          // a <<= y
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o032);  // 032
+opcode('o032);          // 032
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o033);  // EXT
+opcode('o033);          // EXT
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o034);  // E+N
+opcode('o034);          // E+N
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o035);  // E-N
+opcode('o035);          // E-N
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o036);  // ASN
+opcode('o036);          // ASN
 op(`SHIFT | `ACC_ALU | `W_A);                               // a <<= Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o037);  // NTR
+opcode('o037);          // NTR
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o040);  // ATI
+opcode('o040);          // ATI
 op(`MW_UA | `MD_A | `W_M | `GO_FETCH_OR_DECODE);            // m[Uaddr] = A; pc_cached ? decode else fetch,decode
 
-opcode('o041);  // STI
+opcode('o041);          // STI
 op(`MW_UA | `MD_A | `W_M);                                  // m[Uaddr] = A
-op(`MR_IMM(15) | `MW_IMM(15) | `MD_REG_MINUS1 | `W_M);      // m[15] = m[15] - 1
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
 op(`MEM_R | `ADDR_SP | `ACC_MEM | `W_A);                    // A = memory[m15]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o042);  // ITA
+opcode('o042);          // ITA
 op(`ACC_REG | `MR_UA | `W_A | `GO_FETCH_OR_DECODE);         // acc = m[r]; pc_cached ? decode else fetch,decode
 
-opcode('o043);  // ITS
-op(`MEM_W | `ADDR_SP | `MR_IMM(15) | `MW_IMM(15) | `MD_REG_PLUS1 | `W_M); // memory[m15] = A; m[15] = m[15] + 1
+opcode('o043);          // ITS
+op(`MEM_W | `ADDR_SP | `STACK_INCR);                        // memory[m15] = A; m[15] = m[15] + 1
 op(`ACC_REG | `MR_UA | `W_A | `GO_FETCH_OR_DECODE);         // acc = m[r]; pc_cached ? decode else fetch,decode
 
-opcode('o044);  // MTJ
+opcode('o044);          // MTJ
 op(`MR_REG | `MW_VA | `MD_REG | `W_M |                      // m[r] = m[i]; pc_cached ? decode else fetch,decode
     `GO_FETCH_OR_DECODE);
 
-opcode('o045);  // J+M
+opcode('o045);          // J+M
 op(`MR_VA | `MW_VA | `MD_UA | `R_ADD | `W_M |               // m[r] = m[i] + m[r]; pc_cached ? decode else fetch,decode
     `GO_FETCH_OR_DECODE);
 
-opcode('o046);  // E46
+opcode('o046);          // E46
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o047);  // E47
+opcode('o047);          // E47
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o050);  // E50
+opcode('o050);          // E50
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o051);  // E51
+opcode('o051);          // E51
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o052);  // E52
+opcode('o052);          // E52
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o053);  // E53
+opcode('o053);          // E53
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o054);  // E54
+opcode('o054);          // E54
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o055);  // E55
+opcode('o055);          // E55
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o056);  // E56
+opcode('o056);          // E56
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o057);  // E57
+opcode('o057);          // E57
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o060);  // E60
+opcode('o060);          // E60
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o061);  // E61
+opcode('o061);          // E61
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o062);  // E62
+opcode('o062);          // E62
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o063);  // E63
+opcode('o063);          // E63
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o064);  // E64
+opcode('o064);          // E64
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o065);  // E65
+opcode('o065);          // E65
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o066);  // E66
+opcode('o066);          // E66
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o067);  // E67
+opcode('o067);          // E67
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o070);  // E70
+opcode('o070);          // E70
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o071);  // E71
+opcode('o071);          // E71
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o072);  // E72
+opcode('o072);          // E72
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o073);  // E73
+opcode('o073);          // E73
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o074);  // E74
+opcode('o074);          // E74
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o075);  // E75
+opcode('o075);          // E75
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o076);  // E76
+opcode('o076);          // E76
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o077);  // E77
+opcode('o077);          // E77
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 //--------------------------------------------------------------
 // Opcodes 20-37.
-opcode('o200);  // E20
+opcode('o200);          // E20
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o210);  // E21
+opcode('o210);          // E21
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o220);  // UTC
+opcode('o220);          // UTC
 op(`W_C);                                                   // C = Uaddr
 op(`GO_FETCH_OR_DECODE_C);                                  // pc_cached ? decode else fetch,decode
 
-opcode('o230);  // WTC
+stack_mode('o230);      // WTC in stack mode
+op(`STACK_DECR);                                            // m[15] = m[15] - 1
+opcode('o230);          // WTC
 op(`MEM_R | `C_MEM | `W_C);                                 // C = memory[Uaddr]
 op(`GO_FETCH_OR_DECODE_C);                                  // pc_cached ? decode else fetch,decode
 
-opcode('o240);  // VTM
+opcode('o240);          // VTM
 op(`MW_REG | `MD_VA | `W_M | `GO_FETCH_OR_DECODE);          // pc_cached ? decode else fetch,decode
 
-opcode('o250);  // UTM
+opcode('o250);          // UTM
 op(`MW_REG | `MD_UA | `W_M | `GO_FETCH_OR_DECODE);          // m[i] = Uaddr; pc_cached ? decode else fetch,decode
 
-opcode('o260);  // UZA
+opcode('o260);          // UZA
 op(`BRANCHIF_A_ZERO(c+2));                                  // if (A == 0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 op(`PC_UA | `W_PC);                                         // pc = Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o270);  // UIA
+opcode('o270);          // UIA
 op(`BRANCHIF_A_NONZERO(c+2));                               // if (A != 0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 op(`PC_UA | `W_PC);                                         // pc = Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o300);  // UJ
+opcode('o300);          // UJ
 op(`PC_UA | `W_PC);                                         // pc = Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o310);  // VJM
+opcode('o310);          // VJM
 op(`MW_REG | `MD_PC | `W_M | `PC_VA | `W_PC);               // m[i] = pc; pc = Vaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o320);  // IJ
+opcode('o320);          // IJ
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o330);  // STOP
+opcode('o330);          // STOP
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o340);  // VZM
+opcode('o340);          // VZM
 op(`BRANCHIF_M_ZERO(c+2));                                  // if (m[i]==0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 op(`PC_VA | `W_PC);                                         // pc = Vaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o350);  // VIM
+opcode('o350);          // VIM
 op(`BRANCHIF_M_NONZERO(c+2));                               // if (m[i]!=0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 op(`PC_VA | `W_PC);                                         // pc = Vaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o360);  // E36
+opcode('o360);          // E36
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-opcode('o370);  // VLM
+opcode('o370);          // VLM
 op(`BRANCHIF_M_NONZERO(c+2));                               // if (m[i]!=0) goto +2
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 op(`MR_REG | `MW_REG | `MD_REG_PLUS1 | `W_M | `PC_VA | `W_PC); // pc = Vaddr; m[i] += 1
@@ -495,13 +555,17 @@ $fclose(fd);
 
 fd = $fopen("jumptab16.v", "w");
 for(n = 0; n < 16; n = n + 1) begin
-    $fdisplay(fd, "'o0%2o: %0d'd%0d,", n, `UPC_BITS, ltab[n]);
+    $fdisplay(fd, "'o0%2o<<1: %0d'd%0d, 'o0%2o<<1|1: %0d'd%0d,",
+        n, `UPC_BITS, ltab[n],
+        n, `UPC_BITS, ltab_stack[n] == 0 ? ltab[n] : ltab_stack[n]);
 end
 $fclose(fd);
 
 fd = $fopen("jumptab64.v", "w");
 for(n = 0; n < 64; n = n + 1) begin
-    $fdisplay(fd, "'o0%2o: %0d'd%0d,", n, `UPC_BITS, stab[n]);
+    $fdisplay(fd, "'o0%2o<<1: %0d'd%0d, 'o0%2o<<1|1: %0d'd%0d,",
+        n, `UPC_BITS, stab[n],
+        n, `UPC_BITS, stab_stack[n] == 0 ? stab[n] : stab_stack[n]);
 end
 $fclose(fd);
 

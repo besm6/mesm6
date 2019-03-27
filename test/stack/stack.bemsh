@@ -20,6 +20,7 @@
         aex     cful
         ati     10
 *
+        xta
         atx     ws
         atx     ws+1
         atx     ws+2
@@ -140,7 +141,7 @@
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *------------------------
-check v1m     fail(15)
+check   v1m     fail(15)
         xta     ws
         ati     2
         v1m     fail(2)
@@ -189,7 +190,6 @@ i1      конд    b'1'
 i2      конд    b'2'
 i3      конд    b'3'
 i48     конд    b'60'
-ufsl1   vlm     '77777'(15)
-        atx     1
+ufsl1   конд    b'7777777700000001'
 ws      пам     1030
         fin
