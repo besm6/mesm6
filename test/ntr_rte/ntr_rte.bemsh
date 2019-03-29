@@ -1,12 +1,13 @@
 *
-* 2с - работа с регистром режима
-*      UZA, U1A, XTR, NTR, RТЕ, УТА
+* Test for instructions XTR, NTR, RТЕ, UZA, U1A, УТА.
 *
-t2с     nop
-        vtm     63(2)
-        vtm     -63(3)
-lt0c2c  ntr     (2)
-        rte     63
+start   start   '1'
+        vtm     ws+1(15)
+        ita
+        vtm     '77'(2)
+        vtm     1-64(3)
+loop    ntr     (2)
+        rte     '77'
         atx     ws
         its     2
         asn     64-41
@@ -14,12 +15,12 @@ lt0c2c  ntr     (2)
         u1a     fail
         u1a     fail
         xtr
-        rte     63
+        rte     '77'
         uza     fail
         aox
         u1a     fail
         xtr     ws
-        rte     63
+        rte     '77'
         its     2
         asn     64-41
         aex     (15)
@@ -29,15 +30,15 @@ lt0c2c  ntr     (2)
         vtm     ws+1(15)
         xtr     (15)
         vtm     mst(15)
-        rte     63
+        rte     '77'
         its     2
         asn     64-41
         aex     (15)
         u1a     fail
         utm     -1(2)
-        vlm     lt0c2c(3)
+        vlm     loop(3)
 *
-        ntr     63
+        ntr     '77'
         rte     '41'
         aex     e42x
         u1a     fail

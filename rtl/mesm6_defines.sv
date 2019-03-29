@@ -59,6 +59,11 @@
 `define SEL_PC_IMM              3   // immediate constant
 `define SEL_PC_PLUS1            4   // pc + 1
 
+// R register source selector
+`define SEL_RR_UA               0   // from Uaddr
+`define SEL_RR_MEM              1   // from memory
+`define SEL_RR_REG              2   // M[r]
+
 // ALU operations
 `define ALU_NOP                 0   // result = a
 `define ALU_AND                 1   // result = a & b
@@ -84,12 +89,12 @@
 
 // Microcode memory settings
 `define UPC_BITS                9   // microcode address width
-`define UOP_BITS                51  // microcode opcode width
+`define UOP_BITS                54  // microcode opcode width
 
 // Dedicated microcode addresses
 `define UADDR_RESET             0   // start from zero
-`define UADDR_NOP               22  // no operation
-`define UADDR_INTERRUPT         23  // defined by mesm6_microcode.sv at runtime
+`define UADDR_NOP               23  // no operation
+`define UADDR_INTERRUPT         24  // defined by mesm6_microcode.sv at runtime
 
 // Micro-instruction fields
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level
@@ -122,3 +127,5 @@
 `define P_W_PC                  48  // write pc (from alu-out)
 `define P_M_ZERO                49  // microcode branch if M[i] is zero
 `define P_SEL_ALU_MEM           50  // use memory output for ALU input B instead of Uaddr
+`define P_SEL_RR                51  // R register multiplexor (2 bits)
+`define P_W_RR                  53  // write R register

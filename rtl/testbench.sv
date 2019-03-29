@@ -409,6 +409,9 @@ task print_uop();
     static string mr_name[4] = '{
         0: "I",      1: "IMM",     2: "VA",  3: "UA"
     };
+    static string rr_name[4] = '{
+        0: "UA",     1: "MEM",     2: "REG", 3: "?3"
+    };
     static string pc_name[8] = '{
         0: "UA",    1: "VA",  2: "REG", 3: "IMM",
         4: "PLUS1", 5: "?5",  6: "?6",  7: "?7"
@@ -420,6 +423,7 @@ task print_uop();
     logic [2:0] sel_md;
     logic [1:0] sel_mw;
     logic [1:0] sel_mr;
+    logic [1:0] sel_rr;
     logic [2:0] sel_pc;
     logic       w_m;
     logic       sel_addr;
@@ -434,6 +438,7 @@ task print_uop();
     logic       mem_w;
     logic       w_a;
     logic       w_c;
+    logic       w_r;
     logic       cond_a_zero;
     logic       cond_a_nonzero;
     logic       cond_a_neg;
@@ -452,6 +457,7 @@ task print_uop();
     assign sel_mw             = uop[`P_SEL_MW+1:`P_SEL_MW];
     assign sel_mr             = uop[`P_SEL_MR+1:`P_SEL_MR];
     assign sel_pc             = uop[`P_SEL_PC+2:`P_SEL_PC];
+    assign sel_rr             = uop[`P_SEL_RR+1:`P_SEL_RR];
     assign w_m                = uop[`P_W_M];
     assign sel_addr           = uop[`P_SEL_ADDR];
     assign r_add              = uop[`P_R_ADD];
@@ -465,6 +471,7 @@ task print_uop();
     assign mem_w              = uop[`P_MEM_W];
     assign w_a                = uop[`P_W_A];
     assign w_c                = uop[`P_W_C];
+    assign w_r                = uop[`P_W_RR];
     assign cond_a_zero        = uop[`P_A_ZERO];
     assign cond_a_nonzero     = uop[`P_A_NONZERO];
     assign cond_a_neg         = uop[`P_A_NEG];
@@ -486,6 +493,7 @@ task print_uop();
     if (w_a)    $fwrite(tracefd, " acc=%0s", acc_name[sel_acc]);
     if (w_m)    $fwrite(tracefd, " md=%0s",  md_name[sel_md]);
     if (w_m)    $fwrite(tracefd, " mw=%0s",  mw_name[sel_mw]);
+    if (w_r)    $fwrite(tracefd, " rr=%0s",  rr_name[sel_rr]);
     if (r_add || sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG ||
         sel_md == `SEL_MD_REG_PLUS1 || sel_md == `SEL_MD_REG_MINUS1)
         $fwrite(tracefd, " mr=%0s",  mr_name[sel_mr]);
@@ -504,6 +512,7 @@ task print_uop();
     if (mem_w)              $fwrite(tracefd, " mem_w");
     if (w_a)                $fwrite(tracefd, " w_a");
     if (w_c)                $fwrite(tracefd, " w_c");
+    if (w_r)                $fwrite(tracefd, " w_r");
     if (cond_a_zero)        $fwrite(tracefd, " cond_a_zero");
     if (cond_a_nonzero)     $fwrite(tracefd, " cond_a_nonzero");
     if (cond_a_neg)         $fwrite(tracefd, " cond_a_neg");
@@ -585,11 +594,12 @@ task print_changed_regs();
     end
 
     // PC
+`ifdef notdef
     if (tracelevel >= 2 && cpu.pc !== old_pc) begin
         $fdisplay(tracefd, "(%0d)        Write PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
         old_pc = cpu.pc;
     end
-
+`endif
 endtask
 
 //

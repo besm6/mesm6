@@ -64,7 +64,8 @@ wire [2:0] sel_pc   = uop[`P_SEL_PC+2:`P_SEL_PC];   // mux for pc
 wire [1:0] sel_mr   = uop[`P_SEL_MR+1:`P_SEL_MR];   // mux for M[i] read address
 wire [1:0] sel_mw   = uop[`P_SEL_MW+1:`P_SEL_MW];   // mux for M[i] write address
 wire [2:0] sel_md   = uop[`P_SEL_MD+2:`P_SEL_MD];   // mux for M[i] write data
-wire [2:0] sel_acc  = uop[`P_SEL_ACC+2:`P_SEL_ACC]; // mux for A write data
+wire [2:0] sel_acc  = uop[`P_SEL_ACC+2:`P_SEL_ACC]; // mux for A
+wire [1:0] sel_rr   = uop[`P_SEL_RR+1:`P_SEL_RR];   // mux for R
 
 wire   sel_addr     = uop[`P_SEL_ADDR];             // mux for data address
 wire   sel_c_mem    = uop[`P_SEL_C_MEM];            // use memory output for C instead of Uaddr
@@ -76,6 +77,7 @@ wire   w_m          = uop[`P_W_M] & ~busy;          // write M[i]
 wire   w_acc        = uop[`P_W_A] & ~busy;          // write A (from ALU result)
 wire   w_c          = uop[`P_W_C] & ~busy;          // write C
 wire   w_opcode     = uop[`P_W_OPCODE] & ~busy;     // write OPCODE (opcode cache)
+wire   w_r          = uop[`P_W_RR] & ~busy;         // write R
 
 wire   exit_interrupt  = uop[`P_EXIT_INT]  & ~busy; // enable interrupts
 wire   enter_interrupt = uop[`P_ENTER_INT] & ~busy; // disable interrupts
@@ -255,9 +257,28 @@ end
 // C address modifier.
 //
 always @(posedge clk) begin
-    if (w_c)
+    if (reset)
+        C <= '0;
+    else if (w_c)
         C <= sel_c_mem ? dbus_input :   // from memory
                          Uaddr;         // addr + C + M[i]
+end
+
+//--------------------------------------------------------------
+// R register.
+//
+wire no_ovf   = R[5];           // no interrupt on overflow
+wire grp_add  = R[4];           // additive group
+wire grp_mul  = R[3] & !R[4];   // multiplicative group
+wire grp_log  = R[2] & !R[4:3]; // logical group
+wire no_round = R[1];           // np rounding
+wire no_norm  = R[0];           // no normalization
+
+always @(posedge clk) begin
+    if (w_r)
+        R <= (sel_rr == `SEL_RR_MEM) ? dbus_input[46:41] :  // from memory
+             (sel_rr == `SEL_RR_REG) ? Mr[5:0] :            // from M[m_ra] -- for IJ (TODO)
+                       /*SEL_RR_UA*/   Uaddr[5:0];          // from Uaddr
 end
 
 //--------------------------------------------------------------
@@ -267,7 +288,8 @@ always @(posedge clk) begin
     if (w_acc)
         acc <= (sel_acc == `SEL_ACC_MEM) ? dbus_input : // from memory
                (sel_acc == `SEL_ACC_REG) ? Mr :         // M[m_ra]
-               (sel_acc == `SEL_ACC_RR)  ? R :          // R register
+               (sel_acc == `SEL_ACC_RR)  ?              // R register
+                    { 1'b0, R & Uaddr[5:0], 41'b0 } :
                (sel_acc == `SEL_ACC_Y)   ? Y :          // Y register
                           /*SEL_ACC_ALU*/  alu_result;  // from ALU
     else if (decode & op_xta0 & ~branch)

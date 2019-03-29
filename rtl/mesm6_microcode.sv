@@ -39,6 +39,11 @@
 `define PC_UA                   (`SEL_PC_UA << `P_SEL_PC)
 `define PC_PLUS1                (`SEL_PC_PLUS1 << `P_SEL_PC)
 
+// R register source selector
+`define RR_UA                   (`SEL_RR_UA << `P_SEL_RR)
+`define RR_MEM                  (`SEL_RR_MEM << `P_SEL_RR)
+`define RR_REG                  (`SEL_RR_REG << `P_SEL_RR)
+
 // ALU operations
 `define AND                     (`ALU_AND << `P_ALU)
 `define OR                      (`ALU_OR << `P_ALU)
@@ -64,6 +69,7 @@
 `define W_PC                    (1 << `P_W_PC)
 `define W_A                     (1 << `P_W_A)
 `define W_C                     (1 << `P_W_C)
+`define W_RR                    (1 << `P_W_RR)
 `define W_OPCODE                (1 << `P_W_OPCODE)
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
@@ -151,7 +157,8 @@ if (`UADDR_RESET != c) begin
     $display("`define UADDR_RESET %0d", c);
 end
 op(`MD_A | `MW_IMM(0) | `W_M);                          // m0 = 0
-op(`ACC_REG | `MR_IMM(0) | `W_A);                       // acc = 0
+op(`ACC_REG | `MR_IMM(0) | `W_A);                       // acc = m0
+op(`RR_REG | `MR_IMM(0) | `W_RR);                       // rr = m0
 op(`MD_A | `MW_IMM(1) | `W_M);                          // m1 = 0
 op(`MD_A | `MW_IMM(2) | `W_M);                          // m2 = 0
 op(`MD_A | `MW_IMM(3) | `W_M);                          // m3 = 0
@@ -350,13 +357,15 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 stack_mode('o027);      // XTR in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o027);          // XTR
+op(`MEM_R | `RR_MEM | `W_RR);                               // rr = memory[Uaddr]
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o030);          // RTE
+op(`ACC_RR | `W_A);                                         // a = r
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o031);          // YTA
-op(`ACC_Y | `W_A);                                          // a <<= y
+op(`ACC_Y | `W_A);                                          // a = y
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o032);          // 032
@@ -376,6 +385,7 @@ op(`SHIFT | `ACC_ALU | `W_A);                               // a <<= Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o037);          // NTR
+op(`RR_UA | `W_RR);                                         // rr = Uaddr
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o040);          // ATI
