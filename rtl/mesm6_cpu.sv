@@ -78,6 +78,9 @@ wire   w_acc        = uop[`P_W_A] & ~busy;          // write A (from ALU result)
 wire   w_c          = uop[`P_W_C] & ~busy;          // write C
 wire   w_opcode     = uop[`P_W_OPCODE] & ~busy;     // write OPCODE (opcode cache)
 wire   w_r          = uop[`P_W_RR] & ~busy;         // write R
+wire   set_add      = uop[`P_G_ADD];                // update R register: set additive group
+wire   set_mul      = uop[`P_G_MUL];                // update R register: set multiplicative group
+wire   set_log      = uop[`P_G_LOG];                // update R register: set logical group
 
 wire   exit_interrupt  = uop[`P_EXIT_INT]  & ~busy; // enable interrupts
 wire   enter_interrupt = uop[`P_ENTER_INT] & ~busy; // disable interrupts
@@ -279,6 +282,12 @@ always @(posedge clk) begin
         R <= (sel_rr == `SEL_RR_MEM) ? dbus_input[46:41] :  // from memory
              (sel_rr == `SEL_RR_REG) ? Mr[5:0] :            // from M[m_ra] -- for IJ (TODO)
                        /*SEL_RR_UA*/   Uaddr[5:0];          // from Uaddr
+    else if (set_add)
+        R[4:2] = 3'b100;        // set additive group
+    else if (set_mul)
+        R[4:2] = 3'b010;        // set multiplicative group
+    else if (set_log)
+        R[4:2] = 3'b001;        // set logical group
 end
 
 //--------------------------------------------------------------

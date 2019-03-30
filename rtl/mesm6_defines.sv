@@ -89,7 +89,7 @@
 
 // Microcode memory settings
 `define UPC_BITS                9   // microcode address width
-`define UOP_BITS                54  // microcode opcode width
+`define UOP_BITS                57  // microcode opcode width
 
 // Dedicated microcode addresses
 `define UADDR_RESET             0   // start from zero
@@ -129,3 +129,6 @@
 `define P_SEL_ALU_MEM           50  // use memory output for ALU input B instead of Uaddr
 `define P_SEL_RR                51  // R register multiplexor (2 bits)
 `define P_W_RR                  53  // write R register
+`define P_G_LOG                 54  // set logical group
+`define P_G_MUL                 55  // set multiplicative group
+`define P_G_ADD                 56  // set additive group

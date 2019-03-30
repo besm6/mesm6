@@ -16,8 +16,9 @@ loop    ntr     (2)
         u1a     fail
         xtr
         rte     '77'
-        uza     fail
-        aox
+* С некоторых пор команда RTE уставливает логическую группу.
+*       uza     fail
+*       aox
         u1a     fail
         xtr     ws
         rte     '77'

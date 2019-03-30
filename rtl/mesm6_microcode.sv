@@ -81,6 +81,9 @@
 `define MEM_R                   (1 << `P_MEM_R)
 `define MEM_W                   (1 << `P_MEM_W)
 `define DECODE                  (1 << `P_DECODE)
+`define G_LOG                   (1 << `P_G_LOG)
+`define G_MUL                   (1 << `P_G_MUL)
+`define G_ADD                   (1 << `P_G_ADD)
 
 // Branches
 `define BRANCH(addr)                (1 << `P_BRANCH | (addr) << `P_IMM)
@@ -229,130 +232,131 @@ opcode('o001);          // STX
 op(`MEM_W);                                                 // memory[Uaddr] = A
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 op(`MEM_R | `ADDR_SP | `ACC_MEM | `W_A);                    // A = memory[m15]
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 opcode('o002);          // MOD
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+//TODO: set logical group in case of read operation
 
 opcode('o003);          // XTS
 op(`MEM_W | `ADDR_SP);                                      // memory[m15] = A;
 op(`STACK_INCR);                                            // m[15] = m[15] + 1
 op(`MEM_R | `ACC_MEM | `W_A);                               // A = memory[Uaddr]
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o004);      // A+X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o004);          // A+X
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o005);      // A-X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o005);          // A-X
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o006);      // X-A in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o006);          // X-A
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o007);      // AMX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o007);          // AMX
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o010);      // XTA in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o010);          // XTA
 op(`MEM_R | `ACC_MEM | `W_A);                               // A = memory[Uaddr]
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o011);      // AAX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o011);          // AAX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `AND | `ACC_ALU | `W_A);                      // a &= x
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o012);      // AEX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o012);          // AEX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `XOR | `ACC_ALU | `W_A);                      // a ^= x
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o013);      // ARX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o013);          // ARX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `ADD_CARRY_AROUND | `ACC_ALU | `W_A);         // a += x with carry around
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o014);      // AVX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o014);          // AVX
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o015);      // AOX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o015);          // AOX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `OR | `ACC_ALU | `W_A);                       // a |= x
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o016);      // A/X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o016);          // A/X
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o017);      // A*X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o017);          // A*X
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o020);      // APX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o020);          // APX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `PACK | `ACC_ALU | `W_A);                     // a = pack(a, x)
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o021);      // AUX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o021);          // AUX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `UNPACK | `ACC_ALU | `W_A);                   // a = unpack(a, x)
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o022);      // ACX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o022);          // ACX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `COUNT | `ACC_ALU | `W_A);                    // a = countones(a) + x witn carry around
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o023);      // ANX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o023);          // ANX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `CLZ | `ACC_ALU | `W_A);                      // a = clz(a) + x witn carry around
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o024);      // E+X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o024);          // E+X
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o025);      // E-X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o025);          // E-X
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o026);      // ASX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o026);          // ASX
 op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
 op(`ALU_MEM | `SHIFT | `ACC_ALU | `W_A);                    // a <<= x
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 stack_mode('o027);      // XTR in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
@@ -362,7 +366,7 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 
 opcode('o030);          // RTE
 op(`ACC_RR | `W_A);                                         // a = r
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 opcode('o031);          // YTA
 op(`ACC_Y | `W_A);                                          // a = y
@@ -370,19 +374,21 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 
 opcode('o032);          // 032
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+//TODO: set logical group in case of read operation
 
 opcode('o033);          // EXT
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+//TODO: set logical group in case of read operation
 
 opcode('o034);          // E+N
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 opcode('o035);          // E-N
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 opcode('o036);          // ASN
 op(`SHIFT | `ACC_ALU | `W_A);                               // a <<= Uaddr
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 opcode('o037);          // NTR
 op(`RR_UA | `W_RR);                                         // rr = Uaddr
@@ -395,14 +401,16 @@ opcode('o041);          // STI
 op(`MW_UA | `MD_A | `W_M);                                  // m[Uaddr] = A
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 op(`MEM_R | `ADDR_SP | `ACC_MEM | `W_A);                    // A = memory[m15]
-op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
+op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 opcode('o042);          // ITA
-op(`ACC_REG | `MR_UA | `W_A | `GO_FETCH_OR_DECODE);         // acc = m[r]; pc_cached ? decode else fetch,decode
+op(`ACC_REG | `MR_UA | `W_A | `G_LOG |                      // acc = m[r]; set logical mode;
+    `GO_FETCH_OR_DECODE);                                   // pc_cached ? decode else fetch,decode
 
 opcode('o043);          // ITS
 op(`MEM_W | `ADDR_SP | `STACK_INCR);                        // memory[m15] = A; m[15] = m[15] + 1
-op(`ACC_REG | `MR_UA | `W_A | `GO_FETCH_OR_DECODE);         // acc = m[r]; pc_cached ? decode else fetch,decode
+op(`ACC_REG | `MR_UA | `W_A | `G_LOG |                      // acc = m[r]; set logical mode;
+    `GO_FETCH_OR_DECODE);                                   // pc_cached ? decode else fetch,decode
 
 opcode('o044);          // MTJ
 op(`MR_REG | `MW_VA | `MD_REG | `W_M |                      // m[r] = m[i]; pc_cached ? decode else fetch,decode
@@ -492,6 +500,7 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 
 //--------------------------------------------------------------
 // Opcodes 20-37.
+//
 opcode('o200);          // E20
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
@@ -561,9 +570,11 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 op(`MR_REG | `MW_REG | `MD_REG_PLUS1 | `W_M | `PC_VA | `W_PC); // pc = Vaddr; m[i] += 1
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
-// --------------------- END OF MICROCODE PROGRAM --------------------------
+// End of microcode program.
 
+//--------------------------------------------------------------
 // Generate output files.
+//
 fd = $fopen("microcode.v", "w");
 for(n = 0; n < c; n = n + 1) begin
     $fdisplay(fd, "%3d: %0d'o%o,", n, `UOP_BITS, memory[n]);
