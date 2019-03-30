@@ -395,9 +395,8 @@ task print_uop();
         16:"A+.exp.B", 17:"A*B",      18:"A/B",      19:"?19",
         default: "???"
     };
-    static string acc_name[8] = '{
-        0: "ALU",  1: "MEM",   2: "REG",  3: "RR",
-        4: "Y",    5: "?5",    6: "?6",   7: "?7"
+    static string acc_name[4] = '{
+        0: "ALU",  1: "MEM",   2: "REG",  3: "RR"
     };
     static string md_name[8] = '{
         0: "PC",     1: "A",       2: "ALU",  3: "REG",
@@ -419,7 +418,7 @@ task print_uop();
 
     logic [`UPC_BITS-1:0] imm;
     logic [5:0] alu_op;
-    logic [2:0] sel_acc;
+    logic [1:0] sel_acc;
     logic [2:0] sel_md;
     logic [1:0] sel_mw;
     logic [1:0] sel_mr;
@@ -451,7 +450,7 @@ task print_uop();
 
     assign imm                = uop[`P_IMM+`UPC_BITS-1:`P_IMM];
     assign alu_op             = uop[`P_ALU+5:`P_ALU];
-    assign sel_acc            = uop[`P_SEL_ACC+2:`P_SEL_ACC];
+    assign sel_acc            = uop[`P_SEL_ACC+1:`P_SEL_ACC];
     assign sel_md             = uop[`P_SEL_MD+2:`P_SEL_MD];
     assign sel_mw             = uop[`P_SEL_MW+1:`P_SEL_MW];
     assign sel_mr             = uop[`P_SEL_MR+1:`P_SEL_MR];
@@ -554,11 +553,11 @@ task print_changed_regs();
     end
 
     // Y register
-    if (cpu.Y !== old_Y) begin
+    if (cpu.alu.y !== old_Y) begin
         $fdisplay(tracefd, "(%0d)        Write Y = %o %o %o %o",
-            ctime, cpu.Y[47:36], cpu.Y[35:24],
-            cpu.Y[23:12], cpu.Y[11:0]);
-        old_Y = cpu.Y;
+            ctime, cpu.alu.y[47:36], cpu.alu.y[35:24],
+            cpu.alu.y[23:12], cpu.alu.y[11:0]);
+        old_Y = cpu.alu.y;
     end
 
     // R register

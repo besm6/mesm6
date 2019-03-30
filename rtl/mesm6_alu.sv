@@ -8,12 +8,14 @@ module mesm6_alu(
     input  wire [47:0]              a,      // parameter A
     input  wire [47:0]              b,      // parameter B
     output reg  [47:0]              result, // computed result
-    output reg  [47:0]              y,      // least significant bits
     output reg                      done    // flag: alu operation finished
 );
 
 // Internal cycle count.
 reg [3:0] count;
+
+// Y register.
+reg [47:0] y;                               // least significant bits of mantissa
 
 // Count leading zeroes (plus 1).
 wire [5:0] clz =
@@ -52,6 +54,13 @@ always @(posedge clk) begin
         count <= count + 1;
 
         case (op)
+        `ALU_YTA: begin
+                // YTA: one cycle.
+                // TODO: additive and multiplicative modes.
+                result <= y;
+                done <= 1;
+            end
+
         `ALU_AND: begin
                 // AAX: one cycle.
                 result <= a & b;

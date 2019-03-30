@@ -6,7 +6,6 @@
 `define ACC_MEM                 (`SEL_ACC_MEM << `P_SEL_ACC)
 `define ACC_REG                 (`SEL_ACC_REG << `P_SEL_ACC)
 `define ACC_RR                  (`SEL_ACC_RR << `P_SEL_ACC)
-`define ACC_Y                   (`SEL_ACC_Y << `P_SEL_ACC)
 
 // M[r] read index selector
 `define MR_REG                  (`SEL_MR_REG << `P_SEL_MR)
@@ -59,10 +58,11 @@
 `define FREVSUB                 (`ALU_FREVSUB << `P_ALU)
 `define FSUBABS                 (`ALU_FSUBABS << `P_ALU)
 `define FSIGN                   (`ALU_FSIGN << `P_ALU)
-`define ADDEXP                  (`ALU_ADDEXP << `P_ALU)
-`define SUBEXP                  (`ALU_SUBEXP << `P_ALU)
+`define FADDEXP                 (`ALU_FADDEXP << `P_ALU)
+`define FSUBEXP                 (`ALU_FSUBEXP << `P_ALU)
 `define FMUL                    (`ALU_FMUL << `P_ALU)
 `define FDIV                    (`ALU_FDIV << `P_ALU)
+`define YTA                     (`ALU_YTA << `P_ALU)
 
 // Other micro-instruction fields
 `define W_M                     (1 << `P_W_M)
@@ -368,7 +368,7 @@ op(`ACC_RR | `W_A);                                         // a = r
 op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
 opcode('o031);          // YTA
-op(`ACC_Y | `W_A);                                          // a = y
+op(`YTA | `ACC_ALU | `W_A);                                 // a = y
 op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decode else fetch,decode
 
 opcode('o032);          // 032

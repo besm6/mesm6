@@ -29,7 +29,6 @@
 `define SEL_ACC_MEM             1   // from memory
 `define SEL_ACC_REG             2   // M[r]
 `define SEL_ACC_RR              3   // R register
-`define SEL_ACC_Y               4   // Y register
 
 // M[r] read index selector
 `define SEL_MR_REG              0   // opcode[24:21]
@@ -80,10 +79,11 @@
 `define ALU_FREVSUB             12  // result = b - a (float)
 `define ALU_FSUBABS             13  // result = |a| - |b| (float)
 `define ALU_FSIGN               14  // result = -a (float)
-`define ALU_ADDEXP              15  // result = add exponents
-`define ALU_SUBEXP              16  // result = subtract exponents
+`define ALU_FADDEXP             15  // result = add exponents (float)
+`define ALU_FSUBEXP             16  // result = subtract exponents (float)
 `define ALU_FMUL                17  // result = a * b (float)
 `define ALU_FDIV                18  // result = a / b (float)
+`define ALU_YTA                 19  // result = y
 
 `define ALU_OP_WIDTH            6   // alu operation is 6 bits
 
@@ -99,7 +99,8 @@
 // Micro-instruction fields
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level
 `define P_ALU                   9   // alu operation (6 bits)
-`define P_SEL_ACC               15  // accumulator multiplexor (3 bits)
+`define P_SEL_ACC               15  // accumulator multiplexor (2 bits)
+`define P_unused_17             17  // unused
 `define P_SEL_MD                18  // M[i] write data multiplexor (3 bits)
 `define P_SEL_MW                21  // M[i] write address multiplexor (2 bits)
 `define P_W_M                   23  // write M[i] (from alu-out)

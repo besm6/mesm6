@@ -64,7 +64,7 @@ wire [2:0] sel_pc   = uop[`P_SEL_PC+2:`P_SEL_PC];   // mux for pc
 wire [1:0] sel_mr   = uop[`P_SEL_MR+1:`P_SEL_MR];   // mux for M[i] read address
 wire [1:0] sel_mw   = uop[`P_SEL_MW+1:`P_SEL_MW];   // mux for M[i] write address
 wire [2:0] sel_md   = uop[`P_SEL_MD+2:`P_SEL_MD];   // mux for M[i] write data
-wire [2:0] sel_acc  = uop[`P_SEL_ACC+2:`P_SEL_ACC]; // mux for A
+wire [1:0] sel_acc  = uop[`P_SEL_ACC+1:`P_SEL_ACC]; // mux for A
 wire [1:0] sel_rr   = uop[`P_SEL_RR+1:`P_SEL_RR];   // mux for R
 
 wire   sel_addr     = uop[`P_SEL_ADDR];             // mux for data address
@@ -155,7 +155,6 @@ logic [`UPC_BITS-1:0] entry64[64*2] = '{
 //
 reg  [15:0] pc;                     // program counter (half word granularity)
 reg  [47:0] acc;                    // A: accumulator
-wire [47:0] Y;                      // Y: least significant bits
 reg  [14:0] M[16];                  // M1-M15: index registers (modifiers)
 reg  [14:0] C;                      // C: address modifier
 reg  [5:0]  R;                      // R: rounding mode register
@@ -234,7 +233,6 @@ mesm6_alu alu(
     .a      (acc),
     .b      (alu_b),
     .result (alu_result),
-    .y      (Y),
     .done   (alu_done)
 );
 
@@ -297,7 +295,6 @@ always @(posedge clk) begin
                (sel_acc == `SEL_ACC_REG) ? Mr :         // M[m_ra]
                (sel_acc == `SEL_ACC_RR)  ?              // R register
                     { 1'b0, R & Uaddr[5:0], 41'b0 } :
-               (sel_acc == `SEL_ACC_Y)   ? Y :          // Y register
                           /*SEL_ACC_ALU*/  alu_result;  // from ALU
     else if (decode & op_xta0 & ~branch)
         acc <= 0;
