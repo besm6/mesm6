@@ -2,12 +2,13 @@
 `include "mesm6_defines.sv"
 
 module mesm6_alu(
+    input  wire                     clk,    // clock for syncronous multicycle operations
+    input  wire [`ALU_OP_WIDTH-1:0] op,     // ALU operation
+    input  wire                     wy,     // write Y := A
     input  wire [47:0]              a,      // parameter A
     input  wire [47:0]              b,      // parameter B
     output reg  [47:0]              result, // computed result
     output reg  [47:0]              y,      // least significant bits
-    input  wire [`ALU_OP_WIDTH-1:0] op,     // ALU operation
-    input  wire                     clk,    // clock for syncronous multicycle operations
     output reg                      done    // flag: alu operation finished
 );
 
@@ -43,6 +44,8 @@ always @(posedge clk) begin
         // No operation: reset count and done flag.
         done <= 0;
         count <= 0;
+        if (wy)
+            y <= a;                         // update Y for UZA and U1A
 
     end else if (~done) begin
         // Perform the operation.

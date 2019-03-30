@@ -228,12 +228,13 @@ wire [47:0] alu_result;
 assign alu_b = sel_alu_mem ? dbus_input
                            : {Uaddr[6:0], 41'd0};
 mesm6_alu alu(
+    .clk    (clk),
+    .op     (alu_op),
+    .wy     (cond_acc_zero | cond_acc_nonzero),
     .a      (acc),
     .b      (alu_b),
     .result (alu_result),
     .y      (Y),
-    .op     (alu_op),
-    .clk    (clk),
     .done   (alu_done)
 );
 
