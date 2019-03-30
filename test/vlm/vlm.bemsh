@@ -21,6 +21,7 @@ b       atx     ws+255(14)
         vtm     -255(15)
 c       arx     ws+255(15)
         vlm     c(15)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -29,12 +30,14 @@ c       arx     ws+255(15)
         vtm     -255(13)
 d       arx     ws+255(14)
         vlm     d(14)
+        aex
         uza     fail
         aex     cful
         u1a     fail
 *
 e       arx     ws+255(13)
         vlm     e(13)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -43,12 +46,14 @@ e       arx     ws+255(13)
         vtm     -255(11)
 f       arx     ws+255(12)
         vlm     f(12)
+        aex
         uza     fail
         aex     cful
         u1a     fail
 *
 g       arx     ws+255(11)
         vlm     g(11)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -57,12 +62,14 @@ g       arx     ws+255(11)
         vtm     -255(9)
 h       arx     ws+255(10)
         vlm     h(10)
+        aex
         uza     fail
         aex     cful
         u1a     fail
 *
 i       arx     ws+255(9)
         vlm     i(9)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -71,12 +78,14 @@ i       arx     ws+255(9)
         vtm     -255(7)
 j       arx     ws+255(8)
         vlm     j(8)
+        aex
         uza     fail
         aex     cful
         u1a     fail
 *
 k       arx     ws+255(7)
         vlm     k(7)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -85,12 +94,14 @@ k       arx     ws+255(7)
         vtm     -255(5)
 l       arx     ws+255(6)
         vlm     l(6)
+        aex
         uza     fail
         aex     cful
         u1a     fail
 *
 m       arx     ws+255(5)
         vlm     m(5)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -99,12 +110,14 @@ m       arx     ws+255(5)
         vtm     -255(3)
 n       arx     ws+255(4)
         vlm     n(4)
+        aex
         uza     fail
         aex     cful
         u1a     fail
 *
 o       arx     ws+255(3)
         vlm     o(3)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -112,6 +125,7 @@ o       arx     ws+255(3)
         vtm     -255(2)
 p       arx     ws+255(2)
         vlm     p(2)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -119,6 +133,7 @@ p       arx     ws+255(2)
         vtm     -255(1)
 q       arx     ws+255(1)
         vlm     q(1)
+        aex
         uza     fail
         aex     cful
         u1a     fail
@@ -126,6 +141,5 @@ pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *-------------------------
 align   пам     1024
-cful    vlm     '77777'(15)
-        vlm     '77777'(15)
+cful    конд    b'7777777777777777'
 ws      пам     1030

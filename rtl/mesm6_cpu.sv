@@ -90,7 +90,6 @@ wire   cond_acc_zero      = uop[`P_A_ZERO];         // conditional: true if A is
 wire   cond_acc_nonzero   = uop[`P_A_NONZERO];      // conditional: true if A is non-zero
 wire   cond_m_zero        = uop[`P_M_ZERO];         // conditional: true if M[i] is zero
 wire   cond_m_nonzero     = uop[`P_M_NONZERO];      // conditional: true if M[i] is non-zero
-wire   cond_acc_neg       = uop[`P_A_NEG];          // conditional: true if A is negative
 wire   decode             = uop[`P_DECODE] & ~busy; // decode means jumps to apropiate microcode based on besm6 opcode
 wire   uncond_branch      = uop[`P_BRANCH];         // unconditional jump inside microcode
 
@@ -100,15 +99,13 @@ assign dbus_write = uop[`P_MEM_W];
 
 // Branch conditions.
 wire   is_op_cached;                // is opcode available?
-wire   acc_is_zero;                 // A == 0
-wire   acc_is_neg;                  // A[41] == 1
+wire   acc_is_zero;                 // A==0 or A>=0 or A>=1, depending on mode
 wire   Mi_is_zero;                  // M[i] == 0
 wire   alu_done;
 
 // Branch flag: sum of all conditionals and unconditionals.
 wire branch = (cond_op_not_cached & ~is_op_cached) |
               (cond_acc_zero & acc_is_zero) | (cond_acc_nonzero & !acc_is_zero) |
-              (cond_acc_neg & acc_is_neg) |
               (cond_m_zero & Mi_is_zero) | (cond_m_nonzero & !Mi_is_zero) |
               uncond_branch;
 
@@ -274,7 +271,7 @@ wire no_ovf   = R[5];           // no interrupt on overflow
 wire grp_add  = R[4];           // additive group
 wire grp_mul  = R[3] & !R[4];   // multiplicative group
 wire grp_log  = R[2] & !R[4:3]; // logical group
-wire no_round = R[1];           // np rounding
+wire no_round = R[1];           // no rounding
 wire no_norm  = R[0];           // no normalization
 
 always @(posedge clk) begin
@@ -306,8 +303,9 @@ always @(posedge clk) begin
 end
 
 // Status of accumulator.
-assign acc_is_zero = (acc == 0);
-assign acc_is_neg  = acc[40];
+assign acc_is_zero = (grp_add & ~acc[40]) |     // additive group: non-negative
+                     (grp_mul & acc[47]) |      // multiplicative group: 1.0 and bigger
+                     (grp_log & ~|acc);         // logical group: zero
 
 //--------------------------------------------------------------
 // Modifiers M1-M15.

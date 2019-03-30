@@ -118,7 +118,7 @@
 `define P_W_A                   39  // write accumulator (from alu-out)
 `define P_W_C                   40  // write C register
 `define P_A_NONZERO             41  // microcode branch if acc is zero
-`define P_A_NEG                 42  // microcode branch if acc is negative (acc[41] = 1)
+`define P_unused_42             42  // unused
 `define P_A_ZERO                43  // microcode branch if acc is zero
 `define P_BRANCH                44  // microcode inconditional branch to address
 `define P_C_ACTIVE              45  // clear C register flag

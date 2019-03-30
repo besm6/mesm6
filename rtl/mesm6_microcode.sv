@@ -90,7 +90,6 @@
 `define BRANCHIF_OP_NOT_CACHED(a)   (1 << `P_OP_NOT_CACHED | (a) << `P_IMM)
 `define BRANCHIF_A_ZERO(addr)       (1 << `P_A_ZERO | (addr) << `P_IMM)
 `define BRANCHIF_A_NONZERO(addr)    (1 << `P_A_NONZERO | (addr) << `P_IMM)
-`define BRANCHIF_A_NEG(addr)        (1 << `P_A_NEG | (addr) << `P_IMM)
 `define BRANCHIF_M_ZERO(addr)       (1 << `P_M_ZERO | (addr) << `P_IMM)
 `define BRANCHIF_M_NONZERO(addr)    (1 << `P_M_NONZERO | (addr) << `P_IMM)
 

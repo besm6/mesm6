@@ -47,9 +47,9 @@ loop    ntr     (2)
         uza     fail
 a       u1a     ok
         uj      fail
-ok      ntr     (7)             , логическая группа
+ok      ntr     7               , логическая группа
         u1a     fail
-        ntr     (11)            , группа умножения
+        ntr     11              , группа умножения
         uza     fail
         aox
         u1a     fail
@@ -64,7 +64,7 @@ ok      ntr     (7)             , логическая группа
 *
         ntr     24              , гс+гу = гс
         uza     fail
-        ntr     (12)            , гу+гл = гу
+        ntr     12              , гу+гл = гу
         u1a     fail
         xta     i1
         ntr     20              , гс+гл = гс
