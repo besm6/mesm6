@@ -157,7 +157,15 @@ reg  [15:0] pc;                     // program counter (half word granularity)
 reg  [47:0] acc;                    // A: accumulator
 reg  [14:0] M[16];                  // M1-M15: index registers (modifiers)
 reg  [14:0] C;                      // C: address modifier
+
 reg  [5:0]  R;                      // R: rounding mode register
+wire no_ovf   = R[5];               // no interrupt on overflow
+wire grp_add  = R[4];               // additive group
+wire grp_mul  = R[3] & !R[4];       // multiplicative group
+wire grp_log  = R[2] & !R[4:3];     // logical group
+wire no_round = R[1];               // no rounding
+wire no_norm  = R[0];               // no normalization
+
 reg  [15:1] pc_cached;              // cached PC
 reg  [47:0] opcode_cache;           // cached instruction word
 
@@ -227,13 +235,16 @@ wire [47:0] alu_result;
 assign alu_b = sel_alu_mem ? dbus_input
                            : {Uaddr[6:0], 41'd0};
 mesm6_alu alu(
-    .clk    (clk),
-    .op     (alu_op),
-    .wy     (cond_acc_zero | cond_acc_nonzero),
-    .a      (acc),
-    .b      (alu_b),
-    .result (alu_result),
-    .done   (alu_done)
+    .clk        (clk),
+    .op         (alu_op),
+    .wy         (cond_acc_zero | cond_acc_nonzero),
+    .grp_log    (grp_log),
+    .no_norm    (no_norm),
+    .no_round   (no_round),
+    .a          (acc),
+    .b          (alu_b),
+    .result     (alu_result),
+    .done       (alu_done)
 );
 
 //--------------------------------------------------------------
@@ -266,13 +277,6 @@ end
 //--------------------------------------------------------------
 // R register.
 //
-wire no_ovf   = R[5];           // no interrupt on overflow
-wire grp_add  = R[4];           // additive group
-wire grp_mul  = R[3] & !R[4];   // multiplicative group
-wire grp_log  = R[2] & !R[4:3]; // logical group
-wire no_round = R[1];           // no rounding
-wire no_norm  = R[0];           // no normalization
-
 always @(posedge clk) begin
     if (w_r)
         R <= (sel_rr == `SEL_RR_MEM) ? dbus_input[46:41] :  // from memory

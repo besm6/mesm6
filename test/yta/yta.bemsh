@@ -1,0 +1,159 @@
+*
+* Test for Y register and instruction YTA.
+*
+* Check that:
+*   YTA does not modify Y
+*   YTA in logical mode returns Y untouched
+*   YTA in other modes works as E+N but with Y mantissa
+*   AAX clears Y
+*   AOX clears Y
+*   ARX clears Y
+*   ACX clears Y
+*   APX clears Y
+*   AUX clears Y
+*   UZA saves accumulator in Y
+*   U1A saves accumulator in Y
+*   AEX saves accumulator in Y
+*
+start   start   '1'
+*
+* Check that YTA in logical mode returns Y untouched.
+* Check that YTA does not modify Y.
+*
+        xta     c123
+        asn     64+48           , Y := A, logical mode
+        yta                     , read Y once
+        atx     ws
+        yta                     , read Y twice
+        aex     c123
+        u1a     fail
+        xta     ws
+        aex     c123
+        u1a     fail
+*
+* Check YTA in additive mode (normalization and rounding disabled).
+*
+        xta     c123
+        asn     64+48           , Y := A, logical mode
+        ntr     '23'            , additive mode, no norm and rounding
+        yta     '123'           , read Y once
+        atx     ws
+        yta     '065'           , read Y twice
+        aex     c123            , TODO: not implemented yet
+        u1a     fail
+        xta     ws
+        aex     c123            , TODO: not implemented yet
+        u1a     fail
+*
+* Check YTA in multiplicative mode (normalization and rounding disabled).
+*
+        xta     c123
+        asn     64+48           , Y := A, logical mode
+        ntr     '13'            , multiplicative mode, no norm and rounding
+        yta     '123'           , read Y once
+        atx     ws
+        yta     '065'           , read Y twice
+        aex     c123            , TODO: not implemented yet
+        u1a     fail
+        xta     ws
+        aex     c123            , TODO: not implemented yet
+        u1a     fail
+*
+* Check YTA in mode 0 (normalization and rounding disabled).
+*
+        xta     c123
+        asn     64+48           , Y := A, logical mode
+        ntr     '03'            , mode 0, no norm and rounding
+        yta     '123'           , read Y once
+        atx     ws
+        yta     '065'           , read Y twice
+        aex     c123            , TODO: not implemented yet
+        u1a     fail
+        xta     ws
+        aex     c123            , TODO: not implemented yet
+        u1a     fail
+*
+* AAX should clear Y.
+*
+        xta     c123
+        asn     64+48           , Y := A
+        aax     cful            , logical mode
+        yta
+        u1a     fail
+*
+* AOX should clear Y.
+*
+        xta     c123
+        asn     64+48           , Y := A
+        aox     cful            , logical mode
+        yta
+        u1a     fail
+*
+* ARX should clear Y.
+*
+        xta     c123
+        asn     64+48           , Y := A
+        arx     cful
+        ntr     '07'            , logical mode
+        yta
+        u1a     fail
+*
+* ACX should clear Y.
+*
+        xta     c123
+        asn     64+48           , Y := A
+        acx     cful            , logical mode
+        yta
+        u1a     fail
+*
+* APX should clear Y.
+*
+        xta     c123
+        asn     64+48           , Y := A
+        apx     cful            , logical mode
+        yta
+        u1a     fail
+*
+* AUX should clear Y.
+*
+        xta     c123
+        asn     64+48           , Y := A
+        aux     cful            , logical mode
+        yta
+        u1a     fail
+*
+* UZA should save accumulator in Y.
+*
+        xta     c123            , logical mode
+        uza     fail
+        yta
+        aex     c123
+        u1a     fail
+*
+* U1A should save accumulator in Y.
+*
+        aax                     , clear Y
+        xta     c123            , logical mode
+        u1a     next
+        uj      fail
+next    yta
+        aex     c123
+        u1a     fail
+*
+* AEX should save accumulator in Y.
+*
+        aax                     , clear Y
+        xta     c123            , logical mode
+        aex
+        yta
+        aex     c123
+        u1a     fail
+*
+pass    стоп    '12345'(6)
+fail    стоп    '76543'(2)
+*-------------------------
+align   пам     1024
+c123    конд    b'1234567123456712'
+cful    конд    b'7777777777777777'
+ws      пам     1
+        fin

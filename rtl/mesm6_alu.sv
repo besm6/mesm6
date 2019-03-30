@@ -2,13 +2,16 @@
 `include "mesm6_defines.sv"
 
 module mesm6_alu(
-    input  wire                     clk,    // clock for syncronous multicycle operations
-    input  wire [`ALU_OP_WIDTH-1:0] op,     // ALU operation
-    input  wire                     wy,     // write Y := A
-    input  wire [47:0]              a,      // parameter A
-    input  wire [47:0]              b,      // parameter B
-    output reg  [47:0]              result, // computed result
-    output reg                      done    // flag: alu operation finished
+    input  wire                     clk,        // clock for syncronous multicycle operations
+    input  wire [`ALU_OP_WIDTH-1:0] op,         // ALU operation
+    input  wire                     wy,         // write Y := A
+    input  wire                     grp_log,    // logical group
+    input  wire                     no_norm,    // normalization disabled
+    input  wire                     no_round,   // rounding disabled
+    input  wire [47:0]              a,          // parameter A
+    input  wire [47:0]              b,          // parameter B
+    output reg  [47:0]              result,     // computed result
+    output reg                      done        // flag: alu operation finished
 );
 
 // Internal cycle count.
@@ -56,8 +59,13 @@ always @(posedge clk) begin
         case (op)
         `ALU_YTA: begin
                 // YTA: one cycle.
-                // TODO: additive and multiplicative modes.
-                result <= y;
+                if (grp_log) begin
+                    // Logical mode.
+                    result <= y;
+                end else begin
+                    // TODO: additive and multiplicative modes.
+                    result <= y;
+                end
                 done <= 1;
             end
 
