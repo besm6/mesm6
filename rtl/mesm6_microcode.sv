@@ -246,21 +246,29 @@ op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode;
 stack_mode('o004);      // A+X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o004);          // A+X
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FADD | `ACC_ALU | `W_A);                     // a += x
 op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o005);      // A-X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o005);          // A-X
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FSUB | `ACC_ALU | `W_A);                     // a -= x
 op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o006);      // X-A in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o006);          // X-A
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FREVSUB | `ACC_ALU | `W_A);                  // a = x - a
 op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o007);      // AMX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o007);          // AMX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FSUBABS | `ACC_ALU | `W_A);                  // a = |a| - |x|
 op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o010);      // XTA in stack mode
@@ -293,6 +301,8 @@ op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicativ
 stack_mode('o014);      // AVX in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o014);          // AVX
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FSIGN | `ACC_ALU | `W_A);                    // a = x<0 ? -a : a
 op(`G_ADD | `GO_FETCH_OR_DECODE);                           // set additive mode; done
 
 stack_mode('o015);      // AOX in stack mode
@@ -305,11 +315,15 @@ op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode;
 stack_mode('o016);      // A/X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o016);          // A/X
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FDIV | `ACC_ALU | `W_A);                     // a /= x
 op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o017);      // A*X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o017);          // A*X
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FMUL | `ACC_ALU | `W_A);                     // a *= x
 op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o020);      // APX in stack mode
@@ -343,11 +357,15 @@ op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode;
 stack_mode('o024);      // E+X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o024);          // E+X
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FADDEXP | `ACC_ALU | `W_A);                  // a = addexp(a, x)
 op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o025);      // E-X in stack mode
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
 opcode('o025);          // E-X
+op(`MEM_R | `ACC_MEM);                                      // x = memory[Uaddr]
+op(`ALU_MEM | `FSUBEXP | `ACC_ALU | `W_A);                  // a = subexp(a, x)
 op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 stack_mode('o026);      // ASX in stack mode
@@ -380,9 +398,11 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 //TODO: set logical group in case of read operation
 
 opcode('o034);          // E+N
+op(`FADDEXP | `ACC_ALU | `W_A);                             // a = addexp(a, Uaddr)
 op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 opcode('o035);          // E-N
+op(`FSUBEXP | `ACC_ALU | `W_A);                             // a = subexp(a, Uaddr)
 op(`G_MUL | `GO_FETCH_OR_DECODE);                           // set multiplicative mode; done
 
 opcode('o036);          // ASN
