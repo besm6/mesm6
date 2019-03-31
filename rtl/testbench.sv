@@ -399,8 +399,8 @@ task print_uop();
         0: "ALU",  1: "MEM",   2: "REG",  3: "RR"
     };
     static string md_name[8] = '{
-        0: "PC",     1: "A",       2: "ALU",  3: "REG",
-        4: "RPLUS1", 5: "RMINUS1", 6: "VA",   7: "UA"
+        0: "PC",      1: "A",  2: "REG",  3: "RPLUS1",
+        4: "RMINUS1", 5: "VA", 6: "UA",   7: "UA"
     };
     static string mw_name[4] = '{
         0: "I",      1: "IMM",     2: "VA",  3: "UA"
