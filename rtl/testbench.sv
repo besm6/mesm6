@@ -562,7 +562,17 @@ task print_changed_regs();
 
     // R register
     if (cpu.R !== old_R) begin
-        $fdisplay(tracefd, "(%0d)        Write R = %o", ctime, cpu.R);
+        $fwrite(tracefd, "(%0d)        Write R = %o", ctime, cpu.R);
+        if (cpu.R[5]) $fwrite(tracefd, " NO_FPE");
+        casez (cpu.R[4:2])
+            3'b1??:  $fwrite(tracefd, " G_ADD");
+            3'b01?:  $fwrite(tracefd, " G_MUL");
+            3'b001:  $fwrite(tracefd, " G_LOG");
+            default: $fwrite(tracefd, " G_000");
+        endcase
+        if (cpu.R[1]) $fwrite(tracefd, " NO_ROUND");
+        if (cpu.R[0]) $fwrite(tracefd, " NO_NORM");
+        $fdisplay(tracefd, "");
         old_R = cpu.R;
     end
 
