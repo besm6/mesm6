@@ -1,4 +1,5 @@
 a.out
+.vscode
 output*.trace
 output.vcd
 run.log
