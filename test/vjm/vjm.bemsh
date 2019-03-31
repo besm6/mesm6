@@ -1,14 +1,15 @@
 *
-* 26 - проверка команды VJM:
+* Test for instruction VJM.
 *
-t26     nop
-        vjm     a(2)            ; справа
-a       utm     -2(2)           ; a = 2
+start   start   '1'
+        utc
+        vjm     a(2)            , справа
+a       utm     -2(2)           , a = 2
         v1m     fail(2)
-c       vjm     b(2)            ; слева
-b       utm     -4(2)           ; b = 4
+c       дк      ’31’,b(2)       , слева
+b       utm     -4(2)           , b = 4
         v1m     fail(2)
-d       vjm     f(2)
+d       дк      ’31’,f(2)       , слева
 e       utc     -1
 f       vtm     1(3)
         vzm     fail(3)
