@@ -7,36 +7,48 @@ start   start   '1'
         ita     14
         a-x     =f'65'                  , целое 65 без порядка
         uza     fail
+*
         a+x     =b'1'
         u1a     fail
+*
         aox
         u1a     fail
+*
         xta     =b'2'
         x-a     =b'1'
         a-x     =b'0137777777777777'
         u1a     fail
+*
         aox
         u1a     fail
+*
         xta     =b'2'
         xts     =b'1'
         xts     =b'2'
         xts     =b'3'
         a-x     (15)                    , 3-2=1
         u1a     fail
+*
         a+x     (15)                    , 1+1 = 2
         x-a     (15)                    , 2-2 = 0
         u1a     fail
+*
         aox
         u1a     fail
+*
         xta     =b'6400000000000100'    , целое 64
         a-x     =b'6400000000000102'    , целое 66
         uza     fail
+*
         a+x     =e'2.0'
         u1a     fail
+*
         aox
         uza     fail
+*
         aex     =b'6400000000000000'    , целое 0
         u1a     fail
+*
         ntr     2
         xta     =e'2.0'                 , 2.0
         xts     =e'3.0'                 , 3.0
@@ -46,8 +58,9 @@ start   start   '1'
         a-x     (15)                    , 5-3
         x-a     (15)                    , 2-2
         u1a     fail
+*
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *-------------------------
-align   пам     1024
+        адрес   start+'1777'            , данные с адреса 2000
         fin
