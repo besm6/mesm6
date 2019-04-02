@@ -553,11 +553,11 @@ task print_changed_regs();
     end
 
     // Y register
-    if (cpu.alu.y !== old_Y) begin
+    if (cpu.alu.rmr !== old_Y) begin
         $fdisplay(tracefd, "(%0d)        Write Y = %o %o %o %o",
-            ctime, cpu.alu.y[47:36], cpu.alu.y[35:24],
-            cpu.alu.y[23:12], cpu.alu.y[11:0]);
-        old_Y = cpu.alu.y;
+            ctime, cpu.alu.rmr[47:36], cpu.alu.rmr[35:24],
+            cpu.alu.rmr[23:12], cpu.alu.rmr[11:0]);
+        old_Y = cpu.alu.rmr;
     end
 
     // R register

@@ -6,19 +6,26 @@ module mesm6_alu(
     input  wire [`ALU_OP_WIDTH-1:0] op,         // ALU operation
     input  wire                     wy,         // write Y := A
     input  wire                     grp_log,    // logical group
-    input  wire                     no_norm,    // normalization disabled
-    input  wire                     no_round,   // rounding disabled
-    input  wire [47:0]              a,          // parameter A
-    input  wire [47:0]              b,          // parameter B
-    output reg  [47:0]              result,     // computed result
+    input  wire                     do_norm,    // normalization enabled
+    input  wire                     do_round,   // rounding enabled
+    input  wire [47:0]              a,          // operand A
+    input  wire [47:0]              b,          // operand B
+    output reg  [47:0]              acc,        // computed result
     output reg                      done        // flag: alu operation finished
 );
 
-// Internal cycle count.
-reg [3:0] count;
+// Internal progress indicator.
+enum reg [3:0] {
+    STATE_IDLE,
+    STATE_ADD_CARRY,
+    STATE_NORM_BEFORE,
+    STATE_ADDING,
+    STATE_NORM_AFTER,
+    STATE_ROUND
+} state;
 
 // Y register.
-reg [47:0] y;                               // least significant bits of mantissa
+reg [47:0] rmr;                             // least significant bits of mantissa
 
 // Count leading zeroes (plus 1).
 wire [5:0] clz =
@@ -42,118 +49,245 @@ wire [47:0] adder_a =                       // mux at A input of adder
                          a;                 // accumulator
 wire [48:0] sum = adder_a + b;              // adder
 reg carry;                                  // carry bit, latched
+reg ovfl;                                   // overflow bit, latched
+
+logic accsign2, inc1;
+logic [41:0] tmp, add_val1, add_val2;
+logic [40:0] inc2;
+logic [6:0] tmpexp;
+logic rounded;
+logic need_neg1, need_neg2;
+
+wire [7:0] expincr = (accsign2 != acc[40]) ? 8'h01 :
+                     (acc[40] == acc[39])  ? 8'hFF :
+                                             8'h00;
+
+`define FULLMANT {accsign2, acc[40:0]}
+`define FULLEXP {ovfl, acc[47:41]}
+
+assign need_neg1 = (op == `ALU_FREVSUB) ||
+                   (op == `ALU_FSUBABS && a[40]) ||
+                   (op == `ALU_FSIGN && b[40]);
+assign need_neg2 = (op == `ALU_FSUB) ||
+                   (op == `ALU_FSUBABS && !b[40]);
+
+assign add_val1 = {a[40], a[40:0]} ^ {42{need_neg1}};
+assign add_val2 = {b[40], b[40:0]} ^ {42{need_neg2}};
 
 // ALU operation selection.
 always @(posedge clk) begin
     if (op == `ALU_NOP) begin
-        // No operation: reset count and done flag.
+        // No operation: reset state and done flag.
         done <= 0;
-        count <= 0;
+        state <= STATE_IDLE;
+        ovfl <= 0;
         if (wy)
-            y <= a;                         // update Y for UZA and U1A
+            rmr <= a;                       // update Y for UZA and U1A
 
     end else if (~done) begin
-        // Perform the operation.
-        count <= count + 1;
-
-        case (op)
-        `ALU_YTA: begin
-                // YTA: one cycle.
-                if (grp_log) begin
-                    // Logical mode.
-                    result <= y;
-                end else begin
-                    // TODO: additive and multiplicative modes.
-                    result <= y;
+        case (state)
+        STATE_IDLE:
+            // Start new operation.
+            case (op)
+            `ALU_YTA: begin
+                    // YTA: one cycle.
+                    if (grp_log) begin
+                        // Logical mode.
+                        acc <= rmr;
+                    end else begin
+                        // TODO: additive and multiplicative modes.
+                        acc <= rmr;
+                    end
+                    done <= 1;
                 end
-                done <= 1;
-            end
 
-        `ALU_AND: begin
-                // AAX: one cycle.
-                result <= a & b;
-                y <= '0;
-                done <= 1;
-            end
-
-        `ALU_OR: begin
-                // AOX: one cycle.
-                result <= a | b;
-                y <= '0;
-                done <= 1;
-            end
-
-        `ALU_XOR: begin
-                // AEX: one cycle.
-                result <= a ^ b;
-                y <= a;
-                done <= 1;
-            end
-
-        `ALU_ADD_CARRY_AROUND,
-        `ALU_COUNT: begin
-                // ARX, ACX: two cycles.
-                case (count)
-                 0: begin
-                        {carry, result} <= sum;
-                        y <= '0;
-                    end
-                 1: begin
-                        result <= result + carry;
-                        done <= 1;
-                    end
-                endcase
-            end
-
-        `ALU_CLZ: begin
-                // ANX: two cycles.
-                case (count)
-                 0: begin
-                        {carry, result} <= sum;
-                        y <= a << clz;
-                    end
-                 1: begin
-                        result <= result + carry;
-                        done <= 1;
-                    end
-                endcase
-            end
-
-        `ALU_SHIFT: begin
-                // ASX, ASN: one cycle.
-                if (b[47]) begin
-                    // shift right
-                    {result, y} <= {a, 48'b0} >> b[46:41];
-                end else begin
-                    // shift left
-                    {y, result} <= {48'b0, a} << (6'd64 - b[46:41]);
+            `ALU_AND: begin
+                    // AAX: one cycle.
+                    acc <= a & b;
+                    rmr <= '0;
+                    done <= 1;
                 end
+
+            `ALU_OR: begin
+                    // AOX: one cycle.
+                    acc <= a | b;
+                    rmr <= '0;
+                    done <= 1;
+                end
+
+            `ALU_XOR: begin
+                    // AEX: one cycle.
+                    acc <= a ^ b;
+                    rmr <= a;
+                    done <= 1;
+                end
+
+            `ALU_ADD_CARRY_AROUND,
+            `ALU_COUNT: begin
+                    // ARX, ACX: two cycles.
+                    {carry, acc} <= sum;
+                    rmr <= '0;
+                    state <= STATE_ADD_CARRY;
+                end
+
+            `ALU_CLZ: begin
+                    // ANX: two cycles.
+                    {carry, acc} <= sum;
+                    rmr <= a << clz;
+                    state <= STATE_ADD_CARRY;
+                end
+
+            `ALU_SHIFT: begin
+                    // ASX, ASN: one cycle.
+                    if (b[47]) begin
+                        // shift right
+                        {acc, rmr} <= {a, 48'b0} >> b[46:41];
+                    end else begin
+                        // shift left
+                        {rmr, acc} <= {48'b0, a} << (6'd64 - b[46:41]);
+                    end
+                    done <= 1;
+                end
+
+            `ALU_PACK: begin
+                    // APX: one cycle.
+                    acc <= pack(a, b);
+                    rmr <= '0;
+                    done <= 1;
+                end
+
+            `ALU_UNPACK: begin
+                    // AUX: one cycle.
+                    acc <= unpack(a, b);
+                    rmr <= '0;
+                    done <= 1;
+                end
+
+            //TODO:`ALU_FADD
+            //TODO:`ALU_FSUB
+            //TODO:`ALU_FREVSUB
+            //TODO:`ALU_FSUBABS
+            //TODO:`ALU_FSIGN
+            //TODO:`ALU_FADDEXP
+            //TODO:`ALU_FSUBEXP
+            `ALU_FADD, `ALU_FSUB, `ALU_FREVSUB, `ALU_FSUBABS: begin
+                    // acc gets the operand with the larger exponent, tmp gets the other
+                    if (a[47:41] > b[47:41]) begin
+                        `FULLMANT <= add_val1;
+                        inc1 <= need_neg1;
+                        tmp <= add_val2;
+                        inc2 <= {need_neg2, 40'b0};
+                        `FULLEXP <= a[47:41];
+                        tmpexp <= b[47:41];
+                    end else begin
+                        `FULLMANT <= add_val2;
+                        inc1 <= need_neg2;
+                        tmp <= add_val1;
+                        inc2 <= {need_neg1, 40'b0};
+                        `FULLEXP <= b[47:41];
+                        tmpexp <= a[47:41];
+                    end
+                    rmr[39:0] <= 40'b0;
+                    state <= STATE_NORM_BEFORE;
+                end
+
+            `ALU_FSIGN: begin
+                    `FULLMANT <= add_val1;
+                    inc1 <= need_neg1;
+                    tmp <= 42'b0;
+                    tmpexp <= a[47:41];
+                    rmr <= 48'b0;
+                    state <= STATE_NORM_BEFORE;
+                end
+
+            `ALU_FADDEXP: begin
+                    acc[40:0] <= a[40:0];
+                    `FULLEXP <= (a[47:41] + b[47:41] - 64);
+                    rmr <= 48'b0;
+                    if (do_norm)
+                        state <= STATE_NORM_AFTER;
+                    else
+                        done <= 1;
+                end
+
+            `ALU_FSUBEXP: begin
+                    acc[40:0] <= a[40:0];
+                    `FULLEXP <= (a[47:41] - b[47:41] + 64);
+                    rmr <= 48'b0;
+                    if (do_norm)
+                        state <= STATE_NORM_AFTER;
+                    else
+                        done <= 1;
+                end
+
+            //TODO:`ALU_FMUL
+            //TODO:`ALU_FDIV
+            endcase
+
+        STATE_ADD_CARRY: begin
+                // Second cycle of ARX, ACX or ANX: add carry bit.
+                acc <= acc + carry;
                 done <= 1;
             end
 
-        `ALU_PACK: begin
-                // APX: one cycle.
-                result <= pack(a, b);
-                y <= '0;
-                done <= 1;
+        STATE_NORM_BEFORE: begin
+//              {tmp, rmr[39:0]} <= $signed(tmp) >>> (acc[47:41] - tmpexp);
+//              state <= STATE_ADDING;
+                if (acc[47:41] != tmpexp) begin
+                    tmpexp <= tmpexp + 1;
+                    {tmp, rmr[39:0]} <= $signed({tmp, rmr[39:0]}) >>> 1;
+                    inc2 <= inc2 >> 1;
+                end else begin
+                    state <= STATE_ADDING;
+                end
             end
 
-        `ALU_UNPACK: begin
-                // AUX: one cycle.
-                result <= unpack(a, b);
-                y <= '0;
-                done <= 1;
+        STATE_ADDING: begin
+                {`FULLMANT, rmr[39:0]} <= {`FULLMANT, rmr[39:0]} +
+                                          {tmp, inc2[39:0]} +
+                                          {inc1, 40'b0} +
+                                          {inc2[40], 40'b0};
+                rounded <= 1'b0;
+                if (do_norm)
+                    state <= STATE_NORM_AFTER;
+                else if (do_round)
+                    state <= STATE_ROUND;
+                else
+                    done <= 1;
             end
 
-        //TODO:`ALU_FADD
-        //TODO:`ALU_FSUB
-        //TODO:`ALU_FREVSUB
-        //TODO:`ALU_FSUBABS
-        //TODO:`ALU_FSIGN
-        //TODO:`ALU_ADDEXP
-        //TODO:`ALU_SUBEXP
-        //TODO:`ALU_FMUL
-        //TODO:`ALU_FDIV
+        STATE_NORM_AFTER: begin
+                if (ovfl) begin
+                    // Exponent underflow during normalization to the left; flush everything to 0.
+                    acc[40:0] <= 41'b0;
+                    rmr[39:0] <= 40'b0;
+                    `FULLEXP <= 0;
+                    done <= 1;
+                end else if (accsign2 != acc[40]) begin
+                    {`FULLMANT, rmr[39:0]} <= $signed({`FULLMANT, rmr[39:0]}) >>> 1;
+                    `FULLEXP <= `FULLEXP + expincr;
+                    if (do_round)
+                        state <= STATE_ROUND;
+                    else
+                        done <= 1;
+                end else if (acc[40] == acc[39]) begin
+                    // A 1 bit is about to move from RMR to ACC, this makes additional rounding not needed.
+                    rounded <= rounded | rmr[39];
+                    {acc[40:0], rmr[39:0]} <= {acc[40:0], rmr[39:0]} << 1;
+                    `FULLEXP <= `FULLEXP + expincr;
+                end else begin
+                    if (do_round)
+                        state <= STATE_ROUND;
+                    else
+                        done <= 1;
+                end
+            end
+
+        STATE_ROUND: begin
+                if (rmr[39:0] != 40'b0 && !rounded)
+                    acc[0] <= 1'b1;
+                done <= 1;
+            end
         endcase
     end
 end

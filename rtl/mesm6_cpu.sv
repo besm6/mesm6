@@ -239,11 +239,11 @@ mesm6_alu alu(
     .op         (alu_op),
     .wy         (cond_acc_zero | cond_acc_nonzero),
     .grp_log    (grp_log),
-    .no_norm    (no_norm),
-    .no_round   (no_round),
+    .do_norm    (~no_norm),
+    .do_round   (~no_round),
     .a          (acc),
     .b          (alu_b),
-    .result     (alu_result),
+    .acc        (alu_result),
     .done       (alu_done)
 );
 
