@@ -14,7 +14,7 @@ start   start   '1'
         xta     c
         u1a     fail
 *
-        xta     one
+        xta     =b'1'
         atx     b
 *
         xta     a
@@ -24,7 +24,7 @@ start   start   '1'
         xta     c
         u1a     fail
 *
-        xta     one
+        xta     =b'1'
         atx     a
         atx     c
         xta
@@ -39,8 +39,7 @@ start   start   '1'
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *-------------------------
-align   пам     1024
-one     конд    b'1'
+align   адрес   start+'1777'            , данные с адреса 2000
 a       пам     1
 b       пам     1
 c       пам     1

@@ -6,7 +6,7 @@ start   start   '1'
         vtm     -1(2)
         ati     2
         v1m     fail(2)
-        xta     cful
+        xta     =b'7777777777777777'
         ati     2
         vzm     fail(2)
         xta
@@ -18,6 +18,5 @@ start   start   '1'
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *-------------------------
-align   пам     1024
-cful    конд    b'7777777777777777'
+align   адрес   start+'1777'            , данные с адреса 2000
         fin

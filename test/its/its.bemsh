@@ -4,7 +4,7 @@
 start   start   '1'
         vtm     ws(15)
         ita     15
-        aex     cful
+        aex     =b'77777'
         ati     14
 *
         vtm     '11'(1)
@@ -19,24 +19,20 @@ start   start   '1'
 *
         v1m     fail(15)
         xta     ws
-        aex     c11
+        aex     =b'11'
         u1a     fail
 *
         xta     ws+1
-        aex     c22
+        aex     =b'22'
         u1a     fail
 *
         xta     ws+2
-        aex     c33
+        aex     =b'33'
         u1a     fail
 *
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *-------------------------
-align   пам     1024
-cful    конд    b'7777777777777777'
-c11     конд    b'11'
-c22     конд    b'22'
-c33     конд    b'33'
+align   адрес   start+'1777'            , данные с адреса 2000
 ws      пам     3
         fin

@@ -1,7 +1,7 @@
 *
-* 27 - MTJ, J+M, VTM, UTM
+* Test for instructions MTJ, J+M, VTM, UTM.
 *
-t27     nop
+start   start   '1'
         utc     -13
         vtm     14(2)
         utm     -1(2)
@@ -32,3 +32,4 @@ t27     nop
 *
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
+        fin
