@@ -1,5 +1,5 @@
 //
-// MESM-6 processor
+// MESM-6 processor: control unit.
 //
 // Copyright (c) 2019 Serge Vakulenko
 //
