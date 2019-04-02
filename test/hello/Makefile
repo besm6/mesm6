@@ -11,7 +11,7 @@ clean:
 
 run:    $(TEST).oct
 	$(MAKE) -C../../rtl work
-	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct +nowarn3116 +limit=1000 #+dump
+	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct +nowarn3116 +limit=3000 #+dump
 
 view:
 	gtkwave output.vcd cpu.gtkw &
