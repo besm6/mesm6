@@ -3,4 +3,5 @@ program hello(output);
 begin
     dump;
     writeln('Hello, World!');
+    besm(33312345B);
 end.

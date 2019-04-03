@@ -5,14 +5,14 @@ start   start   '1'
         vtm     -'176'(12)
         xta     cfe8u
         atx     ws
-l76е    xta     ws
+loop1   xta     ws
         e+n     64-1
         atx     ws
         asn     64+41
         ati     14
         j+m     14(12)
         v1m     fail(14)
-        vlm     l76е(12)
+        vlm     loop1(12)
         xta     ws
         e-n     64+1
         uza     fail
@@ -20,7 +20,7 @@ l76е    xta     ws
         xta     c008u
         atx     ws
         vtm     -1(11)
-l761е   xta     ws
+loop2   xta     ws
         e-x     c7e8u
         atx     ws
         asn     64+41
@@ -28,7 +28,7 @@ l761е   xta     ws
         j+m     14(11)
         v1m     fail(14)
         utm     -1(11)
-        vlm     l761е(12)
+        vlm     loop2(12)
         xta     ws
         e+x     c008u
         aex     c7e8u

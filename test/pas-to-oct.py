@@ -112,6 +112,8 @@ except:
 def valid_address(addr):
     if addr == 017:
         return 1
+    if addr == 072:
+        return 1
     if addr >= 01000 and addr <= 010001:
         return 1
     return 0
@@ -132,6 +134,10 @@ for line in dump_file.readlines():
         addr = int(word[14], 8)
         if valid_address(addr):
             #print addr, word
+            if addr == 01010 and word[1] == "00" and word[2] == "037" and \
+               word[3] == "0002," and word[4] == "15" and word[5] == "31":
+                # Remove DUMP invocation.
+                word[4:7] = ["00", "22", "00000"]
             oct_file.write("i %05o %s %s %s %s %s %s\n" %
                 (addr, word[1], word[2], word[3][:-1], word[4], word[5], word[6]))
             oct_file.write("d %05o %s %s %s %s\n" %
