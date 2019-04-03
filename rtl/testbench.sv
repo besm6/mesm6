@@ -321,22 +321,9 @@ always @(negedge clk) begin
             // stop 76543(2) - failure.
             terminate("Test FAIL");
         end
-`ifdef notdef
-        if (opcode[17:12] == 'o71) begin
-            // Print line to stdout.
-            automatic bit [47:0] word = ram.mem[cpu.Uaddr];
-            if (~word == '0)
-                cpu.acc = 48'h004000000000;
-            else begin
-                $display("*71 Uaddr = %o, word = %o", cpu.Uaddr, word);
-                if (tracefd)
-                    $fdisplay(tracefd, "*71 Uaddr = %o, word = %o", cpu.Uaddr, word);
-# *71 Uaddr = 03331, word = 9 034 0013 9 112 0013
-# *71 Uaddr = 03332, word = 01200000 00000012
-
-            end
+        if (~opcode[19] && opcode[17:12] == 'o71) begin
+            extracode_71();
         end
-`endif
     end
 
     if ((cpu.dbus_read | cpu.dbus_write) && $isunknown(cpu.dbus_addr)) begin
@@ -692,6 +679,105 @@ task print_insn();
     if (op_ir != 0)
         $fwrite(tracefd, "(%0d)", op_ir);
     $fdisplay(tracefd, "");
+endtask
+
+//
+// Extracode *71.
+//
+task extracode_71();
+    // Print line to stdout.
+    automatic bit [14:0] addr = cpu.Uaddr;
+    automatic bit [47:0] word = ram.mem[addr];
+
+    if (~word == '0) begin
+        // Get mask of attached terminals.
+        cpu.acc = 48'h004000000000;
+        return;
+    end
+    forever begin
+        //$display("*71 Uaddr = %o, word = %o", cpu.Uaddr, word);
+        //if (tracefd)
+        //    $fdisplay(tracefd, "*71 Uaddr = %o, word = %o", cpu.Uaddr, word);
+
+        if (word[42]) begin
+            // Status/release.
+            cpu.acc = 48'o1000_0002_0000_0012;
+            return;
+        end
+
+        if (word[41:39] == 'b010) begin
+            // Emit text to stdout.
+            automatic bit [14:0] addr1 = cpu.M[word[47:44]] + word[35:24];
+            automatic bit [14:0] addr2 = cpu.M[word[23:20]] + word[11:0];
+            automatic bit [14:0] limit = addr1 + 324;
+            automatic bit     raw_flag = word[36];
+
+            if (addr2 >= addr1 && addr2 + 1 < limit)
+                limit = addr2 + 1;
+
+            //$display("--- output from %o, to %o, flag %o", addr1, addr2, raw_flag);
+            //if (tracefd)
+            //    $fdisplay(tracefd, "--- output from %o, to %o, flag %o", addr1, addr2, raw_flag);
+
+            while (addr1 <= addr2) begin
+                if (raw_flag) begin
+                    tty_putw_raw(ram.mem[addr1]);
+                end else begin
+                    //TODO
+                    //tty_putw(ram.mem[addr1]);
+                end
+                addr1 += 1;
+            end
+        end
+
+        if (word[18])
+            break;
+        addr += 1;
+        word = ram.mem[addr];
+    end
+endtask
+
+//
+// Print a symbol to stdout.
+//
+task tty_putc(bit [7:0] c);
+    $write("%c", c);
+    if (tracefd)
+        $fwrite(tracefd, "%c", c);
+endtask
+
+//
+// Print a string to stdout.
+//
+task tty_puts(string s);
+    $write("%s", s);
+    if (tracefd)
+        $fwrite(tracefd, "%s", s);
+endtask
+
+//
+// Print a word to stdout.
+//
+task tty_putw_raw(bit [47:0] word);
+    int offset;
+
+    for (offset = 40; offset >= 0; offset -= 8) begin
+        automatic byte c = word >> offset;
+
+        if (c == 0)
+            break;
+
+        /* Convert control chars to ANSI escapes */
+        case (c[6:0])
+        'o037:   tty_puts("\033[H\033[J");  // clrscr
+        'o014:   tty_puts("\033[H");        // home
+        'o031:   tty_puts("\033[A");        // up
+        'o032:   tty_puts("\033[B");        // down
+        'o030:   tty_puts("\033[C");        // right
+        'o010:   tty_puts("\033[D");        // left
+        default: tty_putc(c[6:0]);
+        endcase
+    end
 endtask
 
 endmodule
