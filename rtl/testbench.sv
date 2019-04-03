@@ -546,7 +546,7 @@ task print_changed_regs();
 
     // Accumulator
     if (cpu.acc !== old_acc) begin
-        $fdisplay(tracefd, "(%0d)        Write A = %o %o %o %o",
+        $fdisplay(tracefd, "(%0d)        A = %o %o %o %o",
             ctime, cpu.acc[47:36], cpu.acc[35:24],
             cpu.acc[23:12], cpu.acc[11:0]);
         old_acc = cpu.acc;
@@ -554,7 +554,7 @@ task print_changed_regs();
 
     // Y register
     if (cpu.alu.rmr !== old_Y) begin
-        $fdisplay(tracefd, "(%0d)        Write Y = %o %o %o %o",
+        $fdisplay(tracefd, "(%0d)        Y = %o %o %o %o",
             ctime, cpu.alu.rmr[47:36], cpu.alu.rmr[35:24],
             cpu.alu.rmr[23:12], cpu.alu.rmr[11:0]);
         old_Y = cpu.alu.rmr;
@@ -562,7 +562,7 @@ task print_changed_regs();
 
     // R register
     if (cpu.R !== old_R) begin
-        $fwrite(tracefd, "(%0d)        Write R = %o", ctime, cpu.R);
+        $fwrite(tracefd, "(%0d)        R = %o", ctime, cpu.R);
         if (cpu.R[5]) $fwrite(tracefd, " NO_FPE");
         casez (cpu.R[4:2])
             3'b1??:  $fwrite(tracefd, " G_ADD");
@@ -578,7 +578,7 @@ task print_changed_regs();
 
     // C register
     if (cpu.C !== old_C || (uop[`P_W_C] & ~busy)) begin
-        $fdisplay(tracefd, "(%0d)        Write C = %o", ctime, cpu.C);
+        $fdisplay(tracefd, "(%0d)        C = %o", ctime, cpu.C);
         old_C = cpu.C;
     end
 
@@ -587,7 +587,7 @@ task print_changed_regs();
     //
     for (int i=0; i<16; i+=1) begin
         if (cpu.M[i] !== old_M[i]) begin
-            $fdisplay(tracefd, "(%0d)        Write %0s = %o",
+            $fdisplay(tracefd, "(%0d)        %0s = %o",
                 ctime, ir_name[i], cpu.M[i]);
             old_M[i] = cpu.M[i];
         end
@@ -595,14 +595,14 @@ task print_changed_regs();
 
     // Global Interrupt Enable
     if (cpu.gie !== old_gie) begin
-        $fdisplay(tracefd, "(%0d)        Write GIE = %o", ctime, cpu.gie);
+        $fdisplay(tracefd, "(%0d)        GIE = %o", ctime, cpu.gie);
         old_gie = cpu.gie;
     end
 
     // PC
 `ifdef notdef
     if (tracelevel >= 2 && cpu.pc !== old_pc) begin
-        $fdisplay(tracefd, "(%0d)        Write PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
+        $fdisplay(tracefd, "(%0d)        PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
         old_pc = cpu.pc;
     end
 `endif
@@ -613,17 +613,17 @@ endtask
 //
 task print_ext_bus();
     if (ibus_rd & ibus_done && tracelevel > 1)
-        $fdisplay(tracefd, "(%0d)        Memory Fetch [%o] = %o %o %o %o",
+        $fdisplay(tracefd, "(%0d)        Fetch [%o] = %o %o %o %o",
             ctime, ibus_addr, ibus_input[47:36], ibus_input[35:24],
             ibus_input[23:12], ibus_input[11:0]);
 
     if (dbus_wr & dbus_done)
-        $fdisplay(tracefd, "(%0d)        Memory Store [%o] = %o %o %o %o",
+        $fdisplay(tracefd, "(%0d)        Store [%o] = %o %o %o %o",
             ctime, dbus_addr, dbus_output[47:36], dbus_output[35:24],
             dbus_output[23:12], dbus_output[11:0]);
 
     else if (dbus_rd & dbus_done)
-        $fdisplay(tracefd, "(%0d)        Memory Load [%o] = %o %o %o %o",
+        $fdisplay(tracefd, "(%0d)        Load [%o] = %o %o %o %o",
             ctime, dbus_addr, dbus_input[47:36], dbus_input[35:24],
             dbus_input[23:12], dbus_input[11:0]);
 endtask

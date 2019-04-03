@@ -122,7 +122,8 @@ def valid_address(addr):
 # Generate oct file.
 #
 oct_file = open(basename + ".oct", "w")
-oct_file.write("i 00001 00 30 01000 00 22 00000\n")
+oct_file.write("i 00001 15 31 01000 00 22 00000\n") # vjm 01000(13)
+oct_file.write("i 00002 06 33 12345 00 22 00000\n") # stop
 
 for line in dump_file.readlines():
     #print line
