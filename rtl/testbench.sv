@@ -312,13 +312,31 @@ always @(negedge clk) begin
     end
 
     // Check for magic opcodes.
-    if (fetch && opcode == 'o33312345) begin
-        // stop 12345(6) - success.
-        terminate("Test PASS");
-    end
-    if (fetch && opcode == 'o13376543) begin
-        // stop 76543(2) - failure.
-        terminate("Test FAIL");
+    if (fetch) begin
+        if (opcode == 'o33312345) begin
+            // stop 12345(6) - success.
+            terminate("Test PASS");
+        end
+        if (opcode == 'o13376543) begin
+            // stop 76543(2) - failure.
+            terminate("Test FAIL");
+        end
+`ifdef notdef
+        if (opcode[17:12] == 'o71) begin
+            // Print line to stdout.
+            automatic bit [47:0] word = ram.mem[cpu.Uaddr];
+            if (~word == '0)
+                cpu.acc = 48'h004000000000;
+            else begin
+                $display("*71 Uaddr = %o, word = %o", cpu.Uaddr, word);
+                if (tracefd)
+                    $fdisplay(tracefd, "*71 Uaddr = %o, word = %o", cpu.Uaddr, word);
+# *71 Uaddr = 03331, word = 9 034 0013 9 112 0013
+# *71 Uaddr = 03332, word = 01200000 00000012
+
+            end
+        end
+`endif
     end
 
     if ((cpu.dbus_read | cpu.dbus_write) && $isunknown(cpu.dbus_addr)) begin
@@ -562,17 +580,17 @@ task print_changed_regs();
 
     // R register
     if (cpu.R !== old_R) begin
-        $fwrite(tracefd, "(%0d)        R = %o", ctime, cpu.R);
-        if (cpu.R[5]) $fwrite(tracefd, " NO_FPE");
+        $fwrite(tracefd, "(%0d)        R = %o (", ctime, cpu.R);
+        if (cpu.R[5]) $fwrite(tracefd, "no-ovf,");
         casez (cpu.R[4:2])
-            3'b1??:  $fwrite(tracefd, " G_ADD");
-            3'b01?:  $fwrite(tracefd, " G_MUL");
-            3'b001:  $fwrite(tracefd, " G_LOG");
-            default: $fwrite(tracefd, " G_000");
+            3'b1??:  $fwrite(tracefd, "add");
+            3'b01?:  $fwrite(tracefd, "mul");
+            3'b001:  $fwrite(tracefd, "log");
+            default: $fwrite(tracefd, "undef");
         endcase
-        if (cpu.R[1]) $fwrite(tracefd, " NO_ROUND");
-        if (cpu.R[0]) $fwrite(tracefd, " NO_NORM");
-        $fdisplay(tracefd, "");
+        if (cpu.R[1]) $fwrite(tracefd, ",no-round");
+        if (cpu.R[0]) $fwrite(tracefd, ",no-norm");
+        $fdisplay(tracefd, ")");
         old_R = cpu.R;
     end
 
