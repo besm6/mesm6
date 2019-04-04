@@ -408,8 +408,8 @@ task print_uop();
         0: "A",        1: "A&B",      2: "A|B",      3: "A^B",
         4: "A<<B",     5: "A++B",     6: "A.pack.B", 7: "A.unpack.B",
         8: ".count.A", 9: ".clz.A",   10:"A+B",      11:"A-B",
-        12:"B-A",      13:"A.sign.B", 14:"?14",      15:"A+.exp.B",
-        16:"A+.exp.B", 17:"A*B",      18:"A/B",      19:"?19",
+        12:"B-A",      13:"|A|-|B|",  14:"A.sign.B", 15:"A+.exp.B",
+        16:"A-.exp.B", 17:"A*B",      18:"A/B",      19:"YTA",
         default: "???"
     };
     static string acc_name[4] = '{
@@ -540,7 +540,7 @@ task print_uop();
     if (uop == 0) $fwrite(tracefd, " nop");
 
     if (busy)
-        $fwrite(tracefd, " --- busy");
+        $fwrite(tracefd, " (busy)");
     $fdisplay(tracefd, "");
 
 endtask

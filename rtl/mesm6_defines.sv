@@ -78,7 +78,7 @@
 `define ALU_FSUB                11  // result = a - b (float)
 `define ALU_FREVSUB             12  // result = b - a (float)
 `define ALU_FSUBABS             13  // result = |a| - |b| (float)
-`define ALU_FSIGN               14  // result = -a (float)
+`define ALU_FSIGN               14  // result = a with sign(b) (float)
 `define ALU_FADDEXP             15  // result = add exponents (float)
 `define ALU_FSUBEXP             16  // result = subtract exponents (float)
 `define ALU_FMUL                17  // result = a * b (float)

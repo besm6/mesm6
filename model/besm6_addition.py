@@ -20,10 +20,17 @@ if len(sys.argv) != 4:
 op = sys.argv[1]
 a = sys.argv[2]
 b = sys.argv[3]
+normalize = 1
+rounding = 1
 
 def besm_word(input):
-    if not ('.' in input) and not ('e' in input) and not ('E' in input):
-        return int(input, 8)
+    if not ('.' in input or
+            '-' in input or
+            'e' in input or
+            'E' in input or
+            '8' in input or
+            '9' in input):
+        return int(input[:16], 8)
     (fmantissa, exponent) = frexp(float(input))
     sign = 0
     if fmantissa > 0:
@@ -227,18 +234,19 @@ def normalize(e,m,rmr):
     e = '{:07b}'.format(e)
     return (e,m,rmr)
 
-print "\nВыполняем нормализацию результата"
-e,m,rmr = normalize(ae, sum_ab, rmr)
-print "\texponent = {} = {:d} = 2^{:d}".format(e, int(e,2), int(e,2)-64)
-print "\tmantissa = {} {}".format(m[0], m[1:])
+if normalize:
+    print "\nВыполняем нормализацию результата"
+    e,m,rmr = normalize(ae, sum_ab, rmr)
+    print "\texponent = {} = {:d} = 2^{:d}".format(e, int(e,2), int(e,2)-64)
+    print "\tmantissa = {} {}".format(m[0], m[1:])
 
-
-print "\nВыполняем округление"
-print "\tRMR = {}".format(rmr)
-if '1' in rmr:
-    m = m[:-1] + '1'
-else:
-    print "\tОкругление не требуется"
+if rounding:
+    print "\nВыполняем округление"
+    print "\tRMR = {}".format(rmr)
+    if '1' in rmr:
+        m = m[:-1] + '1'
+    else:
+        print "\tОкругление не требуется"
 
 print "\texponent = {} = {:d} = 2^{:d}".format(e, int(e,2), int(e,2)-64)
 print "\tmantissa = {} {}".format(m[0], m[1:])

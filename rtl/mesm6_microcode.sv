@@ -184,7 +184,8 @@ end
 op(`MD_A | `MW_IMM(0) | `W_M);                          // m0 = 0
 op(`ACC_REG | `MR_IMM(0) | `W_A);                       // acc = m0
 op(`RR_REG | `MR_IMM(0) | `W_RR);                       // rr = m0
-op(`MD_A | `MW_IMM(1) | `W_M);                          // m1 = 0
+op(`MD_A | `MW_IMM(1) | `W_M |                          // m1 = 0
+    `BRANCHIF_A_ZERO(0));                               // y = acc
 op(`MD_A | `MW_IMM(2) | `W_M);                          // m2 = 0
 op(`MD_A | `MW_IMM(3) | `W_M);                          // m3 = 0
 op(`MD_A | `MW_IMM(4) | `W_M);                          // m4 = 0
