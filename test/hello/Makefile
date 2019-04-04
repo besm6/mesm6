@@ -1,5 +1,6 @@
 TEST    = $(notdir $(CURDIR))
 PASCAL  = ../pas-to-oct.py
+TTY     = +tty
 
 all:    $(TEST).oct
 
@@ -11,7 +12,11 @@ clean:
 
 run:    $(TEST).oct
 	$(MAKE) -C../../rtl work
-	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct +nowarn3116 +limit=10000 #+dump
+	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct +nowarn3116 +limit=10000 $(TTY) #+dump
+
+# Disable +tty option when running from test script.
+test:   TTY=
+test:   run
 
 view:
 	gtkwave output.vcd cpu.gtkw &

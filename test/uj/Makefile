@@ -12,3 +12,5 @@ clean:
 run:    $(TEST).oct
 	$(MAKE) -C../../rtl work
 	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct
+
+test:   run

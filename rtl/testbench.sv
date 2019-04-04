@@ -92,6 +92,7 @@ string tracefile = "output.trace";
 int limit;
 int tracelevel;             // Trace level
 int tracefd;                // Trace file descriptor
+int tty;                    // stdout descriptor for *71
 time ctime;                 // Current time
 longint uinstr_count;
 longint instr_count;                    // Instruction and micro-instruction counters
@@ -133,6 +134,16 @@ initial begin
     $display("");
     $display("--------------------------------");
 
+    // Open display for *71 extracode.
+    tty = 0;
+    if ($test$plusargs("tty")) begin
+        tty = $fopen("/dev/tty", "w");
+        if (! tty) begin
+            $display("Cannot open /dev/tty");
+            $finish(1);
+        end
+    end
+
     // Dump waveforms.
     if ($test$plusargs("dump")) begin
         $dumpfile("output.vcd");
@@ -160,6 +171,7 @@ initial begin
         $display("    +load=NAME        Load code into main memory");
         $display("    +limit=NUM        Limit execution to a number of cycles (default %0d)", limit);
         $display("    +dump             Dump waveforms as output.vcd");
+        $display("    +tty              Enable *71 output to /dev/tty");
         $display("");
         $finish(1);
     end
@@ -741,7 +753,8 @@ endtask
 // Print a symbol to stdout.
 //
 task tty_putc(bit [7:0] c);
-    $write("%c", c);
+    if (tty)
+        $fwrite(tty, "%c", c);
     if (tracefd)
         $fwrite(tracefd, "%c", c);
 endtask
@@ -750,7 +763,8 @@ endtask
 // Print a string to stdout.
 //
 task tty_puts(string s);
-    $write("%s", s);
+    if (tty)
+        $fwrite(tty, "%s", s);
     if (tracefd)
         $fwrite(tracefd, "%s", s);
 endtask
@@ -775,6 +789,37 @@ task tty_putw_raw(bit [47:0] word);
         'o032:   tty_puts("\033[B");        // down
         'o030:   tty_puts("\033[C");        // right
         'o010:   tty_puts("\033[D");        // left
+        'o140:   tty_puts("Ю");
+        'o141:   tty_puts("А");
+        'o142:   tty_puts("Б");
+        'o143:   tty_puts("Ц");
+        'o144:   tty_puts("Д");
+        'o145:   tty_puts("Е");
+        'o146:   tty_puts("Ф");
+        'o147:   tty_puts("Г");
+        'o150:   tty_puts("Х");
+        'o151:   tty_puts("И");
+        'o152:   tty_puts("Й");
+        'o153:   tty_puts("К");
+        'o154:   tty_puts("Л");
+        'o155:   tty_puts("М");
+        'o156:   tty_puts("Н");
+        'o157:   tty_puts("О");
+        'o160:   tty_puts("П");
+        'o161:   tty_puts("Я");
+        'o162:   tty_puts("Р");
+        'o163:   tty_puts("С");
+        'o164:   tty_puts("Т");
+        'o165:   tty_puts("У");
+        'o166:   tty_puts("Ж");
+        'o167:   tty_puts("В");
+        'o170:   tty_puts("Ь");
+        'o171:   tty_puts("Ы");
+        'o172:   tty_puts("З");
+        'o173:   tty_puts("Ш");
+        'o174:   tty_puts("Э");
+        'o175:   tty_puts("Щ");
+        'o176:   tty_puts("Ч");
         default: tty_putc(c[6:0]);
         endcase
     end

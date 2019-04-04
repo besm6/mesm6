@@ -36,7 +36,7 @@ do
 
     echo ==== >> run.log
     rm -f $dir/output.trace
-    make -C$dir run >> run.log
+    make -C$dir test >> run.log
     make_status=$?
 
     let ntests++
