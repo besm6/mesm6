@@ -2,6 +2,7 @@
 * Test for instructions А+Х, А-Х, Х-А.
 *
 start   start   '1'
+        vtm     stack(15)
         ntr     3
         vtm     64(14)
         ita     14
@@ -16,7 +17,7 @@ start   start   '1'
 *
         xta     =b'2'
         x-a     =b'1'
-        a-x     =b'0137777777777777'
+        a-x     =b'0037777777777777'
         u1a     fail
 *
         aox
@@ -63,4 +64,5 @@ pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *-------------------------
 align   адрес   start+'1777'            , данные с адреса 2000
+stack   пам     10                      , стек
         fin
