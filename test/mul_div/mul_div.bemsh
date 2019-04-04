@@ -2,6 +2,7 @@
 * Test for instructions А*Х, А/Х.
 *
 start   start   '1'
+        vtm     stack(15)
         ntr     3
         xta     cdu5l
         a*x     c5udl           , 13/2**64
@@ -51,4 +52,5 @@ c848u   конд    b'4110000000000000'
 c84cu   конд    b'4114000000000000'     , 3.
 c02u    конд    b'0040000000000000'
 ws      пам     1
+stack   пам     10                      , стек
         fin
