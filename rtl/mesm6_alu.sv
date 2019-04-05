@@ -212,9 +212,10 @@ always @(posedge clk) begin
                     `FULLMANT <= add_val1;
                     inc1 <= need_neg1;
                     tmp <= 42'b0;
-                    tmpexp <= a[47:41];
+                    inc2 <= 41'b0;
+                    `FULLEXP <= a[47:41];
                     rmr <= 48'b0;
-                    state <= STATE_NORM_BEFORE;
+                    state <= STATE_ADDING;
                 end
 
             `ALU_FADDEXP: begin
@@ -248,8 +249,6 @@ always @(posedge clk) begin
             end
 
         STATE_NORM_BEFORE: begin
-//              {tmp, rmr[39:0]} <= $signed(tmp) >>> (acc[47:41] - tmpexp);
-//              state <= STATE_ADDING;
                 if (acc[47:41] != tmpexp) begin
                     tmpexp <= tmpexp + 1;
                     {tmp, rmr[39:0]} <= $signed({tmp, rmr[39:0]}) >>> 1;

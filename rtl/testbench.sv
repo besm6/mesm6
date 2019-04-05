@@ -338,6 +338,13 @@ always @(negedge clk) begin
         end
     end
 
+    if ($isunknown(cpu.upc)) begin
+        $display("(%0d) Unknown microinstruction address: upc=%b", ctime, cpu.upc);
+        if (tracefd)
+            $fdisplay(tracefd, "(%0d) Unknown microinstruction address: upc=%b", ctime, cpu.upc);
+        terminate("Fatal Error!");
+    end
+
     if ((cpu.dbus_read | cpu.dbus_write) && $isunknown(cpu.dbus_addr)) begin
         $display("(%0d) Unknown address: dbus_addr=%h", ctime, cpu.dbus_addr);
         if (tracefd)

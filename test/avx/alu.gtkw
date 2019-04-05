@@ -1,0 +1,60 @@
+[*]
+[*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
+[*] Thu Apr  4 23:54:34 2019
+[*]
+[dumpfile] "/home/vak/Stuff/Besm-6/mesm6/test/avx/output.vcd"
+[dumpfile_mtime] "Thu Apr  4 23:49:00 2019"
+[dumpfile_size] 59038
+[savefile] "/home/vak/Stuff/Besm-6/mesm6/test/avx/cpu.gtkw"
+[timestart] 33370
+[size] 1152 884
+[pos] -845 -409
+*-11.298658 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] testbench.
+[treeopen] testbench.cpu.
+[sst_width] 235
+[signals_width] 158
+[sst_expanded] 1
+[sst_vpaned_height] 259
+@28
+testbench.cpu.alu.clk
+@22
+#{testbench.cpu.alu.op[5:0]} testbench.cpu.alu.op[5] testbench.cpu.alu.op[4] testbench.cpu.alu.op[3] testbench.cpu.alu.op[2] testbench.cpu.alu.op[1] testbench.cpu.alu.op[0]
+@28
+testbench.cpu.alu.wy
+testbench.cpu.alu.grp_log
+testbench.cpu.alu.do_norm
+testbench.cpu.alu.do_round
+@22
+#{testbench.cpu.alu.a[47:0]} testbench.cpu.alu.a[47] testbench.cpu.alu.a[46] testbench.cpu.alu.a[45] testbench.cpu.alu.a[44] testbench.cpu.alu.a[43] testbench.cpu.alu.a[42] testbench.cpu.alu.a[41] testbench.cpu.alu.a[40] testbench.cpu.alu.a[39] testbench.cpu.alu.a[38] testbench.cpu.alu.a[37] testbench.cpu.alu.a[36] testbench.cpu.alu.a[35] testbench.cpu.alu.a[34] testbench.cpu.alu.a[33] testbench.cpu.alu.a[32] testbench.cpu.alu.a[31] testbench.cpu.alu.a[30] testbench.cpu.alu.a[29] testbench.cpu.alu.a[28] testbench.cpu.alu.a[27] testbench.cpu.alu.a[26] testbench.cpu.alu.a[25] testbench.cpu.alu.a[24] testbench.cpu.alu.a[23] testbench.cpu.alu.a[22] testbench.cpu.alu.a[21] testbench.cpu.alu.a[20] testbench.cpu.alu.a[19] testbench.cpu.alu.a[18] testbench.cpu.alu.a[17] testbench.cpu.alu.a[16] testbench.cpu.alu.a[15] testbench.cpu.alu.a[14] testbench.cpu.alu.a[13] testbench.cpu.alu.a[12] testbench.cpu.alu.a[11] testbench.cpu.alu.a[10] testbench.cpu.alu.a[9] testbench.cpu.alu.a[8] testbench.cpu.alu.a[7] testbench.cpu.alu.a[6] testbench.cpu.alu.a[5] testbench.cpu.alu.a[4] testbench.cpu.alu.a[3] testbench.cpu.alu.a[2] testbench.cpu.alu.a[1] testbench.cpu.alu.a[0]
+#{testbench.cpu.alu.b[47:0]} testbench.cpu.alu.b[47] testbench.cpu.alu.b[46] testbench.cpu.alu.b[45] testbench.cpu.alu.b[44] testbench.cpu.alu.b[43] testbench.cpu.alu.b[42] testbench.cpu.alu.b[41] testbench.cpu.alu.b[40] testbench.cpu.alu.b[39] testbench.cpu.alu.b[38] testbench.cpu.alu.b[37] testbench.cpu.alu.b[36] testbench.cpu.alu.b[35] testbench.cpu.alu.b[34] testbench.cpu.alu.b[33] testbench.cpu.alu.b[32] testbench.cpu.alu.b[31] testbench.cpu.alu.b[30] testbench.cpu.alu.b[29] testbench.cpu.alu.b[28] testbench.cpu.alu.b[27] testbench.cpu.alu.b[26] testbench.cpu.alu.b[25] testbench.cpu.alu.b[24] testbench.cpu.alu.b[23] testbench.cpu.alu.b[22] testbench.cpu.alu.b[21] testbench.cpu.alu.b[20] testbench.cpu.alu.b[19] testbench.cpu.alu.b[18] testbench.cpu.alu.b[17] testbench.cpu.alu.b[16] testbench.cpu.alu.b[15] testbench.cpu.alu.b[14] testbench.cpu.alu.b[13] testbench.cpu.alu.b[12] testbench.cpu.alu.b[11] testbench.cpu.alu.b[10] testbench.cpu.alu.b[9] testbench.cpu.alu.b[8] testbench.cpu.alu.b[7] testbench.cpu.alu.b[6] testbench.cpu.alu.b[5] testbench.cpu.alu.b[4] testbench.cpu.alu.b[3] testbench.cpu.alu.b[2] testbench.cpu.alu.b[1] testbench.cpu.alu.b[0]
+testbench.cpu.alu.acc[47:0]
+@29
+testbench.cpu.alu.done
+@200
+---- Internal ---
+@22
+testbench.cpu.alu.state[3:0]
+testbench.cpu.alu.rmr[47:0]
+#{testbench.cpu.alu.clz[5:0]} testbench.cpu.alu.clz[5] testbench.cpu.alu.clz[4] testbench.cpu.alu.clz[3] testbench.cpu.alu.clz[2] testbench.cpu.alu.clz[1] testbench.cpu.alu.clz[0]
+#{testbench.cpu.alu.adder_a[47:0]} testbench.cpu.alu.adder_a[47] testbench.cpu.alu.adder_a[46] testbench.cpu.alu.adder_a[45] testbench.cpu.alu.adder_a[44] testbench.cpu.alu.adder_a[43] testbench.cpu.alu.adder_a[42] testbench.cpu.alu.adder_a[41] testbench.cpu.alu.adder_a[40] testbench.cpu.alu.adder_a[39] testbench.cpu.alu.adder_a[38] testbench.cpu.alu.adder_a[37] testbench.cpu.alu.adder_a[36] testbench.cpu.alu.adder_a[35] testbench.cpu.alu.adder_a[34] testbench.cpu.alu.adder_a[33] testbench.cpu.alu.adder_a[32] testbench.cpu.alu.adder_a[31] testbench.cpu.alu.adder_a[30] testbench.cpu.alu.adder_a[29] testbench.cpu.alu.adder_a[28] testbench.cpu.alu.adder_a[27] testbench.cpu.alu.adder_a[26] testbench.cpu.alu.adder_a[25] testbench.cpu.alu.adder_a[24] testbench.cpu.alu.adder_a[23] testbench.cpu.alu.adder_a[22] testbench.cpu.alu.adder_a[21] testbench.cpu.alu.adder_a[20] testbench.cpu.alu.adder_a[19] testbench.cpu.alu.adder_a[18] testbench.cpu.alu.adder_a[17] testbench.cpu.alu.adder_a[16] testbench.cpu.alu.adder_a[15] testbench.cpu.alu.adder_a[14] testbench.cpu.alu.adder_a[13] testbench.cpu.alu.adder_a[12] testbench.cpu.alu.adder_a[11] testbench.cpu.alu.adder_a[10] testbench.cpu.alu.adder_a[9] testbench.cpu.alu.adder_a[8] testbench.cpu.alu.adder_a[7] testbench.cpu.alu.adder_a[6] testbench.cpu.alu.adder_a[5] testbench.cpu.alu.adder_a[4] testbench.cpu.alu.adder_a[3] testbench.cpu.alu.adder_a[2] testbench.cpu.alu.adder_a[1] testbench.cpu.alu.adder_a[0]
+#{testbench.cpu.alu.sum[48:0]} testbench.cpu.alu.sum[48] testbench.cpu.alu.sum[47] testbench.cpu.alu.sum[46] testbench.cpu.alu.sum[45] testbench.cpu.alu.sum[44] testbench.cpu.alu.sum[43] testbench.cpu.alu.sum[42] testbench.cpu.alu.sum[41] testbench.cpu.alu.sum[40] testbench.cpu.alu.sum[39] testbench.cpu.alu.sum[38] testbench.cpu.alu.sum[37] testbench.cpu.alu.sum[36] testbench.cpu.alu.sum[35] testbench.cpu.alu.sum[34] testbench.cpu.alu.sum[33] testbench.cpu.alu.sum[32] testbench.cpu.alu.sum[31] testbench.cpu.alu.sum[30] testbench.cpu.alu.sum[29] testbench.cpu.alu.sum[28] testbench.cpu.alu.sum[27] testbench.cpu.alu.sum[26] testbench.cpu.alu.sum[25] testbench.cpu.alu.sum[24] testbench.cpu.alu.sum[23] testbench.cpu.alu.sum[22] testbench.cpu.alu.sum[21] testbench.cpu.alu.sum[20] testbench.cpu.alu.sum[19] testbench.cpu.alu.sum[18] testbench.cpu.alu.sum[17] testbench.cpu.alu.sum[16] testbench.cpu.alu.sum[15] testbench.cpu.alu.sum[14] testbench.cpu.alu.sum[13] testbench.cpu.alu.sum[12] testbench.cpu.alu.sum[11] testbench.cpu.alu.sum[10] testbench.cpu.alu.sum[9] testbench.cpu.alu.sum[8] testbench.cpu.alu.sum[7] testbench.cpu.alu.sum[6] testbench.cpu.alu.sum[5] testbench.cpu.alu.sum[4] testbench.cpu.alu.sum[3] testbench.cpu.alu.sum[2] testbench.cpu.alu.sum[1] testbench.cpu.alu.sum[0]
+@28
+testbench.cpu.alu.carry
+testbench.cpu.alu.ovfl
+testbench.cpu.alu.accsign2
+testbench.cpu.alu.inc1
+@22
+testbench.cpu.alu.tmp[41:0]
+testbench.cpu.alu.add_val1[41:0]
+testbench.cpu.alu.add_val2[41:0]
+testbench.cpu.alu.inc2[40:0]
+testbench.cpu.alu.tmpexp[6:0]
+@28
+testbench.cpu.alu.rounded
+testbench.cpu.alu.need_neg1
+testbench.cpu.alu.need_neg2
+@22
+#{testbench.cpu.alu.expincr[7:0]} testbench.cpu.alu.expincr[7] testbench.cpu.alu.expincr[6] testbench.cpu.alu.expincr[5] testbench.cpu.alu.expincr[4] testbench.cpu.alu.expincr[3] testbench.cpu.alu.expincr[2] testbench.cpu.alu.expincr[1] testbench.cpu.alu.expincr[0]
+[pattern_trace] 1
+[pattern_trace] 0
