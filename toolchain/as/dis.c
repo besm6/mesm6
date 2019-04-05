@@ -3,7 +3,7 @@
  */
 #include <stdio.h>
 #include <ctype.h>
-#include "microbesm/a.out.h"
+#include "mesm6/a.out.h"
 
 #define W 8             /* длина слова в байтах */
 

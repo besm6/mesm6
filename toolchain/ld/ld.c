@@ -27,9 +27,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "microbesm/a.out.h"
-#include "microbesm/ar.h"
-#include "microbesm/ranlib.h"
+#include "mesm6/a.out.h"
+#include "mesm6/ar.h"
+#include "mesm6/ranlib.h"
 
 #define W       8               /* длина слова в байтах */
 #define LOCSYM  'L'             /* убрать локальные символы, нач. с 'L' */
@@ -117,7 +117,7 @@ char    *filname;
 int     errlev;
 int     delarg    = 4;
 char    tfname[] = "/tmp/ldaXXXXX";
-char    libname[] = "/usr/local/lib/microbesm/libxxxxxxxxxxxxxxx";
+char    libname[] = "/usr/local/lib/mesm6/libxxxxxxxxxxxxxxx";
 
 #define LNAMLEN 17             /* originally 12 */
 

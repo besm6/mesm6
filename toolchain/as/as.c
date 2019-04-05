@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdarg.h>
-#include "microbesm/a.out.h"
+#include "mesm6/a.out.h"
 
 #define W       8               /* длина слова в байтах */
 

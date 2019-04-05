@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-#include "microbesm/a.out.h"
+#include "mesm6/a.out.h"
 
 void fputhdr(struct exec *filhdr, register FILE *coutb)
 {

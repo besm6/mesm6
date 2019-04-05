@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-#include "microbesm/a.out.h"
+#include "mesm6/a.out.h"
 
 int fgetint(register FILE *f, register int *i)
 {

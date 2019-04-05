@@ -66,3 +66,13 @@ $(DESTDIR)/bin/$(lorder): lorder.sh
 	install lorder.sh $(DESTDIR)/bin/$(lorder)
 
 ###
+fgetarhdr.o: fgetarhdr.c ../mesm6/a.out.h ../mesm6/ar.h
+fgeth.o: fgeth.c ../mesm6/a.out.h
+fgethdr.o: fgethdr.c ../mesm6/a.out.h
+fgetint.o: fgetint.c ../mesm6/a.out.h
+fgetran.o: fgetran.c ../mesm6/a.out.h ../mesm6/ranlib.h
+fgetsym.o: fgetsym.c ../mesm6/a.out.h
+fputh.o: fputh.c ../mesm6/a.out.h
+fputhdr.o: fputhdr.c ../mesm6/a.out.h
+fputsym.o: fputsym.c ../mesm6/a.out.h
+ld.o: ld.c ../mesm6/a.out.h ../mesm6/ar.h ../mesm6/ranlib.h

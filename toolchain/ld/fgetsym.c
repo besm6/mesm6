@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "microbesm/a.out.h"
+#include "mesm6/a.out.h"
 
 int fgetsym(register FILE *text, register struct nlist *sym)
 {
