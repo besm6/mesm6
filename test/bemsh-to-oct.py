@@ -16,12 +16,20 @@ import sys, os, string, subprocess
 #
 # Parse command line.
 #
-if len(sys.argv) != 2:
-    print "Usage: bemsh-to-oct.py filename.bemsh"
+if len(sys.argv) < 2:
+    print "Usage: bemsh-to-oct.py filename.bemsh [instr-map]"
     sys.exit(1)
 input_name = sys.argv[1]
 basename = os.path.splitext(input_name)[0]
 #print "basename =", basename
+
+if len(sys.argv) >= 3:
+    # Get user defined list of ranges for instruction space.
+    # The rest is data.
+    instr_map = list(eval(sys.argv[2]))
+else:
+    # Default map: instructions 1-1777, data 2000-77777.
+    instr_map = [1, 1777]
 
 #
 # Open input file.
@@ -107,17 +115,10 @@ if nerrors != 0:
 # versus data space.
 #
 def instruction_space(addr):
-    return addr < 02000
-
-    # For ALU test:
-    #if addr >= 000001 and addr <= 000001: return 1
-    #if addr >= 032000 and addr <= 032007: return 1
-    #if addr >= 032012 and addr <= 034407: return 1
-    #if addr >= 035052 and addr <= 035156: return 1
-    #if addr >= 035207 and addr <= 035760: return 1
-    #if addr >= 036022 and addr <= 036121: return 1
-    #if addr >= 036125 and addr <= 036427: return 1
-    #return 0
+    for i in range(0, len(instr_map), 2):
+        if addr >= instr_map[i] and addr <= instr_map[i+1]:
+            return 1
+    return 0
 
 #
 # Open the dump file.
