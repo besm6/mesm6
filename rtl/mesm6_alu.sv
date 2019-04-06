@@ -305,7 +305,7 @@ always @(posedge clk) begin
                 if (acc[47:41] != tmpexp) begin
                     tmpexp <= tmpexp + 1;
                     {tmp, rmr[39:0]} <= $signed({tmp, rmr[39:0]}) >>> 1;
-                    inc2 <= inc2 >> 1;
+                    inc2 <= (inc2 >> 1) | (inc2[0] & rmr[0]);
                     sticky <= sticky | rmr[0] | inc2[0];
                 end else begin
                     state <= STATE_ADDING;

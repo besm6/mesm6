@@ -193,9 +193,11 @@ wire op_utc0 = (opcode == 'o02200000) &         // utc 0(0)
 wire op_xta0 = ((opcode == 'o00100000) |        // xta 0(0)
                 (opcode == 'o00420000)) &       // ita 0(0)
                !c_active;
+wire op_sti  = (opcode == 'o00410000);          // sti
 
 // Stack mode.
-wire stack_mode = (op_ir == 15) & (Vaddr_next == 0);
+wire stack_mode = (op_ir == 15) & (op_sti ? (Uaddr == 15) :
+                                            (Vaddr_next == 0));
 
 assign uentry = op_utc0 ? `UADDR_NOP :          // fast utc 0(0)
                 op_xta0 ? `UADDR_NOP :          // fast xta 0(0) or ita 0(0)

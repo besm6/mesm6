@@ -13,7 +13,7 @@ clean:
 
 run:    $(TEST).oct
 	$(MAKE) -C../../rtl work
-	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct +nowarn3116 +limit=5470860 #+dump
+	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct +nowarn3116 +limit=12000000 #+dump
 
 test:   run
 

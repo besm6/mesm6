@@ -441,8 +441,9 @@ opcode('o040);          // ATI
 op(`MW_UA | `MD_A | `W_M | `GO_FETCH_OR_DECODE);            // m[Uaddr] = A; pc_cached ? decode else fetch,decode
 
 opcode('o041);          // STI
-op(`MW_UA | `MD_A | `W_M);                                  // m[Uaddr] = A
 op(`STACK_DECR);                                            // m[15] = m[15] - 1
+stack_mode('o041);      // STI in "ugly stack" mode m=15, Uaddr=15
+op(`MW_UA | `MD_A | `W_M);                                  // m[Uaddr] = A
 op(`MEM_R | `ADDR_SP | `ACC_MEM | `W_A);                    // A = memory[m15]
 op(`G_LOG | `GO_FETCH_OR_DECODE);                           // set logical mode; done
 
