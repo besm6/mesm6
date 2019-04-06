@@ -325,13 +325,15 @@ always @(negedge clk) begin
 
     // Check for magic opcodes.
     if (fetch) begin
-        if (opcode == 'o33312345) begin
-            // stop 12345(6) - success.
-            terminate("Test PASS");
-        end
-        if (opcode == 'o13376543) begin
-            // stop 76543(2) - failure.
-            terminate("Test FAIL");
+        if (opcode[19:15] == 'o33) begin
+            // Stop.
+            if (opcode == 'o33312345) begin
+                // stop 12345(6) - success.
+                terminate("Test PASS");
+            end else begin
+                // Fail in case of any other address/register.
+                terminate("Test FAIL");
+            end
         end
         if (~opcode[19] && opcode[17:12] == 'o71) begin
             extracode_71();
