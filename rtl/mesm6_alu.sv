@@ -44,6 +44,7 @@ enum reg [3:0] {
     STATE_ADD_CARRY,
     STATE_NORM_BEFORE,
     STATE_ADDING,
+    STATE_DIVIDING,
     STATE_NORM_AFTER,
     STATE_ROUND
 } state;
@@ -73,7 +74,7 @@ wire [47:0] adder_a =                       // mux at A input of adder
                          a;                 // accumulator
 wire [48:0] sum = adder_a + b;              // adder
 reg carry;                                  // carry bit, latched
-reg ovfl;                                   // overflow bit, latched
+reg ovfl, expsign;                          // overflow bits, latched
 
 logic accsign2, inc1;
 logic [41:0] tmp, add_val1, add_val2;
@@ -82,12 +83,13 @@ logic [6:0] tmpexp;
 logic rounded;
 logic need_neg1, need_neg2;
 
-wire [7:0] expincr = (accsign2 != acc[40]) ? 8'h01 :
-                     (acc[40] == acc[39])  ? 8'hFF :
-                                             8'h00;
+wire [8:0] expincr = (accsign2 != acc[40]) ? 9'h01 :
+                     (acc[40] == acc[39])  ? 9'h1FF :
+                                             9'h00;
 
 `define FULLMANT {accsign2, acc[40:0]}
-`define FULLEXP {ovfl, acc[47:41]}
+`define FULLEXP {expsign, ovfl, acc[47:41]}
+`define ABS(x) (x[40] ? ~x + 1 : x)
 
 assign need_neg1 = (op == `ALU_FREVSUB) ||
                    (op == `ALU_FSUBABS && a[40]) ||
@@ -105,6 +107,7 @@ always @(posedge clk) begin
         done <= 0;
         state <= STATE_IDLE;
         ovfl <= 0;
+        expsign <= 0;
         if (wy)
             rmr <= a;                       // update Y for UZA and U1A
 
@@ -118,11 +121,16 @@ always @(posedge clk) begin
                     if (grp_log) begin
                         // Logical mode.
                         acc <= rmr;
+                        done <= 1;
                     end else begin
-                        // TODO: additive and multiplicative modes.
-                        acc <= rmr;
+                        `FULLMANT <= rmr[39:0];
+                        `FULLEXP <= (a[47:41] + b[47:41] - 64);
+                        rounded <= 1'b1;    // Suppress rounding
+                        if (do_norm)
+                            state <= STATE_NORM_AFTER;
+                        else
+                            done <= 1;
                     end
-                    done <= 1;
                 end
 
             `ALU_AND: begin
@@ -238,9 +246,53 @@ always @(posedge clk) begin
                         done <= 1;
                 end
 
-            //TODO:`ALU_FMUL
-            //TODO:`ALU_FDIV
+            `ALU_FMUL: begin
+                    {`FULLMANT, rmr[39:0]} <= $signed(a[40:0]) * $signed(b[40:0]);
+                    `FULLEXP <= (a[47:41] + b[47:41] - 64);
+                    rounded <= 1'b0;
+                    if (do_norm)
+                        state <= STATE_NORM_AFTER;
+                    else if (do_round)
+                        state <= STATE_ROUND;
+                    else
+                        done <= 1;
+                end
+
+            `ALU_FDIV: begin
+                   // Dividing add_val1 (tmp) by add_val2, result in acc, counter in inc2
+                   inc2 <= 1'b1 << 39;
+                   `FULLMANT <= '0;
+                   if (`ABS(add_val1) >= `ABS(add_val2)) begin
+                       `FULLEXP <= a[47:41] - b[47:41] + 65;
+                       tmp <= add_val1;
+                   end else begin
+                       `FULLEXP <= a[47:41] - b[47:41] + 64;
+                       tmp <= add_val1 << 1;
+                   end
+                   state <= STATE_DIVIDING;
+                end
             endcase
+
+        STATE_DIVIDING: begin
+            if (tmp == '0 || inc2 == '0) begin
+                if (do_norm) begin
+                    rounded <= 1'b1;        // Suppressing rounding
+                    state <= STATE_NORM_AFTER;
+                end else     
+                    done <= 1;
+            end else begin
+               if (`ABS(tmp) < 1'b1 << 39)
+                  tmp <= tmp << 1;
+               else if (tmp[41] ^ add_val2[41]) begin
+                  `FULLMANT <= `FULLMANT - inc2;
+                  tmp <= (tmp + add_val2) << 1;
+               end else begin
+                  `FULLMANT <= `FULLMANT + inc2;
+                  tmp <= (tmp - add_val2) << 1;
+               end
+            end
+            inc2 <= inc2 >> 1;
+        end
 
         STATE_ADD_CARRY: begin
                 // Second cycle of ARX, ACX or ANX: add carry bit.
@@ -273,7 +325,7 @@ always @(posedge clk) begin
             end
 
         STATE_NORM_AFTER: begin
-                if (ovfl) begin
+            if (expsign) begin
                     // Exponent underflow during normalization to the left; flush everything to 0.
                     acc[40:0] <= 41'b0;
                     rmr[39:0] <= 40'b0;
