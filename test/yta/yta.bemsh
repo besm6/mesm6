@@ -39,24 +39,25 @@ start   start   '1'
         yta     '123'           , read Y once
         atx     ws
         yta     '065'           , read Y twice
-        aex     c123            , TODO: not implemented yet
+        aex     =b'0414567123456712'
         u1a     fail
         xta     ws
-        aex     c123            , TODO: not implemented yet
+        aex     =b'1154567123456712'
         u1a     fail
 *
 * Check YTA in multiplicative mode (normalization and rounding disabled).
 *
         xta     c123
+        aex     cful
         asn     64+48           , Y := A, logical mode
         ntr     '13'            , multiplicative mode, no norm and rounding
         yta     '123'           , read Y once
         atx     ws
         yta     '065'           , read Y twice
-        aex     c123            , TODO: not implemented yet
+        aex     =b'0403210654321065'
         u1a     fail
         xta     ws
-        aex     c123            , TODO: not implemented yet
+        aex     =b'1143210654321065'
         u1a     fail
 *
 * Check YTA in mode 0 (normalization and rounding disabled).
@@ -67,10 +68,10 @@ start   start   '1'
         yta     '123'           , read Y once
         atx     ws
         yta     '065'           , read Y twice
-        aex     c123            , TODO: not implemented yet
+        aex     =b'0414567123456712'
         u1a     fail
         xta     ws
-        aex     c123            , TODO: not implemented yet
+        aex     =b'1154567123456712'
         u1a     fail
 *
 * AAX should clear Y.

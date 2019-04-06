@@ -1,0 +1,13 @@
+! rm -f log.txt
+set console log=log.txt
+set console debug=log
+set cpu debug
+
+load yta.simh
+ex -ml 1-61
+ex 2000-2001
+echo
+echo Должен быть останов на стоп 12345(6)
+go 1
+
+quit
