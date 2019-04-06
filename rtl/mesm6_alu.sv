@@ -76,29 +76,28 @@ wire [48:0] sum = adder_a + b;              // adder
 reg carry;                                  // carry bit, latched
 reg ovfl, expsign;                          // overflow bits, latched
 
-logic accsign2, inc1;
-logic [41:0] tmp, add_val1, add_val2;
-logic [40:0] inc2;
-logic [6:0] tmpexp;
-logic rounded;
-logic need_neg1, need_neg2;
+reg accsign2, inc1;
+reg [41:0] tmp;
+reg [40:0] inc2;
+reg [6:0] tmpexp;
+reg rounded;
 
-wire [8:0] expincr = (accsign2 != acc[40]) ? 9'h01 :
-                     (acc[40] == acc[39])  ? 9'h1FF :
-                                             9'h00;
+wire [8:0] expincr = (accsign2 != acc[40]) ? 9'o001 :
+                     (acc[40] == acc[39])  ? 9'o777 :
+                                             9'o000;
 
 `define FULLMANT {accsign2, acc[40:0]}
 `define FULLEXP {expsign, ovfl, acc[47:41]}
 `define ABS(x) (x[40] ? ~x + 1 : x)
 
-assign need_neg1 = (op == `ALU_FREVSUB) ||
-                   (op == `ALU_FSUBABS && a[40]) ||
-                   (op == `ALU_FSIGN && b[40]);
-assign need_neg2 = (op == `ALU_FSUB) ||
-                   (op == `ALU_FSUBABS && !b[40]);
+wire need_neg1 = (op == `ALU_FREVSUB) ||
+                 (op == `ALU_FSUBABS && a[40]) ||
+                 (op == `ALU_FSIGN && b[40]);
+wire need_neg2 = (op == `ALU_FSUB) ||
+                 (op == `ALU_FSUBABS && !b[40]);
 
-assign add_val1 = {a[40], a[40:0]} ^ {42{need_neg1}};
-assign add_val2 = {b[40], b[40:0]} ^ {42{need_neg2}};
+wire [41:0] add_val1 = {a[40], a[40:0]} ^ {42{need_neg1}};
+wire [41:0] add_val2 = {b[40], b[40:0]} ^ {42{need_neg2}};
 
 // ALU operation selection.
 always @(posedge clk) begin
@@ -278,7 +277,7 @@ always @(posedge clk) begin
                 if (do_norm) begin
                     rounded <= 1'b1;        // Suppressing rounding
                     state <= STATE_NORM_AFTER;
-                end else     
+                end else
                     done <= 1;
             end else begin
                if (`ABS(tmp) < 1'b1 << 39)
