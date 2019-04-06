@@ -29,7 +29,7 @@ if len(sys.argv) >= 3:
     instr_map = list(eval(sys.argv[2]))
 else:
     # Default map: instructions 1-1777, data 2000-77777.
-    instr_map = [1, 1777]
+    instr_map = [1, 01777]
 
 #
 # Open input file.
