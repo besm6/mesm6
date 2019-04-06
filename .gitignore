@@ -11,4 +11,8 @@ work/
 *.dump
 *.lst
 *.b6
+*.o
 transcript
+toolchain/as/as
+toolchain/as/dis
+toolchain/ld/ld

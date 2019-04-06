@@ -103,6 +103,23 @@ if nerrors != 0:
     sys.exit(1)
 
 #
+# Check whether the address belongs to the instruction memory space,
+# versus data space.
+#
+def instruction_space(addr):
+    return addr < 02000
+
+    # For ALU test:
+    #if addr >= 000001 and addr <= 000001: return 1
+    #if addr >= 032000 and addr <= 032007: return 1
+    #if addr >= 032012 and addr <= 034407: return 1
+    #if addr >= 035052 and addr <= 035156: return 1
+    #if addr >= 035207 and addr <= 035760: return 1
+    #if addr >= 036022 and addr <= 036121: return 1
+    #if addr >= 036125 and addr <= 036427: return 1
+    #return 0
+
+#
 # Open the dump file.
 #
 try:
@@ -126,7 +143,7 @@ for line in dump_file.readlines():
             word = line.split()
             addr = int(word[14], 8)
             #print addr, word
-            if addr < 02000:
+            if instruction_space(addr):
                 # Addresses 0...01777: instructions
                 oct_file.write("i %05o %s %s %s %s %s %s\n" %
                     (addr, word[1], word[2], word[3][:-1], word[4], word[5], word[6]))
