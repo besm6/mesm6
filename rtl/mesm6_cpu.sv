@@ -283,11 +283,11 @@ always @(posedge clk) begin
              (sel_rr == `SEL_RR_REG) ? Mr[5:0] :            // from M[m_ra] -- for IJ (TODO)
                        /*SEL_RR_UA*/   Uaddr[5:0];          // from Uaddr
     else if (set_add)
-        R[4:2] = 3'b100;        // set additive group
+        R[4:2] <= 3'b100;       // set additive group
     else if (set_mul)
-        R[4:2] = 3'b010;        // set multiplicative group
-    else if (set_log | (op_xta0 & decode & ~irq))
-        R[4:2] = 3'b001;        // set logical group
+        R[4:2] <= 3'b010;       // set multiplicative group
+    else if (set_log | (op_xta0 & decode & ~cond_op_not_cached & ~irq))
+        R[4:2] <= 3'b001;       // set logical group
 end
 
 //--------------------------------------------------------------

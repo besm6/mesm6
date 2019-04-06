@@ -80,7 +80,7 @@ reg accsign2, inc1;
 reg [41:0] tmp;
 reg [40:0] inc2;
 reg [6:0] tmpexp;
-reg rounded;
+reg rounded, sticky;
 
 wire [8:0] expincr = (accsign2 != acc[40]) ? 9'o001 :
                      (acc[40] == acc[39])  ? 9'o777 :
@@ -107,6 +107,7 @@ always @(posedge clk) begin
         state <= STATE_IDLE;
         ovfl <= 0;
         expsign <= 0;
+        sticky <= 0;
         if (wy)
             rmr <= a;                       // update Y for UZA and U1A
 
@@ -175,7 +176,7 @@ always @(posedge clk) begin
                         {acc, rmr} <= {a, 48'b0} >> b[46:41];
                     end else begin
                         // shift left
-                        {rmr, acc} <= {48'b0, a} << (6'd64 - b[46:41]);
+                        {rmr, acc} <= {48'b0, a} << (7'd64 - b[46:41]);
                     end
                     done <= 1;
                 end
@@ -213,6 +214,7 @@ always @(posedge clk) begin
                     end
                     rmr[39:0] <= 40'b0;
                     state <= STATE_NORM_BEFORE;
+                    sticky <= 1'b0;
                 end
 
             `ALU_FSIGN: begin
@@ -226,7 +228,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FADDEXP: begin
-                    acc[40:0] <= a[40:0];
+                    `FULLMANT <= add_val1;
                     `FULLEXP <= (a[47:41] + b[47:41] - 64);
                     rmr <= 48'b0;
                     if (do_norm)
@@ -236,7 +238,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FSUBEXP: begin
-                    acc[40:0] <= a[40:0];
+                    `FULLMANT <= add_val1;
                     `FULLEXP <= (a[47:41] - b[47:41] + 64);
                     rmr <= 48'b0;
                     if (do_norm)
@@ -304,6 +306,7 @@ always @(posedge clk) begin
                     tmpexp <= tmpexp + 1;
                     {tmp, rmr[39:0]} <= $signed({tmp, rmr[39:0]}) >>> 1;
                     inc2 <= inc2 >> 1;
+                    sticky <= sticky | rmr[0] | inc2[0];
                 end else begin
                     state <= STATE_ADDING;
                 end
@@ -315,12 +318,7 @@ always @(posedge clk) begin
                                           {inc1, 40'b0} +
                                           {inc2[40], 40'b0};
                 rounded <= 1'b0;
-                if (do_norm)
-                    state <= STATE_NORM_AFTER;
-                else if (do_round)
-                    state <= STATE_ROUND;
-                else
-                    done <= 1;
+                state <= STATE_NORM_AFTER;
             end
 
         STATE_NORM_AFTER: begin
@@ -337,10 +335,11 @@ always @(posedge clk) begin
                         state <= STATE_ROUND;
                     else
                         done <= 1;
-                end else if (acc[40] == acc[39]) begin
+
+                end else if (do_norm && acc[40] == acc[39]) begin
                     // A 1 bit is about to move from RMR to ACC, this makes additional rounding not needed.
                     rounded <= rounded | rmr[39];
-                    {acc[40:0], rmr[39:0]} <= {acc[40:0], rmr[39:0]} << 1;
+                    {`FULLMANT, rmr[39:0]} <= {`FULLMANT, rmr[39:0]} << 1;
                     `FULLEXP <= `FULLEXP + expincr;
                 end else begin
                     if (do_round)
@@ -351,7 +350,7 @@ always @(posedge clk) begin
             end
 
         STATE_ROUND: begin
-                if (rmr[39:0] != 40'b0 && !rounded)
+                if ((rmr[39:0] != 40'b0 || sticky) && !rounded)
                     acc[0] <= 1'b1;
                 done <= 1;
             end
