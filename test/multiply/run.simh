@@ -3,7 +3,7 @@ set console log=log.txt
 set console debug=log
 set cpu debug
 
-load yta.simh
+load multiply.simh
 echo
 echo Должен быть останов на стоп 12345(6)
 go 1
