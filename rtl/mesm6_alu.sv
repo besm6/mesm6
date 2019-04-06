@@ -247,7 +247,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FMUL: begin
-                    {`FULLMANT, rmr[39:0]} <= $signed(a[41:0]) * $signed(b[41:0]);
+                    {`FULLMANT, rmr[39:0]} <= $signed(a[40:0]) * $signed(b[40:0]);
                     `FULLEXP <= (a[47:41] + b[47:41] - 64);
                     rounded <= 1'b0;
                     if (do_norm)
