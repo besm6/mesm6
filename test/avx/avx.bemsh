@@ -19,8 +19,8 @@ start   start   '1'
 *-------------------------
         xta     minus1
         avx     minus1
-        uza     fail                    , отрицательное
-        aex     minus1                  , без нормализации будет -1
+        u1a     fail                    , положительное
+        aex     plus1
         u1a     fail
 *-------------------------
         xta     plus1
