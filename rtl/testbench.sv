@@ -572,6 +572,29 @@ task print_insn_regs();
     static logic [14:0] old_M[16], old_C;
     static logic        old_gie;
 
+    // PC
+`ifdef notdef
+    if (tracelevel >= 2 && cpu.pc !== old_pc) begin
+        $fdisplay(tracefd, "(%0d)        PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
+        old_pc = cpu.pc;
+    end
+`endif
+
+    //
+    // Index-registers: print before opcode
+    //
+    for (int i=0; i<16; i+=1) begin
+        if (cpu.M[i] !== old_M[i]) begin
+            $fdisplay(tracefd, "(%0d)        %0s = %o",
+                ctime, ir_name[i], cpu.M[i]);
+            old_M[i] = cpu.M[i];
+        end
+    end
+
+    // Print BESM opcode
+    if (fetch)
+        print_insn();
+
     // Accumulator
     if (cpu.acc !== old_acc) begin
         $fdisplay(tracefd, "(%0d)        A = %o %o %o %o",
@@ -594,37 +617,7 @@ task print_insn_regs();
         old_C = cpu.C;
     end
 
-    //
-    // Index-registers
-    //
-    for (int i=0; i<16; i+=1) begin
-        if (cpu.M[i] !== old_M[i]) begin
-            $fdisplay(tracefd, "(%0d)        %0s = %o",
-                ctime, ir_name[i], cpu.M[i]);
-            old_M[i] = cpu.M[i];
-        end
-    end
-
-    // Global Interrupt Enable
-    if (cpu.gie !== old_gie) begin
-        $fdisplay(tracefd, "(%0d)        GIE = %o", ctime, cpu.gie);
-        old_gie = cpu.gie;
-    end
-
-    // PC
-`ifdef notdef
-    if (tracelevel >= 2 && cpu.pc !== old_pc) begin
-        $fdisplay(tracefd, "(%0d)        PC = %o:%b", ctime, cpu.pc[15:1], cpu.pc[0]);
-        old_pc = cpu.pc;
-    end
-`endif
-
-    // Print BESM opcode
-    if (fetch)
-        print_insn();
-
     // R register
-    // Print R after opcode
     if (cpu.R !== old_R) begin
         $fwrite(tracefd, "(%0d)        R = %o (", ctime, cpu.R);
         if (cpu.R[5]) $fwrite(tracefd, "no-ovf,");
@@ -638,6 +631,12 @@ task print_insn_regs();
         if (cpu.R[0]) $fwrite(tracefd, ",no-norm");
         $fdisplay(tracefd, ")");
         old_R = cpu.R;
+    end
+
+    // Global Interrupt Enable
+    if (cpu.gie !== old_gie) begin
+        $fdisplay(tracefd, "(%0d)        GIE = %o", ctime, cpu.gie);
+        old_gie = cpu.gie;
     end
 endtask
 
