@@ -39,11 +39,12 @@ do
 
     echo ==== >> run.log
     rm -f $dir/output.trace
-    make -C$dir test >> run.log
+    make -C$dir test > $dir/run.log
+    cat $dir/run.log >> run.log
     make_status=$?
 
     let ntests++
-    grep -q 'Test PASS' $dir/output.trace
+    grep -q 'Test PASS' $dir/run.log
     if [ $? = 0 -a $make_status = 0 ]; then
         echo -e "- \033[0;32mPASS\033[m"
         let npassed++

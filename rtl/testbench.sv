@@ -88,9 +88,9 @@ dmemory ram(
     dbus_done               // operation completed
 );
 
-string tracefile = "output.trace";
+string tracefile;
 int limit;
-int tracelevel;             // Trace level
+int tracelevel = 0;         // Trace level
 int tracefd;                // Trace file descriptor
 int tty;                    // stdout descriptor for *71
 time ctime;                 // Current time
@@ -151,9 +151,15 @@ initial begin
     end
 
     // Enable detailed instruction trace to file.
-    tracelevel = 2;
-    $display("Generate trace file %0S", tracefile);
-    tracefd = $fopen(tracefile, "w");
+    if ($value$plusargs("trace=%s", tracefile))
+        tracelevel = 1;
+    else if ($value$plusargs("utrace=%s", tracefile))
+        tracelevel = 2;
+
+    if (tracelevel) begin
+        $display("Generate trace file %0S", tracefile);
+        tracefd = $fopen(tracefile, "w");
+    end
 
     // Limit the simulation by specified number of cycles.
     if (! $value$plusargs("limit=%d", limit)) begin
@@ -303,20 +309,16 @@ always @(negedge clk) begin
             $fdisplay(tracefd, "(%0d) *** Clear reset", ctime);
             old_reset = 0;
         end else begin
-            if (tracelevel > 1) begin
+            if (tracelevel >= 2) begin
                 // Print last executed micro-instruction
                 print_uop();
             end
 
-            // Print changed architectural state
-            print_changed_regs();
+            // Print BESM instruction and changed registers
+            print_insn_regs();
 
             // Print transactions on external bus
             print_ext_bus();
-
-            // Print BESM instruction
-            if (fetch)
-                print_insn();
 
             if (cpu.irq)
                 $fdisplay(tracefd, "(%0d) *** Interrupt", ctime);
@@ -555,9 +557,9 @@ task print_uop();
 endtask
 
 //
-// Print changed state at architectural level
+// Print BESM opcode and changed registers
 //
-task print_changed_regs();
+task print_insn_regs();
     static string ir_name[16] = '{
         0:"M[0]",   1:"M[1]",   2:"M[2]",   3:"M[3]",
         4:"M[4]",   5:"M[5]",   6:"M[6]",   7:"M[7]",
@@ -584,22 +586,6 @@ task print_changed_regs();
             ctime, cpu.alu.rmr[47:36], cpu.alu.rmr[35:24],
             cpu.alu.rmr[23:12], cpu.alu.rmr[11:0]);
         old_Y = cpu.alu.rmr;
-    end
-
-    // R register
-    if (cpu.R !== old_R) begin
-        $fwrite(tracefd, "(%0d)        R = %o (", ctime, cpu.R);
-        if (cpu.R[5]) $fwrite(tracefd, "no-ovf,");
-        casez (cpu.R[4:2])
-            3'b1??:  $fwrite(tracefd, "add");
-            3'b01?:  $fwrite(tracefd, "mul");
-            3'b001:  $fwrite(tracefd, "log");
-            default: $fwrite(tracefd, "undef");
-        endcase
-        if (cpu.R[1]) $fwrite(tracefd, ",no-round");
-        if (cpu.R[0]) $fwrite(tracefd, ",no-norm");
-        $fdisplay(tracefd, ")");
-        old_R = cpu.R;
     end
 
     // C register
@@ -632,13 +618,34 @@ task print_changed_regs();
         old_pc = cpu.pc;
     end
 `endif
+
+    // Print BESM opcode
+    if (fetch)
+        print_insn();
+
+    // R register
+    // Print R after opcode
+    if (cpu.R !== old_R) begin
+        $fwrite(tracefd, "(%0d)        R = %o (", ctime, cpu.R);
+        if (cpu.R[5]) $fwrite(tracefd, "no-ovf,");
+        casez (cpu.R[4:2])
+            3'b1??:  $fwrite(tracefd, "add");
+            3'b01?:  $fwrite(tracefd, "mul");
+            3'b001:  $fwrite(tracefd, "log");
+            default: $fwrite(tracefd, "undef");
+        endcase
+        if (cpu.R[1]) $fwrite(tracefd, ",no-round");
+        if (cpu.R[0]) $fwrite(tracefd, ",no-norm");
+        $fdisplay(tracefd, ")");
+        old_R = cpu.R;
+    end
 endtask
 
 //
 // Print transactions on external bus: memory loads/stores/fetches etc.
 //
 task print_ext_bus();
-    if (ibus_rd & ibus_done && tracelevel > 1)
+    if (ibus_rd & ibus_done && tracelevel >= 2)
         $fdisplay(tracefd, "(%0d)        Fetch [%o] = %o %o %o %o",
             ctime, ibus_addr, ibus_input[47:36], ibus_input[35:24],
             ibus_input[23:12], ibus_input[11:0]);

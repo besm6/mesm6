@@ -1,5 +1,9 @@
 TEST    = $(notdir $(CURDIR))
 BEMSH   = ../bemsh-to-oct.py
+OPTS    = +load=$(TEST).oct +nowarn3116 +limit=3000
+#OPTS   += +trace=output.trace
+OPTS   += +utrace=output-full.trace
+#OPTS   += +dump
 
 all:    $(TEST).oct
 
@@ -11,7 +15,7 @@ clean:
 
 run:    $(TEST).oct
 	$(MAKE) -C../../rtl work
-	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench +load=$(TEST).oct +nowarn3116 +limit=3000 #+dump
+	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench $(OPTS)
 
 test:   run
 
