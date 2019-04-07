@@ -16,6 +16,11 @@ tests+=" multiply divide"
 tests+=" hello"
 
 #
+# Legacy ALU test from BESM-6.
+#
+tests+=" alu"
+
+#
 # Delete log file from previous run.
 #
 rm -f run.log
@@ -29,6 +34,9 @@ nfailed=0
 for t in $tests
 do
     echo -n "Test $t "
+    if [ $t = "alu" ]; then
+        echo -n "(takes about 1-2 minutes) "
+    fi
     dir=$t
     tag=`basename $t`
 
