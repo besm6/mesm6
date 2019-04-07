@@ -23,10 +23,30 @@ start   start   '1'
         utm     -'11'(1)
         v1m     fail(1)
 *
+* STI (15) when M15=15: special case
+*
+        xta     cful
+        atx     '77776'
+        atx     '77777'
+        xta
+        vtm     '77776'(15)
+        xts     (15)
+        aex     cful
+        u1a     fail
+*
+        xta     '77776'
+        u1a     fail
+        vtm     15(15)
+        xta     =b'77777'
+        sti     (15)
+        aex     cful
+        u1a     fail
+*
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *-------------------------
 align   адрес   start+'1777'            , данные с адреса 2000
+cful    конд    b'7777777777777777'
 ws      конд    b'11'
         конд    b'22'
         конд    b'33'

@@ -288,7 +288,7 @@ always @(posedge clk) begin
         R[4:2] <= 3'b100;       // set additive group
     else if (set_mul)
         R[4:2] <= 3'b010;       // set multiplicative group
-    else if (set_log | (op_xta0 & decode & ~cond_op_not_cached & ~irq))
+    else if (set_log | (op_xta0 & decode & is_op_cached & ~irq))
         R[4:2] <= 3'b001;       // set logical group
 end
 
