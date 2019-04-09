@@ -43,7 +43,7 @@ enum reg [3:0] {
     STATE_IDLE,
     STATE_SHIFTING,
     STATE_PACKING,
-    STATE_UNPACKING,  
+    STATE_UNPACKING,
     STATE_ADD_CARRY,
     STATE_NORM_BEFORE,
     STATE_ADDING,
@@ -179,7 +179,7 @@ always @(posedge clk) begin
                     {acc, rmr} <= {a, 48'b0};
                     state <= STATE_SHIFTING;
                 end
-  
+
             `ALU_PACK: begin
                     // APX: 1 + as many cycles as 1 bits in the mask.
                     acc <= '0;
@@ -187,7 +187,7 @@ always @(posedge clk) begin
                     rmr <= b;
                     state <= STATE_PACKING;
                 end
-  
+
             `ALU_UNPACK: begin
                     // AUX: 49 cycles.
                     acc <= '0;
@@ -290,7 +290,7 @@ always @(posedge clk) begin
                     tmpexp <= tmpexp + 1'b1;
                 end
             end
-        end 
+        end
 
         STATE_DIVIDING: begin
             if (tmp == '0 || inc2 == '0) begin
@@ -353,7 +353,6 @@ always @(posedge clk) begin
                         state <= STATE_ROUND;
                     else
                         done <= 1;
-
                 end else if (do_norm && acc[40] == acc[39]) begin
                     // A 1 bit is about to move from RMR to ACC, this makes additional rounding not needed.
                     rounded <= rounded | rmr[39];
@@ -378,24 +377,23 @@ always @(posedge clk) begin
                    if (rmr[0])
                        acc <= {tmp[0], acc[47:1]};
                    rmr <= rmr >> 1;
-                   `FULLTMP <= `FULLTMP >> 1;                   
+                   `FULLTMP <= `FULLTMP >> 1;
                 end else
-                  done <= 1;          
+                  done <= 1;
             end
 
         STATE_UNPACKING: begin
                 if (tmpexp) begin
                    tmpexp <= tmpexp - 1'b1;
                    acc <= {acc, tmptail[5] & rmr[47]};
-                   rmr <= rmr << 1;                   
+                   rmr <= rmr << 1;
                    if (rmr[47])
-                       `FULLTMP <= `FULLTMP << 1;                   
+                       `FULLTMP <= `FULLTMP << 1;
                 end else
                     done <= 1;
             end
         endcase
     end
 end
-
 
 endmodule

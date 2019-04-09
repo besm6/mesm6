@@ -1,6 +1,6 @@
 TEST    = $(notdir $(CURDIR))
 BEMSH   = ../bemsh-to-oct.py
-OPTS    = +load=$(TEST).oct +nowarn3116 +limit=10000
+OPTS    = +load=$(TEST).oct +nowarn3116 +limit=20000
 #OPTS   += +trace=output.trace
 OPTS   += +utrace=output-full.trace
 #OPTS   += +dump
