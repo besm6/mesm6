@@ -282,12 +282,54 @@ always @(posedge clk) begin
             else begin
                 if (tmpexp[6]) begin
                     // shift right
+`ifdef SLOW_SHIFT
                     {acc, rmr} <= {acc, rmr} >> 1;
                     tmpexp <= tmpexp - 1'b1;
+`else
+                    case (tmpexp[1:0])
+                     1: begin
+                            {acc, rmr} <= {acc, rmr} >> 1;
+                            tmpexp <= tmpexp - 1'd1;
+                        end
+                     2: begin
+                            {acc, rmr} <= {acc, rmr} >> 2;
+                            tmpexp <= tmpexp - 2'd2;
+                        end
+                     3: begin
+                            {acc, rmr} <= {acc, rmr} >> 3;
+                            tmpexp <= tmpexp - 2'd3;
+                        end
+                     0: begin
+                            {acc, rmr} <= {acc, rmr} >> 4;
+                            tmpexp <= tmpexp - 3'd4;
+                        end
+                    endcase
+`endif
                 end else begin
                     // shift left
+`ifdef SLOW_SHIFT
                     {rmr, acc} <= {rmr, acc} << 1;
                     tmpexp <= tmpexp + 1'b1;
+`else
+                    case (tmpexp[1:0])
+                     3: begin
+                            {rmr, acc} <= {rmr, acc} << 1;
+                            tmpexp <= tmpexp + 1'd1;
+                        end
+                     2: begin
+                            {rmr, acc} <= {rmr, acc} << 2;
+                            tmpexp <= tmpexp + 2'd2;
+                        end
+                     1: begin
+                            {rmr, acc} <= {rmr, acc} << 3;
+                            tmpexp <= tmpexp + 2'd3;
+                        end
+                     0: begin
+                            {rmr, acc} <= {rmr, acc} << 4;
+                            tmpexp <= tmpexp + 3'd4;
+                        end
+                    endcase
+`endif
                 end
             end
         end
