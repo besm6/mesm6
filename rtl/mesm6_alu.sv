@@ -41,6 +41,9 @@ module mesm6_alu(
 // Internal progress indicator.
 enum reg [3:0] {
     STATE_IDLE,
+    STATE_SHIFTING,
+    STATE_PACKING,
+    STATE_UNPACKING,  
     STATE_ADD_CARRY,
     STATE_NORM_BEFORE,
     STATE_ADDING,
@@ -80,12 +83,14 @@ reg accsign2, inc1;
 reg [41:0] tmp;
 reg [40:0] inc2;
 reg [6:0] tmpexp;
+reg [5:0] tmptail;
 reg rounded, sticky;
 
 wire [8:0] expincr = (accsign2 != acc[40]) ? 9'o001 :
                      (acc[40] == acc[39])  ? 9'o777 :
                                              9'o000;
 
+`define FULLTMP {tmptail, tmp}
 `define FULLMANT {accsign2, acc[40:0]}
 `define FULLEXP {expsign, ovfl, acc[47:41]}
 `define ABS(x) (x[40] ? ~x + 1 : x)
@@ -170,29 +175,26 @@ always @(posedge clk) begin
                 end
 
             `ALU_SHIFT: begin
-                    // ASX, ASN: one cycle.
-                    if (b[47]) begin
-                        // shift right
-                        {acc, rmr} <= {a, 48'b0} >> b[46:41];
-                    end else begin
-                        // shift left
-                        {rmr, acc} <= {48'b0, a} << (7'd64 - b[46:41]);
-                    end
-                    done <= 1;
+                    tmpexp <= b[47:41];
+                    {acc, rmr} <= {a, 48'b0};
+                    state <= STATE_SHIFTING;
                 end
-
+  
             `ALU_PACK: begin
-                    // APX: one cycle.
-                    acc <= pack(a, b);
-                    rmr <= '0;
-                    done <= 1;
+                    // APX: 1 + as many cycles as 1 bits in the mask.
+                    acc <= '0;
+                    `FULLTMP <= a;
+                    rmr <= b;
+                    state <= STATE_PACKING;
                 end
-
+  
             `ALU_UNPACK: begin
-                    // AUX: one cycle.
-                    acc <= unpack(a, b);
-                    rmr <= '0;
-                    done <= 1;
+                    // AUX: 49 cycles.
+                    acc <= '0;
+                    `FULLTMP <= a;
+                    rmr <= b;
+                    tmpexp <= 48;
+                    state <= STATE_UNPACKING;
                 end
 
             `ALU_FADD, `ALU_FSUB, `ALU_FREVSUB, `ALU_FSUBABS: begin
@@ -274,6 +276,22 @@ always @(posedge clk) begin
                 end
             endcase
 
+        STATE_SHIFTING: begin
+            if (tmpexp == 7'd64)
+                done <= 1;
+            else begin
+                if (tmpexp[6]) begin
+                    // shift right
+                    {acc, rmr} <= {acc, rmr} >> 1;
+                    tmpexp <= tmpexp - 1'b1;
+                end else begin
+                    // shift left
+                    {rmr, acc} <= {rmr, acc} << 1;
+                    tmpexp <= tmpexp + 1'b1;
+                end
+            end
+        end 
+
         STATE_DIVIDING: begin
             if (tmp == '0 || inc2 == '0) begin
                 if (do_norm) begin
@@ -282,8 +300,9 @@ always @(posedge clk) begin
                 end else
                     done <= 1;
             end else begin
-               if (`ABS(tmp) < 1'b1 << 39)
-                  tmp <= tmp << 1;
+               // ABS(tmp) < 1'b1 << 39
+               if (tmp[41:39] == 3'b0 || (tmp[41:39] == 3'b111 && tmp[38:0] != 39'b0))
+                   tmp <= tmp << 1;
                else if (tmp[41] ^ add_val2[41]) begin
                   `FULLMANT <= `FULLMANT - inc2;
                   tmp <= (tmp + add_val2) << 1;
@@ -304,19 +323,17 @@ always @(posedge clk) begin
         STATE_NORM_BEFORE: begin
                 if (acc[47:41] != tmpexp) begin
                     tmpexp <= tmpexp + 1;
-                    {tmp, rmr[39:0]} <= $signed({tmp, rmr[39:0]}) >>> 1;
-                    inc2 <= (inc2 >> 1) | (inc2[0] & rmr[0]);
-                    sticky <= sticky | rmr[0] | inc2[0];
+                    tmp <= $signed(tmp) >>> 1;
+                    rmr[39:0] <= {tmp[0] ^ inc2[40], rmr[39:1]};
+                    inc2[40] <= tmp[0] & inc2[40];
+                    sticky <= sticky | (tmp[0] ^ inc2[40]);
                 end else begin
                     state <= STATE_ADDING;
                 end
             end
 
         STATE_ADDING: begin
-                {`FULLMANT, rmr[39:0]} <= {`FULLMANT, rmr[39:0]} +
-                                          {tmp, inc2[39:0]} +
-                                          {inc1, 40'b0} +
-                                          {inc2[40], 40'b0};
+                `FULLMANT <= `FULLMANT + tmp + inc1 + inc2[40];
                 rounded <= 1'b0;
                 state <= STATE_NORM_AFTER;
             end
@@ -330,6 +347,7 @@ always @(posedge clk) begin
                     done <= 1;
                 end else if (accsign2 != acc[40]) begin
                     {`FULLMANT, rmr[39:0]} <= $signed({`FULLMANT, rmr[39:0]}) >>> 1;
+                    sticky <= sticky | acc[0];
                     `FULLEXP <= `FULLEXP + expincr;
                     if (do_round)
                         state <= STATE_ROUND;
@@ -354,41 +372,30 @@ always @(posedge clk) begin
                     acc[0] <= 1'b1;
                 done <= 1;
             end
+
+        STATE_PACKING: begin
+                if (rmr) begin
+                   if (rmr[0])
+                       acc <= {tmp[0], acc[47:1]};
+                   rmr <= rmr >> 1;
+                   `FULLTMP <= `FULLTMP >> 1;                   
+                end else
+                  done <= 1;          
+            end
+
+        STATE_UNPACKING: begin
+                if (tmpexp) begin
+                   tmpexp <= tmpexp - 1'b1;
+                   acc <= {acc, tmptail[5] & rmr[47]};
+                   rmr <= rmr << 1;                   
+                   if (rmr[47])
+                       `FULLTMP <= `FULLTMP << 1;                   
+                end else
+                    done <= 1;
+            end
         endcase
     end
 end
 
-//
-// Pack value by mask.
-//
-function [47:0] pack(input [47:0] val, mask);
-    logic [47:0] result;
-    int i;
-
-    result = '0;
-    for (i=0; i<48; i++) begin
-        if (mask[i])
-            result = { val[i], result[47:1] };
-    end
-    return result;
-endfunction
-
-//
-// Unpack value by mask.
-//
-function [47:0] unpack(input [47:0] val, mask);
-    logic [47:0] result;
-    int i, k;
-
-    result = '0;
-    k = 47;
-    for (i=47; i>=0; i--) begin
-        if (mask[i]) begin
-            result[i] = val[k];
-            k--;
-        end
-    end
-    return result;
-endfunction
 
 endmodule
