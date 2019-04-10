@@ -75,10 +75,9 @@ reg carry;                              // carry bit, latched
 reg ovfl, expsign;                      // overflow bits, latched
 
 // Mux at A input of adder,
-wire [47:0] a_mux = (state == STATE_ADD_B ||
-                     state == STATE_ADD_CARRY) ?
-                        acc :           // accumulator
-                        a;              // A input
+wire [47:0] a_mux = (state == STATE_IDLE) ?
+                        a :             // A input
+                        acc;            // accumulator
 
 // Mux at B input of adder
 wire [47:0] b_mux = (state == STATE_ADD_CARRY) ?
@@ -177,7 +176,7 @@ always @(posedge clk) begin
 
             `ALU_COUNT: begin
                     // ACX: three cycles.
-                    acc <= $countones(a);       // number of 1s in accumulator
+                    acc <= countones(a);        // number of 1s in accumulator
                     rmr <= '0;
                     state <= STATE_ADD_B;
                 end
@@ -460,5 +459,14 @@ always @(posedge clk) begin
         endcase
     end
 end
+
+//
+// Count ones in the input 48-bit word.
+//
+function [5:0] countones(input [47:0] a);
+    countones = '0;
+    for (int i = 0; i < 48; ++i)
+        countones += a[i];
+endfunction
 
 endmodule
