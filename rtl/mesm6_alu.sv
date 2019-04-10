@@ -45,6 +45,7 @@ enum reg [3:0] {
     STATE_PACKING,
     STATE_UNPACKING,
     STATE_ADD_CARRY,
+    STATE_ADD_B,
     STATE_NORM_BEFORE,
     STATE_ADDING,
     STATE_DIVIDING,
@@ -70,14 +71,22 @@ wire [5:0] clz =
     a[7]  ? 41 : a[6]  ? 42 : a[5]  ? 43 : a[4]  ? 44 :
     a[3]  ? 45 : a[2]  ? 46 : a[1]  ? 47 : a[0]  ? 48 : 0;
 
+reg carry;                              // carry bit, latched
+reg ovfl, expsign;                      // overflow bits, latched
+
+// Mux at A input of adder,
+wire [47:0] a_mux = (state == STATE_ADD_B ||
+                     state == STATE_ADD_CARRY) ?
+                        acc :           // accumulator
+                        a;              // A input
+
+// Mux at B input of adder
+wire [47:0] b_mux = (state == STATE_ADD_CARRY) ?
+                        carry :         // carry bit
+                        b;              // B input
+
 // 49-bit adder
-wire [47:0] adder_a =                       // mux at A input of adder
-    (op == `ALU_COUNT) ? $countones(a) :    // number of 1s in accumulator
-    (op == `ALU_CLZ)   ? clz :              // count leading zeroes + 1
-                         a;                 // accumulator
-wire [48:0] sum = adder_a + b;              // adder
-reg carry;                                  // carry bit, latched
-reg ovfl, expsign;                          // overflow bits, latched
+wire [48:0] sum = a_mux + b_mux;        // A (or accumulator) + B (or carry)
 
 reg accsign2, inc1;
 reg [41:0] tmp;
@@ -159,19 +168,25 @@ always @(posedge clk) begin
                     done <= 1;
                 end
 
-            `ALU_ADD_CARRY_AROUND,
-            `ALU_COUNT: begin
-                    // ARX, ACX: two cycles.
+            `ALU_ADD_CARRY_AROUND: begin
+                    // ARX: two cycles.
                     {carry, acc} <= sum;
                     rmr <= '0;
                     state <= STATE_ADD_CARRY;
                 end
 
+            `ALU_COUNT: begin
+                    // ACX: three cycles.
+                    acc <= $countones(a);       // number of 1s in accumulator
+                    rmr <= '0;
+                    state <= STATE_ADD_B;
+                end
+
             `ALU_CLZ: begin
-                    // ANX: two cycles.
-                    {carry, acc} <= sum;
+                    // ANX: three cycles.
+                    acc <= clz;                 // count leading zeroes + 1
                     rmr <= a << clz;
-                    state <= STATE_ADD_CARRY;
+                    state <= STATE_ADD_B;
                 end
 
             `ALU_SHIFT: begin
@@ -356,9 +371,17 @@ always @(posedge clk) begin
             inc2 <= inc2 >> 1;
         end
 
+        STATE_ADD_B: begin
+                // Add B to the accumulator.
+                // Second cycle of ACX or ANX.
+                {carry, acc} <= sum;
+                state <= STATE_ADD_CARRY;
+            end
+
         STATE_ADD_CARRY: begin
-                // Second cycle of ARX, ACX or ANX: add carry bit.
-                acc <= acc + carry;
+                // Add carry bit.
+                // Second cycle of ARX and third cycle of ACX or ANX.
+                acc <= sum;
                 done <= 1;
             end
 
