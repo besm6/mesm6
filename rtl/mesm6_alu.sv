@@ -88,20 +88,20 @@ wire [47:0] b_mux = (state == STATE_ADD_CARRY) ?
 wire [48:0] sum = a_mux + b_mux;        // A (or accumulator) + B (or carry)
 
 reg accsign2, inc1;
-reg [41:0] tmp;
+reg [41:0] rail;
 reg [40:0] inc2;
-reg [6:0] tmpexp;
-reg [5:0] tmptail;
+reg [6:0] railexp;
+reg [5:0] railtail;
 reg rounded, sticky;
 
 wire [8:0] expincr = (accsign2 != acc[40]) ? 9'o001 :
                      (acc[40] == acc[39])  ? 9'o777 :
                                              9'o000;
 
-`define FULLTMP {tmptail, tmp}
-`define FULLMANT {accsign2, acc[40:0]}
-`define FULLEXP {expsign, ovfl, acc[47:41]}
-`define ABS(x) (x[40] ? ~x + 1 : x)
+`define FULLRAIL    {railtail, rail}
+`define FULLMANT    {accsign2, acc[40:0]}
+`define FULLEXP     {expsign, ovfl, acc[47:41]}
+`define ABS(x)      (x[40] ? ~x + 1 : x)
 
 wire need_neg1 = (op == `ALU_FREVSUB) ||
                  (op == `ALU_FSUBABS && a[40]) ||
@@ -189,7 +189,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_SHIFT: begin
-                    tmpexp <= b[47:41];
+                    railexp <= b[47:41];
                     {acc, rmr} <= {a, 48'b0};
                     state <= STATE_SHIFTING;
                 end
@@ -197,7 +197,7 @@ always @(posedge clk) begin
             `ALU_PACK: begin
                     // APX: 1 + as many cycles as 1 bits in the mask.
                     acc <= '0;
-                    `FULLTMP <= a;
+                    `FULLRAIL <= a;
                     rmr <= b;
                     state <= STATE_PACKING;
                 end
@@ -205,28 +205,28 @@ always @(posedge clk) begin
             `ALU_UNPACK: begin
                     // AUX: 49 cycles.
                     acc <= '0;
-                    `FULLTMP <= a;
+                    `FULLRAIL <= a;
                     rmr <= b;
-                    tmpexp <= 48;
+                    railexp <= 48;
                     state <= STATE_UNPACKING;
                 end
 
             `ALU_FADD, `ALU_FSUB, `ALU_FREVSUB, `ALU_FSUBABS: begin
-                    // acc gets the operand with the larger exponent, tmp gets the other
+                    // acc gets the operand with the larger exponent, rail gets the other
                     if (a[47:41] > b[47:41]) begin
                         `FULLMANT <= add_val1;
                         inc1 <= need_neg1;
-                        tmp <= add_val2;
+                        rail <= add_val2;
                         inc2 <= {need_neg2, 40'b0};
                         `FULLEXP <= a[47:41];
-                        tmpexp <= b[47:41];
+                        railexp <= b[47:41];
                     end else begin
                         `FULLMANT <= add_val2;
                         inc1 <= need_neg2;
-                        tmp <= add_val1;
+                        rail <= add_val1;
                         inc2 <= {need_neg1, 40'b0};
                         `FULLEXP <= b[47:41];
-                        tmpexp <= a[47:41];
+                        railexp <= a[47:41];
                     end
                     rmr[39:0] <= 40'b0;
                     state <= STATE_NORM_BEFORE;
@@ -236,7 +236,7 @@ always @(posedge clk) begin
             `ALU_FSIGN: begin
                     `FULLMANT <= add_val1;
                     inc1 <= need_neg1;
-                    tmp <= 42'b0;
+                    rail <= 42'b0;
                     inc2 <= 41'b0;
                     `FULLEXP <= a[47:41];
                     rmr <= 48'b0;
@@ -276,46 +276,46 @@ always @(posedge clk) begin
                 end
 
             `ALU_FDIV: begin
-                   // Dividing add_val1 (tmp) by add_val2, result in acc, counter in inc2
+                   // Dividing add_val1 (rail) by add_val2, result in acc, counter in inc2
                    inc2 <= 1'b1 << 39;
                    `FULLMANT <= '0;
                    if (`ABS(add_val1) >= `ABS(add_val2)) begin
                        `FULLEXP <= a[47:41] - b[47:41] + 65;
-                       tmp <= add_val1;
+                       rail <= add_val1;
                    end else begin
                        `FULLEXP <= a[47:41] - b[47:41] + 64;
-                       tmp <= add_val1 << 1;
+                       rail <= add_val1 << 1;
                    end
                    state <= STATE_DIVIDING;
                 end
             endcase
 
         STATE_SHIFTING: begin
-            if (tmpexp == 7'd64)
+            if (railexp == 7'd64)
                 done <= 1;
             else begin
-                if (tmpexp[6]) begin
+                if (railexp[6]) begin
                     // shift right
 `ifdef SLOW_SHIFT
                     {acc, rmr} <= {acc, rmr} >> 1;
-                    tmpexp <= tmpexp - 1'b1;
+                    railexp <= railexp - 1'b1;
 `else
-                    case (tmpexp[1:0])
+                    case (railexp[1:0])
                      1: begin
                             {acc, rmr} <= {acc, rmr} >> 1;
-                            tmpexp <= tmpexp - 1'd1;
+                            railexp <= railexp - 1'd1;
                         end
                      2: begin
                             {acc, rmr} <= {acc, rmr} >> 2;
-                            tmpexp <= tmpexp - 2'd2;
+                            railexp <= railexp - 2'd2;
                         end
                      3: begin
                             {acc, rmr} <= {acc, rmr} >> 3;
-                            tmpexp <= tmpexp - 2'd3;
+                            railexp <= railexp - 2'd3;
                         end
                      0: begin
                             {acc, rmr} <= {acc, rmr} >> 4;
-                            tmpexp <= tmpexp - 3'd4;
+                            railexp <= railexp - 3'd4;
                         end
                     endcase
 `endif
@@ -323,24 +323,24 @@ always @(posedge clk) begin
                     // shift left
 `ifdef SLOW_SHIFT
                     {rmr, acc} <= {rmr, acc} << 1;
-                    tmpexp <= tmpexp + 1'b1;
+                    railexp <= railexp + 1'b1;
 `else
-                    case (tmpexp[1:0])
+                    case (railexp[1:0])
                      3: begin
                             {rmr, acc} <= {rmr, acc} << 1;
-                            tmpexp <= tmpexp + 1'd1;
+                            railexp <= railexp + 1'd1;
                         end
                      2: begin
                             {rmr, acc} <= {rmr, acc} << 2;
-                            tmpexp <= tmpexp + 2'd2;
+                            railexp <= railexp + 2'd2;
                         end
                      1: begin
                             {rmr, acc} <= {rmr, acc} << 3;
-                            tmpexp <= tmpexp + 2'd3;
+                            railexp <= railexp + 2'd3;
                         end
                      0: begin
                             {rmr, acc} <= {rmr, acc} << 4;
-                            tmpexp <= tmpexp + 3'd4;
+                            railexp <= railexp + 3'd4;
                         end
                     endcase
 `endif
@@ -349,22 +349,22 @@ always @(posedge clk) begin
         end
 
         STATE_DIVIDING: begin
-            if (tmp == '0 || inc2 == '0) begin
+            if (rail == '0 || inc2 == '0) begin
                 if (do_norm) begin
                     rounded <= 1'b1;        // Suppressing rounding
                     state <= STATE_NORM_AFTER;
                 end else
                     done <= 1;
             end else begin
-               // ABS(tmp) < 1'b1 << 39
-               if (tmp[41:39] == 3'b0 || (tmp[41:39] == 3'b111 && tmp[38:0] != 39'b0))
-                   tmp <= tmp << 1;
-               else if (tmp[41] ^ add_val2[41]) begin
+               // ABS(rail) < 1'b1 << 39
+               if (rail[41:39] == 3'b0 || (rail[41:39] == 3'b111 && rail[38:0] != 39'b0))
+                   rail <= rail << 1;
+               else if (rail[41] ^ add_val2[41]) begin
                   `FULLMANT <= `FULLMANT - inc2;
-                  tmp <= (tmp + add_val2) << 1;
+                  rail <= (rail + add_val2) << 1;
                end else begin
                   `FULLMANT <= `FULLMANT + inc2;
-                  tmp <= (tmp - add_val2) << 1;
+                  rail <= (rail - add_val2) << 1;
                end
             end
             inc2 <= inc2 >> 1;
@@ -385,19 +385,19 @@ always @(posedge clk) begin
             end
 
         STATE_NORM_BEFORE: begin
-                if (acc[47:41] != tmpexp) begin
-                    tmpexp <= tmpexp + 1;
-                    tmp <= $signed(tmp) >>> 1;
-                    rmr[39:0] <= {tmp[0] ^ inc2[40], rmr[39:1]};
-                    inc2[40] <= tmp[0] & inc2[40];
-                    sticky <= sticky | (tmp[0] ^ inc2[40]);
+                if (acc[47:41] != railexp) begin
+                    railexp <= railexp + 1;
+                    rail <= $signed(rail) >>> 1;
+                    rmr[39:0] <= {rail[0] ^ inc2[40], rmr[39:1]};
+                    inc2[40] <= rail[0] & inc2[40];
+                    sticky <= sticky | (rail[0] ^ inc2[40]);
                 end else begin
                     state <= STATE_ADDING;
                 end
             end
 
         STATE_ADDING: begin
-                `FULLMANT <= `FULLMANT + tmp + inc1 + inc2[40];
+                `FULLMANT <= `FULLMANT + rail + inc1 + inc2[40];
                 rounded <= 1'b0;
                 state <= STATE_NORM_AFTER;
             end
@@ -439,20 +439,20 @@ always @(posedge clk) begin
         STATE_PACKING: begin
                 if (rmr) begin
                    if (rmr[0])
-                       acc <= {tmp[0], acc[47:1]};
+                       acc <= {rail[0], acc[47:1]};
                    rmr <= rmr >> 1;
-                   `FULLTMP <= `FULLTMP >> 1;
+                   `FULLRAIL <= `FULLRAIL >> 1;
                 end else
                   done <= 1;
             end
 
         STATE_UNPACKING: begin
-                if (tmpexp) begin
-                   tmpexp <= tmpexp - 1'b1;
-                   acc <= {acc, tmptail[5] & rmr[47]};
+                if (railexp) begin
+                   railexp <= railexp - 1'b1;
+                   acc <= {acc, railtail[5] & rmr[47]};
                    rmr <= rmr << 1;
                    if (rmr[47])
-                       `FULLTMP <= `FULLTMP << 1;
+                       `FULLRAIL <= `FULLRAIL << 1;
                 end else
                     done <= 1;
             end
