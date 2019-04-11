@@ -112,6 +112,9 @@ wire need_neg2 = (op == `ALU_FSUB) ||
 wire [41:0] add_val1 = {a[40], a[40:0]} ^ {42{need_neg1}};
 wire [41:0] add_val2 = {b[40], b[40:0]} ^ {42{need_neg2}};
 
+wire signed [40:0] amant = a[40:0];
+wire signed [40:0] bmant = b[40:0];
+
 // ALU operation selection.
 always @(posedge clk) begin
     if (op == `ALU_NOP) begin
@@ -244,7 +247,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FADDEXP: begin
-                    `FULLMANT <= add_val1;
+                    `FULLMANT <= amant;
                     `FULLEXP <= (a[47:41] + b[47:41] - 64);
                     rmr <= 48'b0;
                     if (do_norm)
@@ -254,7 +257,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FSUBEXP: begin
-                    `FULLMANT <= add_val1;
+                    `FULLMANT <= amant;
                     `FULLEXP <= (a[47:41] - b[47:41] + 64);
                     rmr <= 48'b0;
                     if (do_norm)
@@ -264,7 +267,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FMUL: begin
-                    {`FULLMANT, rmr[39:0]} <= $signed(a[40:0]) * $signed(b[40:0]);
+                {`FULLMANT, rmr[39:0]} <= amant * bmant;
                     `FULLEXP <= (a[47:41] + b[47:41] - 64);
                     rounded <= 1'b0;
                     if (do_norm)
@@ -276,15 +279,15 @@ always @(posedge clk) begin
                 end
 
             `ALU_FDIV: begin
-                   // Dividing add_val1 (rail) by add_val2, result in acc, counter in inc2
+                // Dividing amant (rail) by bmant, result in acc, counter in inc2
                    inc2 <= 1'b1 << 39;
                    `FULLMANT <= '0;
-                   if (`ABS(add_val1) >= `ABS(add_val2)) begin
+                if (`ABS(amant) >= `ABS(bmant)) begin
                        `FULLEXP <= a[47:41] - b[47:41] + 65;
-                       rail <= add_val1;
+                       rail <= amant;
                    end else begin
                        `FULLEXP <= a[47:41] - b[47:41] + 64;
-                       rail <= add_val1 << 1;
+                       rail <= amant << 1;
                    end
                    state <= STATE_DIVIDING;
                 end
