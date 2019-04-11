@@ -192,6 +192,8 @@ always @(posedge clk) begin
                 end
 
             `ALU_SHIFT: begin
+                    // ASN, ASX: 1 bit or 4 bits per cycle,
+                    // depending on SLOW_SHIFT define.
                     railexp <= b[47:41];
                     {acc, rmr} <= {a, 48'b0};
                     state <= STATE_SHIFTING;
@@ -215,6 +217,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FADD, `ALU_FSUB, `ALU_FREVSUB, `ALU_FSUBABS: begin
+                    // A+X, A-X, X-A or AMX instructions.
                     // acc gets the operand with the larger exponent, rail gets the other
                     if (a[47:41] > b[47:41]) begin
                         `FULLMANT <= add_val1;
@@ -237,6 +240,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FSIGN: begin
+                    // AVX: change sign and normalize.
                     `FULLMANT <= add_val1;
                     inc1 <= need_neg1;
                     rail <= 42'b0;
@@ -247,6 +251,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FADDEXP: begin
+                    // E+N: add to exponent, then normalize.
                     `FULLMANT <= amant;
                     `FULLEXP <= (a[47:41] + b[47:41] - 64);
                     rmr <= 48'b0;
@@ -257,6 +262,7 @@ always @(posedge clk) begin
                 end
 
             `ALU_FSUBEXP: begin
+                    // E-N: subtract from exponent, then normalize.
                     `FULLMANT <= amant;
                     `FULLEXP <= (a[47:41] - b[47:41] + 64);
                     rmr <= 48'b0;
@@ -267,7 +273,8 @@ always @(posedge clk) begin
                 end
 
             `ALU_FMUL: begin
-                {`FULLMANT, rmr[39:0]} <= amant * bmant;
+                    // A*X: multiply in one cycle, then normalize.
+                    {`FULLMANT, rmr[39:0]} <= amant * bmant;
                     `FULLEXP <= (a[47:41] + b[47:41] - 64);
                     rounded <= 1'b0;
                     if (do_norm)
@@ -279,99 +286,105 @@ always @(posedge clk) begin
                 end
 
             `ALU_FDIV: begin
-                // Dividing amant (rail) by bmant, result in acc, counter in inc2
-                   inc2 <= 1'b1 << 39;
-                   `FULLMANT <= '0;
-                if (`ABS(amant) >= `ABS(bmant)) begin
-                       `FULLEXP <= a[47:41] - b[47:41] + 65;
-                       rail <= amant;
-                   end else begin
-                       `FULLEXP <= a[47:41] - b[47:41] + 64;
-                       rail <= amant << 1;
-                   end
-                   state <= STATE_DIVIDING;
+                    // A/X: divide by subtraction.
+                    // Dividing amant (rail) by bmant, result in acc, counter in inc2
+                    inc2 <= 1'b1 << 39;
+                    `FULLMANT <= '0;
+                    if (`ABS(amant) >= `ABS(bmant)) begin
+                        `FULLEXP <= a[47:41] - b[47:41] + 65;
+                        rail <= amant;
+                    end else begin
+                        `FULLEXP <= a[47:41] - b[47:41] + 64;
+                        rail <= amant << 1;
+                    end
+                    state <= STATE_DIVIDING;
                 end
             endcase
 
         STATE_SHIFTING: begin
-            if (railexp == 7'd64)
-                done <= 1;
-            else begin
-                if (railexp[6]) begin
-                    // shift right
+                // Next cycle of shift operation.
+                if (railexp == 7'd64)
+                    done <= 1;
+                else begin
+                    if (railexp[6]) begin
 `ifdef SLOW_SHIFT
-                    {acc, rmr} <= {acc, rmr} >> 1;
-                    railexp <= railexp - 1'b1;
+                        // Shift right by one bit.
+                        {acc, rmr} <= {acc, rmr} >> 1;
+                        railexp <= railexp - 1'b1;
 `else
-                    case (railexp[1:0])
-                     1: begin
-                            {acc, rmr} <= {acc, rmr} >> 1;
-                            railexp <= railexp - 1'd1;
-                        end
-                     2: begin
-                            {acc, rmr} <= {acc, rmr} >> 2;
-                            railexp <= railexp - 2'd2;
-                        end
-                     3: begin
-                            {acc, rmr} <= {acc, rmr} >> 3;
-                            railexp <= railexp - 2'd3;
-                        end
-                     0: begin
-                            {acc, rmr} <= {acc, rmr} >> 4;
-                            railexp <= railexp - 3'd4;
-                        end
-                    endcase
+                        // Shift right by up to four bits.
+                        case (railexp[1:0])
+                         1: begin
+                                {acc, rmr} <= {acc, rmr} >> 1;
+                                railexp <= railexp - 1'd1;
+                            end
+                         2: begin
+                                {acc, rmr} <= {acc, rmr} >> 2;
+                                railexp <= railexp - 2'd2;
+                            end
+                         3: begin
+                                {acc, rmr} <= {acc, rmr} >> 3;
+                                railexp <= railexp - 2'd3;
+                            end
+                         0: begin
+                                {acc, rmr} <= {acc, rmr} >> 4;
+                                railexp <= railexp - 3'd4;
+                            end
+                        endcase
 `endif
-                end else begin
-                    // shift left
+                    end else begin
 `ifdef SLOW_SHIFT
-                    {rmr, acc} <= {rmr, acc} << 1;
-                    railexp <= railexp + 1'b1;
+                        // Shift left by one bit.
+                        {rmr, acc} <= {rmr, acc} << 1;
+                        railexp <= railexp + 1'b1;
 `else
-                    case (railexp[1:0])
-                     3: begin
-                            {rmr, acc} <= {rmr, acc} << 1;
-                            railexp <= railexp + 1'd1;
-                        end
-                     2: begin
-                            {rmr, acc} <= {rmr, acc} << 2;
-                            railexp <= railexp + 2'd2;
-                        end
-                     1: begin
-                            {rmr, acc} <= {rmr, acc} << 3;
-                            railexp <= railexp + 2'd3;
-                        end
-                     0: begin
-                            {rmr, acc} <= {rmr, acc} << 4;
-                            railexp <= railexp + 3'd4;
-                        end
-                    endcase
+                        // Shift left by up to four bits.
+                        case (railexp[1:0])
+                         3: begin
+                                {rmr, acc} <= {rmr, acc} << 1;
+                                railexp <= railexp + 1'd1;
+                            end
+                         2: begin
+                                {rmr, acc} <= {rmr, acc} << 2;
+                                railexp <= railexp + 2'd2;
+                            end
+                         1: begin
+                                {rmr, acc} <= {rmr, acc} << 3;
+                                railexp <= railexp + 2'd3;
+                            end
+                         0: begin
+                                {rmr, acc} <= {rmr, acc} << 4;
+                                railexp <= railexp + 3'd4;
+                            end
+                        endcase
 `endif
+                    end
                 end
             end
-        end
 
         STATE_DIVIDING: begin
-            if (rail == '0 || inc2 == '0) begin
-                if (do_norm) begin
-                    rounded <= 1'b1;        // Suppressing rounding
-                    state <= STATE_NORM_AFTER;
-                end else
-                    done <= 1;
-            end else begin
-               // ABS(rail) < 1'b1 << 39
-               if (rail[41:39] == 3'b0 || (rail[41:39] == 3'b111 && rail[38:0] != 39'b0))
-                   rail <= rail << 1;
-               else if (rail[41] ^ add_val2[41]) begin
-                  `FULLMANT <= `FULLMANT - inc2;
-                  rail <= (rail + add_val2) << 1;
-               end else begin
-                  `FULLMANT <= `FULLMANT + inc2;
-                  rail <= (rail - add_val2) << 1;
-               end
+                // Next cycle of divide operation.
+                if (rail == '0 || inc2 == '0) begin
+                    if (do_norm) begin
+                        rounded <= 1'b1;        // Suppressing rounding
+                        state <= STATE_NORM_AFTER;
+                    end else
+                        done <= 1;
+                end else begin
+                    // ABS(rail) < 1'b1 << 39
+                    if (rail[41:39] == 3'b0 ||
+                        (rail[41:39] == 3'b111 && rail[38:0] != 39'b0))
+                        rail <= rail << 1;
+                    else if (rail[41] ^ add_val2[41]) begin
+                        `FULLMANT <= `FULLMANT - inc2;
+                        rail <= (rail + add_val2) << 1;
+                    end else begin
+                        `FULLMANT <= `FULLMANT + inc2;
+                        rail <= (rail - add_val2) << 1;
+                    end
+                end
+                inc2 <= inc2 >> 1;
             end
-            inc2 <= inc2 >> 1;
-        end
 
         STATE_ADD_B: begin
                 // Add B to the accumulator.
@@ -388,6 +401,7 @@ always @(posedge clk) begin
             end
 
         STATE_NORM_BEFORE: begin
+                // Normalize to the right, before addition.
                 if (acc[47:41] != railexp) begin
                     railexp <= railexp + 1;
                     rail <= $signed(rail) >>> 1;
@@ -400,13 +414,15 @@ always @(posedge clk) begin
             end
 
         STATE_ADDING: begin
+                // Addition in one cycle.
                 `FULLMANT <= `FULLMANT + rail + inc1 + inc2[40];
                 rounded <= 1'b0;
                 state <= STATE_NORM_AFTER;
             end
 
         STATE_NORM_AFTER: begin
-            if (expsign) begin
+                // Normalize after addition and other operations.
+                if (expsign) begin
                     // Exponent underflow during normalization to the left; flush everything to 0.
                     acc[40:0] <= 41'b0;
                     rmr[39:0] <= 40'b0;
@@ -434,28 +450,31 @@ always @(posedge clk) begin
             end
 
         STATE_ROUND: begin
+                // Rounding, usually after normalization.
                 if ((rmr[39:0] != 40'b0 || sticky) && !rounded)
                     acc[0] <= 1'b1;
                 done <= 1;
             end
 
         STATE_PACKING: begin
+                // Next cycle of APX operation.
                 if (rmr) begin
-                   if (rmr[0])
-                       acc <= {rail[0], acc[47:1]};
-                   rmr <= rmr >> 1;
-                   `FULLRAIL <= `FULLRAIL >> 1;
+                    if (rmr[0])
+                        acc <= {rail[0], acc[47:1]};
+                    rmr <= rmr >> 1;
+                    `FULLRAIL <= `FULLRAIL >> 1;
                 end else
-                  done <= 1;
+                    done <= 1;
             end
 
         STATE_UNPACKING: begin
+                // Next cycle of AUX operation.
                 if (railexp) begin
-                   railexp <= railexp - 1'b1;
-                   acc <= {acc, railtail[5] & rmr[47]};
-                   rmr <= rmr << 1;
-                   if (rmr[47])
-                       `FULLRAIL <= `FULLRAIL << 1;
+                    railexp <= railexp - 1'b1;
+                    acc <= {acc, railtail[5] & rmr[47]};
+                    rmr <= rmr << 1;
+                    if (rmr[47])
+                        `FULLRAIL <= `FULLRAIL << 1;
                 end else
                     done <= 1;
             end
