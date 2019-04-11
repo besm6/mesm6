@@ -5,6 +5,8 @@ It includes:
   * as          - assembler and disassembler
   * ld          - linker, archiver, and other object file utilities
   * besm6       - include files
+  * pascompl    - Pascal compiler
+  * dtran       - disassembler for Paascal generated object files
 
 To build and install to /usr/local/bin, run:
 
