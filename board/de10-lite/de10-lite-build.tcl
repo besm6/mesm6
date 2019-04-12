@@ -15,8 +15,8 @@ load_package flow
 project_new result -overwrite
 set_global_assignment -name FAMILY "MAX 10 FPGA"
 set_global_assignment -name DEVICE 10M50DAF484C7G
-set_global_assignment -name TOP_LEVEL_ENTITY "top"
-#set_global_assignment -name TOP_LEVEL_ENTITY "mesm6_alu"
+#set_global_assignment -name TOP_LEVEL_ENTITY "top"
+set_global_assignment -name TOP_LEVEL_ENTITY "mesm6_core"
 set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 484
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 7
@@ -418,8 +418,9 @@ set_location_assignment PIN_AA2 -to gpio[35]
 #
 # Add source files.
 #
-set_global_assignment -name SYSTEMVERILOG_FILE ../top.sv
-#set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_alu.sv
+#set_global_assignment -name SYSTEMVERILOG_FILE ../top.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_cpu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_alu.sv
 
 #
 # Add constraints.

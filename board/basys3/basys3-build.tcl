@@ -6,8 +6,9 @@ set_param place.sliceLegEffortLimit 2000
 
 # STEP#1: setup design sources and constraints
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-read_verilog \
-    ../top.sv
+#read_verilog ../top.sv
+read_verilog ../../../rtl/mesm6_cpu.sv
+read_verilog ../../../rtl/mesm6_alu.sv
 
 read_xdc ../basys3-pins.xdc
 
@@ -16,7 +17,8 @@ set_property TARGET_LANGUAGE "Verilog" [current_project]
 
 # STEP#2: run synthesis, write checkpoint design
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-synth_design -top "top" -flatten rebuilt
+#synth_design -top "top" -flatten rebuilt
+synth_design -top "mesm6_core" -flatten rebuilt
 write_checkpoint -force $ODIR/post_synth
 write_verilog -force -quiet -mode timesim -sdf_anno true post_synth.v
 write_sdf -force -quiet post_synth.sdf
