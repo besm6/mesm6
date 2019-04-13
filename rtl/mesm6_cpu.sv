@@ -125,30 +125,20 @@ always @(posedge clk)
     upc <= upc_next;
 
 // Microinstruction ROM.
-logic [`UOP_BITS-1:0] uop_rom[(1<<`UPC_BITS)-1:0] = '{
-    `include "microcode.v"
-    default: 0
-};
+`include "microcode.v"
 
 // Microinstruction.
 always @(posedge clk)
     if (reset)
         uop <= '0;
     else if (~busy)
-        uop <= uop_rom[upc_next];
+        uop <= microcode(upc_next);
 
 //--------------------------------------------------------------
 // Tables of entry addresses per opcode.
 //
-logic [`UPC_BITS-1:0] entry16[16*2] = '{
-    `include "jumptab16.v"
-    default: 0
-};
-
-logic [`UPC_BITS-1:0] entry64[64*2] = '{
-    `include "jumptab64.v"
-    default: 0
-};
+`include "jumptab16.v"
+`include "jumptab64.v"
 
 //--------------------------------------------------------------
 // Datapath registers and connections.
@@ -199,10 +189,11 @@ wire op_sti  = (opcode == 'o00410000);          // sti
 wire stack_mode = (op_ir == 15) & (op_sti ? (Uaddr == 15) :
                                             (Vaddr_next == 0));
 
-assign uentry = op_utc0 ? `UADDR_NOP :          // fast utc 0(0)
-                op_xta0 ? `UADDR_NOP :          // fast xta 0(0) or ita 0(0)
-               op_lflag ? entry16[{op_lcmd,stack_mode}] :   // entry for long format opcode
-                          entry64[{op_scmd,stack_mode}];    // entry for short format opcode
+assign uentry =
+    op_utc0 ? `UADDR_NOP :                      // fast utc 0(0)
+    op_xta0 ? `UADDR_NOP :                      // fast xta 0(0) or ita 0(0)
+   op_lflag ? jumptab16({op_lcmd,stack_mode}) : // long format opcodes
+              jumptab64({op_scmd,stack_mode});  // for short format opcodes
 
 // memory addr / write ports
 assign ibus_addr   = pc[15:1];

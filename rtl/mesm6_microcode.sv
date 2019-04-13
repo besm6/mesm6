@@ -620,25 +620,44 @@ op(`GO_FETCH_OR_DECODE);                                    // pc_cached ? decod
 // Generate output files.
 //
 fd = $fopen("microcode.v", "w");
+$fdisplay(fd, "function [%0d:0] microcode(input [%0d:0] pc);",
+    `UOP_BITS-1, `UPC_BITS-1);
+$fdisplay(fd, "    case (pc)");
 for(n = 0; n < c; n = n + 1) begin
-    $fdisplay(fd, "%3d: %0d'o%o,", n, `UOP_BITS, memory[n]);
+    $fdisplay(fd, "        %3d: return %0d'o%o;", n, `UOP_BITS, memory[n]);
 end
+$fdisplay(fd, "    endcase");
+$fdisplay(fd, "endfunction");
 $fclose(fd);
 
+//
+// Jump table for long address instructions.
+//
 fd = $fopen("jumptab16.v", "w");
+$fdisplay(fd, "function [%0d:0] jumptab16(input [4:0] index);", `UPC_BITS-1);
+$fdisplay(fd, "    case (index)");
 for(n = 0; n < 16; n = n + 1) begin
-    $fdisplay(fd, "'o0%2o<<1: %0d'd%0d, 'o0%2o<<1|1: %0d'd%0d,",
+    $fdisplay(fd, "        'o%2o<<1: return %0d'd%0d; 'o%2o<<1|1: return %0d'd%0d;",
         n, `UPC_BITS, ltab[n],
         n, `UPC_BITS, ltab_stack[n] == 0 ? ltab[n] : ltab_stack[n]);
 end
+$fdisplay(fd, "    endcase");
+$fdisplay(fd, "endfunction");
 $fclose(fd);
 
+//
+// Jump table for short address instructions.
+//
 fd = $fopen("jumptab64.v", "w");
+$fdisplay(fd, "function [%0d:0] jumptab64(input [6:0] index);", `UPC_BITS-1);
+$fdisplay(fd, "    case (index)");
 for(n = 0; n < 64; n = n + 1) begin
-    $fdisplay(fd, "'o0%2o<<1: %0d'd%0d, 'o0%2o<<1|1: %0d'd%0d,",
+    $fdisplay(fd, "        'o0%2o<<1: return %0d'd%0d; 'o0%2o<<1|1: return %0d'd%0d;",
         n, `UPC_BITS, stab[n],
         n, `UPC_BITS, stab_stack[n] == 0 ? stab[n] : stab_stack[n]);
 end
+$fdisplay(fd, "    endcase");
+$fdisplay(fd, "endfunction");
 $fclose(fd);
 
 $finish(ret);
