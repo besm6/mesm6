@@ -160,12 +160,15 @@ else:
 
 print "\nВыравниваем порядки"
 rmr = '0'
+need_rounding = False # True, it at least one "1" has been shifted to RMR
+
 if (int(ae,2) < int(be,2)):
     diff = int(be,2)-int(ae,2)
     print "Порядок A < B, поэтому необходимо сдвинуть со знаком вправо мантиссу A"
     print "на количество разрядов: {}".format(diff)
     ae = be
     rmr = (am[0]*diff + am)[41:]
+    need_rounding = '1' in rmr
     am  = (am[0]*diff + am)[:41]
     print "\texponent = {}".format(ae)
     print "\tmantissa = {} {}".format(am[0], am[1:])
@@ -175,6 +178,7 @@ elif (int(ae,2) > int(be,2)):
     print "на количество разрядов: {}".format(diff)
     be = ae
     rmr = (bm[0]*diff + bm)[41:]
+    need_rounding = '1' in rmr
     bm = (bm[0]*diff + bm)[:41]
     print "\texponent = {}".format(be)
     print "\tmantissa = {} {}".format(bm[0], bm[1:])
@@ -243,7 +247,7 @@ if normalize:
 if rounding:
     print "\nВыполняем округление"
     print "\tRMR = {}".format(rmr)
-    if '1' in rmr:
+    if need_rounding:
         m = m[:-1] + '1'
     else:
         print "\tОкругление не требуется"
