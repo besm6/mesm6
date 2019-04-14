@@ -283,8 +283,8 @@ always @(posedge clk) begin
 
             `ALU_FDIV: begin
                     // A/X: divide by subtraction.
-                    // Dividing amant (rail) by bmant, result in acc, counter in inc2
-                    inc2 <= 1'b1 << 39;
+                // Dividing amant (rail) by bmant, result in acc, counter in rmr
+                    rmr <= 1'b1 << 39;
                     `FULLMANT <= '0;
                     if (`ABS(amant) >= `ABS(bmant)) begin
                         `FULLEXP <= a[47:41] - b[47:41] + 65;
@@ -360,7 +360,8 @@ always @(posedge clk) begin
 
         STATE_DIVIDING: begin
                 // Next cycle of divide operation.
-                if (rail == '0 || inc2 == '0) begin
+            if (rail == '0) begin
+                    // An exact division: early termination.
                     if (do_norm) begin
                         rounded <= 1'b1;        // Suppressing rounding
                         state <= STATE_NORM_AFTER;
@@ -372,14 +373,22 @@ always @(posedge clk) begin
                         (rail[41:39] == 3'b111 && rail[38:0] != 39'b0))
                         rail <= rail << 1;
                     else if (rail[41] ^ bmant[40]) begin
-                        `FULLMANT <= `FULLMANT - inc2;
+                        `FULLMANT <= `FULLMANT - rmr[39:0];
                         rail <= (rail + bmant) << 1;
                     end else begin
-                        `FULLMANT <= `FULLMANT + inc2;
+                        `FULLMANT <= `FULLMANT + rmr[39:0];
                         rail <= (rail - bmant) << 1;
                     end
+                    if (rmr[0]) begin
+                        // The LSB of the quotient has been formed.
+                        if (do_norm) begin
+                            rounded <= 1'b1;        // Suppressing rounding
+                            state <= STATE_NORM_AFTER;
+                        end else
+                            done <= 1;
+                    end
                 end
-                inc2 <= inc2 >> 1;
+                rmr <= rmr >> 1;
             end
 
         STATE_ADD_B: begin
