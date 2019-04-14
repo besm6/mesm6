@@ -94,10 +94,6 @@ reg [6:0] railexp;
 reg [5:0] railtail;
 reg rounded, sticky;
 
-wire [8:0] expincr = (accsign2 != acc[40]) ? 9'o001 :
-                     (acc[40] == acc[39])  ? 9'o777 :
-                                             9'o000;
-
 `define FULLRAIL    {railtail, rail}
 `define FULLMANT    {accsign2, acc[40:0]}
 `define FULLEXP     {expsign, ovfl, acc[47:41]}
@@ -431,7 +427,7 @@ always @(posedge clk) begin
                 end else if (accsign2 != acc[40]) begin
                     {`FULLMANT, rmr[39:0]} <= $signed({`FULLMANT, rmr[39:0]}) >>> 1;
                     sticky <= sticky | acc[0];
-                    `FULLEXP <= `FULLEXP + expincr;
+                    `FULLEXP <= `FULLEXP + 1'b1;
                     if (do_round)
                         state <= STATE_ROUND;
                     else
@@ -440,7 +436,7 @@ always @(posedge clk) begin
                     // A 1 bit is about to move from RMR to ACC, this makes additional rounding not needed.
                     rounded <= rounded | rmr[39];
                     {`FULLMANT, rmr[39:0]} <= {`FULLMANT, rmr[39:0]} << 1;
-                    `FULLEXP <= `FULLEXP + expincr;
+                    `FULLEXP <= `FULLEXP - 1'b1;
                 end else begin
                     if (do_round)
                         state <= STATE_ROUND;
