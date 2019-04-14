@@ -371,12 +371,12 @@ always @(posedge clk) begin
                     if (rail[41:39] == 3'b0 ||
                         (rail[41:39] == 3'b111 && rail[38:0] != 39'b0))
                         rail <= rail << 1;
-                    else if (rail[41] ^ add_val2[41]) begin
+                    else if (rail[41] ^ bmant[40]) begin
                         `FULLMANT <= `FULLMANT - inc2;
-                        rail <= (rail + add_val2) << 1;
+                        rail <= (rail + bmant) << 1;
                     end else begin
                         `FULLMANT <= `FULLMANT + inc2;
-                        rail <= (rail - add_val2) << 1;
+                        rail <= (rail - bmant) << 1;
                     end
                 end
                 inc2 <= inc2 >> 1;
