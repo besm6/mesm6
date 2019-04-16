@@ -87,9 +87,8 @@ wire [47:0] b_mux = (state == STATE_ADD_CARRY) ?
 // 49-bit adder
 wire [48:0] sum = a_mux + b_mux;        // A (or accumulator) + B (or carry)
 
-reg accsign2, inc1;
+reg accsign2, inc1, inc2;
 reg [41:0] rail;
-reg [40:0] inc2;
 reg [6:0] railexp;
 reg [5:0] railtail;
 reg rounded, sticky;
@@ -219,14 +218,14 @@ always @(posedge clk) begin
                         `FULLMANT <= add_val1;
                         inc1 <= need_neg1;
                         rail <= add_val2;
-                        inc2 <= {need_neg2, 40'b0};
+                        inc2 <= need_neg2;
                         `FULLEXP <= a[47:41];
                         railexp <= b[47:41];
                     end else begin
                         `FULLMANT <= add_val2;
                         inc1 <= need_neg2;
                         rail <= add_val1;
-                        inc2 <= {need_neg1, 40'b0};
+                        inc2 <= need_neg1;
                         `FULLEXP <= b[47:41];
                         railexp <= a[47:41];
                     end
@@ -240,7 +239,7 @@ always @(posedge clk) begin
                     `FULLMANT <= add_val1;
                     inc1 <= need_neg1;
                     rail <= 42'b0;
-                    inc2 <= 41'b0;
+                    inc2 <= 1'b0;
                     `FULLEXP <= a[47:41];
                     rmr <= 48'b0;
                     state <= STATE_ADDING;
@@ -410,9 +409,9 @@ always @(posedge clk) begin
                 if (acc[47:41] != railexp) begin
                     railexp <= railexp + 1;
                     rail <= $signed(rail) >>> 1;
-                    rmr[39:0] <= {rail[0] ^ inc2[40], rmr[39:1]};
-                    inc2[40] <= rail[0] & inc2[40];
-                    sticky <= sticky | (rail[0] ^ inc2[40]);
+                    rmr[39:0] <= {rail[0] ^ inc2, rmr[39:1]};
+                    inc2 <= rail[0] & inc2;
+                    sticky <= sticky | (rail[0] ^ inc2);
                 end else begin
                     state <= STATE_ADDING;
                 end
@@ -420,7 +419,7 @@ always @(posedge clk) begin
 
         STATE_ADDING: begin
                 // Addition in one cycle.
-                `FULLMANT <= `FULLMANT + rail + inc1 + inc2[40];
+                `FULLMANT <= `FULLMANT + rail + inc1 + inc2;
                 rounded <= 1'b0;
                 state <= STATE_NORM_AFTER;
             end
