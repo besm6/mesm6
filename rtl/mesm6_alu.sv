@@ -96,7 +96,6 @@ reg rounded, sticky;
 `define FULLRAIL    {railtail, rail}
 `define FULLMANT    {accsign2, acc[40:0]}
 `define FULLEXP     {expsign, ovfl, acc[47:41]}
-`define ABS(x)      (x[40] ? ~x + 1 : x)
 
 wire need_neg1 = (op == `ALU_FREVSUB) ||
                  (op == `ALU_FSUBABS && a[40]) ||
@@ -282,15 +281,14 @@ always @(posedge clk) begin
 
             `ALU_FDIV: begin
                     // A/X: divide by subtraction.
-                // Dividing amant (rail) by bmant, result in acc, counter in rmr
-                    rmr <= 1'b1 << 39;
+                    // Dividing amant (rail) by bmant, result in acc, counter in rmr
+                    rmr <= 1'b1 << 40;
                     `FULLMANT <= '0;
-                    if (`ABS(amant) >= `ABS(bmant)) begin
-                        `FULLEXP <= a[47:41] - b[47:41] + 65;
-                        rail <= amant;
+                    `FULLEXP <= a[47:41] - b[47:41] + 64;
+                    if (amant[40] == bmant[40]) begin
+                        rail <= amant - bmant;
                     end else begin
-                        `FULLEXP <= a[47:41] - b[47:41] + 64;
-                        rail <= amant << 1;
+                        rail <= amant + bmant;
                     end
                     state <= STATE_DIVIDING;
                 end
@@ -359,7 +357,15 @@ always @(posedge clk) begin
 
         STATE_DIVIDING: begin
                 // Next cycle of divide operation.
-            if (rail == '0) begin
+                if (rmr[40]) begin
+                    if (rail[40] == amant[40]) begin
+                        `FULLEXP <= `FULLEXP + 1;
+                        rail <= amant;
+                    end else begin
+                        rail <= amant << 1;
+                    end
+                end else
+                if (rail == '0) begin
                     // An exact division: early termination.
                     if (do_norm) begin
                         rounded <= 1'b1;        // Suppressing rounding
