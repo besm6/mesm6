@@ -188,7 +188,7 @@ wire op_xta0 = ((opcode == 'o00100000) |        // xta 0(0)
                !c_active;
 wire op_sti  = (opcode == 'o00410000);          // sti
 
-wire op_mod  = !op_lflag & (op_scmd == 'o002);  // mod 
+wire op_mod  = !op_lflag & (op_scmd == 'o002);  // mod
 
 // Stack mode.
 wire stack_mode = (op_ir == 15) & (op_sti ? (Uaddr == 15) :
@@ -384,7 +384,7 @@ always @(posedge clk) begin
     if (reset) begin
         isr <= 0;
         imr <= 0;
-    else if (decode & op_mod) begin
+    end else if (decode & op_mod) begin
         case (opcode[4:0])
             'o36: imr <= acc;
             'o37: isr <= isr & acc;
