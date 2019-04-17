@@ -50,6 +50,7 @@
 `define SEL_MD_REG_MINUS1       4   // M[r] - 1
 `define SEL_MD_VA               5   // addr + C
 `define SEL_MD_UA               6   // addr + C + M[i]
+`define SEL_MD_M_PLUS_J         7   // M[i] + M[r]
 
 // PC source selector
 `define SEL_PC_UA               0   // addr + C + M[i]
@@ -108,7 +109,7 @@
 `define P_M_NONZERO             26  // microcode branch if M[i] is non-zero
 `define P_SEL_PC                27  // PC multiplexor (3 bits)
 `define P_SEL_ADDR              30  // addr-out multiplexor between Uaddr and M[i]
-`define P_R_ADD                 31  // use Mr for Uaddr instead of Vaddr
+`define P_unused_31             31  // unused
 `define P_SEL_C_MEM             32  // use memory output for C instead of Uaddr
 `define P_OP_NOT_CACHED         33  // microcode branch if byte[pc] is not cached at opcode
 `define P_FETCH                 34  // request instruction fetch

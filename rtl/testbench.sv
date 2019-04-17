@@ -427,8 +427,8 @@ task print_uop();
         0: "ALU",  1: "MEM",   2: "REG",  3: "RR"
     };
     static string md_name[8] = '{
-        0: "PC",      1: "A",  2: "REG",  3: "RPLUS1",
-        4: "RMINUS1", 5: "VA", 6: "UA",   7: "UA"
+        0: "PC",  1: "A",  2: "REG",  3: "R+1",
+        4: "R-1", 5: "VA", 6: "UA",   7: "R+J"
     };
     static string mw_name[4] = '{
         0: "I",      1: "IMM",     2: "VA",  3: "UA"
@@ -454,7 +454,6 @@ task print_uop();
     logic [2:0] sel_pc;
     logic       w_m;
     logic       sel_addr;
-    logic       r_add;
     logic       sel_c_mem;
     logic       sel_alu_mem;
     logic       cond_op_not_cached;
@@ -486,7 +485,6 @@ task print_uop();
     assign sel_rr             = uop[`P_SEL_RR+1:`P_SEL_RR];
     assign w_m                = uop[`P_W_M];
     assign sel_addr           = uop[`P_SEL_ADDR];
-    assign r_add              = uop[`P_R_ADD];
     assign sel_c_mem          = uop[`P_SEL_C_MEM];
     assign sel_alu_mem        = uop[`P_SEL_ALU_MEM];
     assign cond_op_not_cached = uop[`P_OP_NOT_CACHED];
@@ -519,14 +517,13 @@ task print_uop();
     if (w_m)    $fwrite(tracefd, " md=%0s",  md_name[sel_md]);
     if (w_m)    $fwrite(tracefd, " mw=%0s",  mw_name[sel_mw]);
     if (w_r)    $fwrite(tracefd, " rr=%0s",  rr_name[sel_rr]);
-    if (r_add || sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG ||
+    if (sel_acc == `SEL_ACC_REG || sel_md == `SEL_MD_REG || sel_md == `SEL_MD_M_PLUS_J ||
         sel_md == `SEL_MD_REG_PLUS1 || sel_md == `SEL_MD_REG_MINUS1)
         $fwrite(tracefd, " mr=%0s",  mr_name[sel_mr]);
     if (w_pc) $fwrite(tracefd, " pc=%0s",  pc_name[sel_pc]);
 
     if (w_m)                $fwrite(tracefd, " w_m");
     if (sel_addr)           $fwrite(tracefd, " sel_addr");
-    if (r_add)              $fwrite(tracefd, " r_add");
     if (sel_c_mem)          $fwrite(tracefd, " c_mem");
     if (sel_alu_mem)        $fwrite(tracefd, " alu_mem");
     if (cond_op_not_cached) $fwrite(tracefd, " cond_op_not_cached");

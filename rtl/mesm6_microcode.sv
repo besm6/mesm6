@@ -50,6 +50,7 @@
 `define MD_REG_MINUS1           (`SEL_MD_REG_MINUS1 << `P_SEL_MD)
 `define MD_VA                   (`SEL_MD_VA << `P_SEL_MD)
 `define MD_UA                   (`SEL_MD_UA << `P_SEL_MD)
+`define MD_M_PLUS_J             (`SEL_MD_M_PLUS_J << `P_SEL_MD)
 
 `define ADDR_M(i)               (1 << `P_SEL_ADDR | `MR_IMM(i))
 `define ADDR_SP                 `ADDR_M(15)
@@ -97,7 +98,6 @@
 `define EXIT_INTERRUPT          (1 << `P_EXIT_INT)
 `define ENTER_INTERRUPT         (1 << `P_ENTER_INT)
 `define C_ACTIVE                (1 << `P_C_ACTIVE)
-`define R_ADD                   (1 << `P_R_ADD)
 `define C_MEM                   (1 << `P_SEL_C_MEM)
 `define ALU_MEM                 (1 << `P_SEL_ALU_MEM)
 `define MEM_FETCH               (1 << `P_FETCH)
@@ -461,7 +461,7 @@ op(`MR_REG | `MW_VA | `MD_REG | `W_M |                      // m[r] = m[i]; pc_c
     `GO_FETCH_OR_DECODE);
 
 opcode('o045);          // J+M
-op(`MR_VA | `MW_VA | `MD_UA | `R_ADD | `W_M |               // m[r] = m[i] + m[r]; pc_cached ? decode else fetch,decode
+op(`MR_VA | `MW_VA | `MD_M_PLUS_J | `W_M |                  // m[r] = m[i] + m[r]; pc_cached ? decode else fetch,decode
     `GO_FETCH_OR_DECODE);
 
 opcode('o046);          // E46
