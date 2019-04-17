@@ -253,8 +253,8 @@ wire [15:0] pc_plus_1 = pc + 1;
 always @(posedge clk) begin
     if (w_pc)
         pc <= (sel_pc == `SEL_PC_IMM)   ? {uop_imm, 1'b0} : // constant
-              (sel_pc == `SEL_PC_REG)   ? {Mi, 1'b0} :      // M[i]
-              (sel_pc == `SEL_PC_PLUS1) ? pc_plus_1 :       // pc + 1
+              (sel_pc == `SEL_PC_REG)   ? {Mi, 1'b0} :      // M[i] -- for IJ (TODO)
+              (sel_pc == `SEL_PC_PLUS1) ? pc_plus_1 :       // pc + 1 -- TODO: delete, if not needed for IJ
               (sel_pc == `SEL_PC_VA)    ? {Vaddr, 1'b0} :   // addr + C
                         /*SEL_PC_UA*/     {Uaddr, 1'b0};    // addr + C + M[i]
     else if (decode & is_op_cached)
@@ -299,7 +299,7 @@ always @(posedge clk) begin
                (sel_acc == `SEL_ACC_RR)  ?              // R register
                     { 1'b0, R & Uaddr[5:0], 41'b0 } :
                           /*SEL_ACC_ALU*/  alu_result;  // from ALU
-    else if (decode & op_xta0 & ~branch)
+    else if (decode & op_xta0 & is_op_cached)
         acc <= 0;
     else if (decode & op_mod) begin
         if (opcode[7]) begin
