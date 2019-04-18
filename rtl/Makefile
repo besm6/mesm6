@@ -3,10 +3,11 @@
 #   module load modelsim/18.1
 #
 SOURCES         = mesm6_alu.sv \
-				  mesm6_pic.sv \
-				  mesm6_gpio.sv \
-				  mesm6_mmu.sv \
+                  mesm6_pic.sv \
+                  mesm6_gpio.sv \
+                  mesm6_mmu.sv \
                   mesm6_cpu.sv \
+                  mesm6_uart.sv \
                   testbench.sv \
                   imemory.sv \
                   dmemory.sv
