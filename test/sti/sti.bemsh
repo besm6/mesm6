@@ -26,18 +26,18 @@ start   start   '1'
 * STI (15) when M15=15: special case
 *
         xta     cful
-        atx     '77776'
-        atx     '77777'
+        atx     '70776'
+        atx     '70777'
         xta
-        vtm     '77776'(15)
+        vtm     '70776'(15)
         xts     (15)
         aex     cful
         u1a     fail
 *
-        xta     '77776'
+        xta     '70776'
         u1a     fail
         vtm     15(15)
-        xta     =b'77777'
+        xta     =b'70777'
         sti     (15)
         aex     cful
         u1a     fail
