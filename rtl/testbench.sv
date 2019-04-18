@@ -31,7 +31,8 @@ timeunit 1ns / 1ps;
 
 // Inputs.
 // Clock, reset, interrupt rquest
-logic        clk, reset, irq;
+logic        clk, reset;
+wire         irq;
 
 // Instruction memory signals.
 logic        ibus_rd;       // fetch request
@@ -78,14 +79,88 @@ imemory prom(
 );
 
 // Data memory.
+wire [14:0] mem_addr;
+wire mem_read;
+wire mem_write;
+wire mem_done;
+wire [47:0] mem_rdata;
+wire [47:0] mem_wdata;
+
 dmemory ram(
     clk,                    // clock on rising edge
-    dbus_addr,              // memory address
-    dbus_rd,                // read request
-    dbus_wr,                // write request
-    dbus_output,            // data to memory
-    dbus_input,             // data from memory
-    dbus_done               // operation completed
+    mem_addr,              // memory address
+    mem_read,                // read request
+    mem_write,                // write request
+    mem_rdata,            // data to memory
+    mem_wdata,             // data from memory
+    mem_done               // operation completed
+);
+
+// GPIO signals
+wire        gpio_int;
+reg  [47:0] gpio_inputs;
+wire [14:0] gpio_addr;
+wire        gpio_read;
+wire        gpio_write;
+wire [47:0] gpio_rdata;
+wire [47:0] gpio_wdata;
+wire        gpio_done;
+
+mesm6_gpio gpio(
+    clk, reset, gpio_int,
+
+    gpio_inputs,
+    gpio_addr,
+    gpio_read,
+    gpio_write,
+    gpio_rdata,
+    gpio_wdata,
+    gpio_done
+);
+
+wire [1:0]  pic_irq;
+wire [14:0] pic_addr;
+wire        pic_read;
+wire        pic_write;
+wire [47:0] pic_rdata;
+wire [47:0] pic_wdata;
+wire        pic_done;
+
+mesm6_pic pic(
+    clk, reset, irq,
+
+    pic_irq,
+
+    pic_addr,
+    pic_read,
+    pic_write,
+    pic_rdata,
+    pic_wdata,
+    pic_done
+);
+
+mesm6_mmu mmu(
+    dbus_addr,
+    dbus_rd, dbus_wr,
+    dbus_output, dbus_input,
+    dbus_done,
+
+    mem_addr,
+    mem_read,  mem_write,
+    mem_wdata, mem_rdata,
+    mem_done,
+
+    pic_addr,
+    pic_read,  pic_write,
+    pic_rdata, pic_wdata,
+    pic_done,
+    pic_irq,
+
+    gpio_addr,
+    gpio_read, gpio_write,
+    gpio_rdata, gpio_wdata,
+    gpio_done,
+    gpio_int
 );
 
 string tracefile;
@@ -186,7 +261,7 @@ initial begin
     // Start with reset active
     clk = 1;
     reset = 1;
-    irq = 0;
+    //irq = 0;
 
     // Hold reset for a while.
     #1 reset = 0;
