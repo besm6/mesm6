@@ -336,12 +336,12 @@ wire [14:0] M14 = M[14];
 wire [14:0] M15 = M[15];
 
 // Read address.
-wire [14:0] m_ra = (sel_mr == `SEL_MR_IMM) ? uop_imm :      // constant
+wire [3:0]  m_ra = (sel_mr == `SEL_MR_IMM) ? uop_imm :      // constant
                    (sel_mr == `SEL_MR_VA)  ? Vaddr :        // addr + C
                    (sel_mr == `SEL_MR_UA)  ? Uaddr :        // addr + C + M[i]
                              /*SEL_MR_REG*/  reg_index;     // opcode[24:21] latched
 // Write address.
-wire [14:0] m_wa = (sel_mw == `SEL_MW_IMM) ? uop_imm :      // constant
+wire [3:0]  m_wa = (sel_mw == `SEL_MW_IMM) ? uop_imm :      // constant
                    (sel_mw == `SEL_MW_VA)  ? Vaddr :        // addr + C
                    (sel_mw == `SEL_MW_UA)  ? Uaddr :        // addr + C + M[i]
                              /*SEL_MW_REG*/  reg_index;     // opcode[24:21] latched
