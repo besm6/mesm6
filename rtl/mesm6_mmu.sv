@@ -56,7 +56,7 @@ module mesm6_mmu(
     input  wire [47:0]  pic_rdata,     // data word written
     output wire [47:0]  pic_wdata,     // data word read
     input  wire         pic_done,      // pic operation completed
-    output wire [1:0]   pic_irq,       // interrupt req's from devices
+    output wire [47:0]  pic_irq,       // interrupt req's from devices
 
     // Signals to GPIO
     output wire [14:0]  gpio_addr,      // register address
@@ -90,8 +90,8 @@ assign gpio_wdata = cpu_wdata;
 //assign tim_wdata  = cpu_addr;
 
 // Connect PIC interrupt signals
-assign pic_irq[0] = gpio_int;
-assign pic_irq[1] = 0; //tim_int;
+assign pic_irq[0]    = gpio_int;
+assign pic_irq[47:1] = '0; //tim_int;
 
 
 // Chip select mux

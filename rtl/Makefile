@@ -8,7 +8,8 @@ SOURCES         = mesm6_alu.sv \
                   mesm6_mmu.sv \
                   mesm6_cpu.sv \
                   mesm6_uart.sv \
-                  testbench.sv \
+				  testbench.sv \
+                  testbench_pic.sv \
                   imemory.sv \
                   dmemory.sv
 
@@ -34,6 +35,7 @@ microcode.v:    mesm6_microcode.sv $(INCLUDES)
 
 run:            work
 		vsim -c -l run.log -do 'run -all; quit' testbench +load=../test/pult-prog-1/pprog01.oct +dump +nowarn3116 | tee run.log
-
+test_pic: work
+		vsim -c -l run.log -do 'run -all; quit' testbench_pic +nowarn3116 | tee run.log
 view:
 		gtkwave output.vcd cpu.gtkw &

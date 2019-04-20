@@ -118,7 +118,7 @@ mesm6_gpio gpio(
     gpio_done
 );
 
-wire [1:0]  pic_irq;
+wire [47:0] pic_irq;
 wire [14:0] pic_addr;
 wire        pic_read;
 wire        pic_write;

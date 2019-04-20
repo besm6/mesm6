@@ -39,7 +39,7 @@ module mesm6_pic(
     input   wire        reset,
     output  wire        interrupt,     // interrupt request to CPU
 
-    input  wire [1:0]   pic_irq,       // sync'ed interrupt req's from devices
+    input  wire [47:0]  pic_irq,       // sync'ed interrupt req's from devices
 
     input  wire [14:0]  pic_addr,      // register address
     input  wire         pic_read,      // request data read
@@ -68,29 +68,40 @@ wire [5:0]  OFF =
     IFS[7]  ? 41 : IFS[6]  ? 42 : IFS[5]  ? 43 : IFS[4]  ? 44 :
     IFS[3]  ? 45 : IFS[2]  ? 46 : IFS[1]  ? 47 : IFS[0]  ? 48 : 0;
 
+
+// Readout logic
 assign pic_rdata = pic_addr [2:0] == `PIC_OFF ? {42'b0, OFF} :
                    pic_addr [2:0] == `PIC_IEC ? IEC :
                    /* PIC_IFS */                IFS;
+always @(posedge clk) begin
+    pic_done  <= pic_read | pic_write;
+end
 
+// Interrupt status register
+always @(posedge clk) begin
+    if (pic_write) begin
+        case (pic_addr [2:0]) 
+            `PIC_IFS   : IFS <= pic_wdata        | pic_irq;
+            `PIC_IFSSET: IFS <= IFS | pic_wdata  | pic_irq;
+            `PIC_IFSCLR: IFS <= IFS & ~pic_wdata | pic_irq;
+            default:     IFS <= IFS              | pic_irq;
+        endcase
+    end else begin
+        IFS <= IFS | pic_irq;
+    end
+end
+
+// Interrupt enable register
 always @(posedge clk) begin
     if (reset) begin
-        IFS <= 0;
-        IEC <= 0;
+        IEC <= '0;
     end else if (pic_write) begin
         case (pic_addr [2:0]) 
-            `PIC_IFS   : IFS <= pic_wdata        | {46'b0, pic_irq};
-            `PIC_IFSSET: IFS <= IFS | pic_wdata  | {46'b0, pic_irq};
-            `PIC_IFSCLR: IFS <= IFS & ~pic_wdata | {46'b0, pic_irq};
             `PIC_IEC:    IEC <= pic_wdata;
             `PIC_IECSET: IEC <= IEC | pic_wdata;
             `PIC_IECCLR: IEC <= IEC & ~pic_wdata;
-            default:     IFS <= IFS | {46'b0, pic_irq};
         endcase
-    end else begin
-        IFS <= IFS | {46'b0, pic_irq};
     end
-
-    pic_done <= pic_read | pic_write;
 end
 
 endmodule
