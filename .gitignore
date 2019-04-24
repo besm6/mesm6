@@ -12,6 +12,7 @@ work/
 *.lst
 *.b6
 *.o
+*.vcd
 transcript
 toolchain/as/as
 toolchain/as/dis

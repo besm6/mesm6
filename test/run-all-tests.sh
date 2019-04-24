@@ -6,14 +6,17 @@
 tests="uj vtm_vzm_v1m j+m_utm vlm utc_wtc vjm mtj xta_uza_u1a atx ati_ita"
 tests+=" addr0 aax_aox_aex arx its sti xts stx asn_asx acx_anx apx_aux"
 tests+=" stack ntr_rte yta e+n_e-n_e+x_e-x a+x_a-x_x-a amx avx"
-
-# TODO:
 tests+=" multiply divide"
 
 #
 # Tests in Pascal.
 #
 tests+=" hello"
+
+#
+# Peripherals.
+#
+tests+=" pic"
 
 #
 # Legacy ALU test from BESM-6.

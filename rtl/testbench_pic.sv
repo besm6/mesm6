@@ -106,7 +106,7 @@ initial begin
     pic_write = 1;
     wait(pic_done);
     pic_write = 0;
-    #10 
+    #10
     if (interrupt) $display("OK: Interrupt is asserted.");
     else begin
         $display("FATAL: Interrupt is not asserted!");
@@ -161,7 +161,7 @@ initial begin
         $display("FATAL: OFF is not 39!");
         $finish;
     end
-    $display("ALL TESTS PASS!");
+    $display("\n----- Test PASS -----");
     $finish;
 end
 
