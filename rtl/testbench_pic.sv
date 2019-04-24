@@ -32,7 +32,7 @@
 `define PIC_IEC    'o4
 `define PIC_IECSET 'o3
 `define PIC_IECCLR 'o2
-`define PIC_OFF    'o0
+`define PIC_ISR    'o0
 
 module testbench_pic();
 
@@ -61,10 +61,13 @@ mesm6_pic pic(
 
 initial begin
     $display("Reseting PIC...");
-    $monitor("(%t) %m: IFS: %o IEC: %o RDATA: %o", $time, pic.IFS, pic.IEC, pic.pic_rdata);
+    $monitor("    (%0t) IFS = %o, IEC = %o, ISR = %2d, RDATA = %o",
+        $time, pic.IFS, pic.IEC, pic.ISR, pic.pic_rdata);
     $dumpfile("output_pic.vcd");
     $dumpvars();
     clk = 0;
+
+    // Hardware reset.
     reset = 1;
     pic_addr = 0;
     pic_read = 0;
@@ -73,16 +76,22 @@ initial begin
     dev_irq = '0;
     #10 $display("Reset done.");
     reset = 0;
+
+    // Write zero to IFS.
     #10 $display("Reseting IFS...");
     pic_addr  = `PIC_IFS;
     pic_wdata = '0;
     pic_write = 1;
     wait(pic_done);
+    pic_write = 0;
     if (pic.IFS != '0) begin
-        $display("FATAL: IFS is not reseted.");
+        $display("FATAL: IFS is not reset.");
         $finish;
     end
-    pic_write = 0;
+
+    // Activate irq10 request.
+    // Check IFS value.
+    // No interrupt is expected, as IEC is still zero.
     #10 $display("Set IRQ 10...");
     dev_irq = 1'b1 << 9;
     #10 $display("Reading IFS...");
@@ -90,77 +99,133 @@ initial begin
     pic_read = 1;
     wait(pic_done);
     pic_read = 0;
+    $display("RDATA: %o", pic_rdata);
     if (pic_rdata == '0) begin
         $display("FATAL: IFS is not changed.");
         $finish;
     end
-    $display("RDATA: %o", pic_rdata);
-    if (!interrupt) $display("OK: Interrupt is not asserted");
+    if (!interrupt)
+        $display("OK: Interrupt is not asserted");
     else begin
         $display("FATAL: Interrupt is asserted!");
         $finish;
     end
+
+    // Enable irq10 in IEC.
+    // Expecting a global interrupt request.
     #10 $display("Enabling IRQ 10 in IEC...");
     pic_addr  = `PIC_IEC;
     pic_wdata = 1'b1 << 9;
     pic_write = 1;
     wait(pic_done);
     pic_write = 0;
-    #10
-    if (interrupt) $display("OK: Interrupt is asserted.");
+    #10;
+    if (interrupt)
+        $display("OK: Interrupt is asserted.");
     else begin
         $display("FATAL: Interrupt is not asserted!");
         $finish;
     end
+
+    // Use IFSSET to activate irq20.
+    // Check ISR is nonzero.
     #10 $display("Enabling IRQ 20 with IFSSET...");
     pic_addr = `PIC_IFSSET;
     pic_wdata = 1'b1 << 19;
     pic_write = 1;
     wait(pic_done);
     pic_write = 0;
+    #10 $display("Reading ISR value...");
+    pic_addr = `PIC_ISR;
+    pic_read = 1;
+    wait(pic_done);
+    pic_read = 0;
+    $display("RDATA (ISR): %0d", pic_rdata);
+    if (pic_rdata != 39) begin
+        $display("FATAL: ISR is not 39!");
+        $finish;
+    end
+
+    // Use IECCLR to disable irq10.
+    // The global interrupt request should deassert.
     #10 $display("Disabling IRQ 10 with IECCLR...");
     pic_addr = `PIC_IECCLR;
     pic_wdata = 1'b1 << 9;
     pic_write = 1;
     wait(pic_done);
     pic_write = 0;
-    #10 if (!interrupt) $display("OK: Interrupt is not asserted");
+    #10;
+    if (!interrupt)
+        $display("OK: Interrupt is not asserted");
     else begin
         $display("FATAL: Interrupt is asserted!");
         $finish;
     end
+    #10 $display("Reading ISR value...");
+    pic_addr = `PIC_ISR;
+    pic_read = 1;
+    wait(pic_done);
+    pic_read = 0;
+    $display("RDATA (ISR): %0d", pic_rdata);
+    if (pic_rdata != 0) begin
+        $display("FATAL: ISR is not 0!");
+        $finish;
+    end
+
+    // Enable ireq20 via IECSET.
+    // Check the global interrupt request is asserted.
+    // Check ISR value.
     #10 $display("Enabling IRQ 20 with IECSET...");
     pic_addr = `PIC_IECSET;
     pic_wdata = 1'b1 << 19;
     pic_write = 1;
     wait(pic_done);
     pic_write = 0;
-    #10 if (interrupt) $display("OK: Interrupt is asserted.");
+    #10;
+    if (interrupt)
+        $display("OK: Interrupt is asserted.");
     else begin
         $display("FATAL: Interrupt is not asserted!");
         $finish;
     end
+    #10 $display("Reading ISR value...");
+    pic_addr = `PIC_ISR;
+    pic_read = 1;
+    wait(pic_done);
+    pic_read = 0;
+    $display("RDATA (ISR): %0d", pic_rdata);
+    if (pic_rdata != 29) begin
+        $display("FATAL: ISR is not 29!");
+        $finish;
+    end
+
+    // Deactivate ireq20 via IFSCLR.
+    // Check the global interrupt request is deasserted.
+    // Check ISR is zero.
     #10 $display("Clearing IRQ 20 with IFSCLR...");
     pic_addr = `PIC_IFSCLR;
     pic_wdata = 1'b1 << 19;
     pic_write = 1;
     wait(pic_done);
     pic_write = 0;
-    #10 if (!interrupt) $display("OK: Interrupt is not asserted");
+    #10;
+    if (!interrupt)
+        $display("OK: Interrupt is not asserted");
     else begin
         $display("FATAL: Interrupt is asserted!");
         $finish;
     end
-    #10 $display("Reading OFF value...");
-    pic_addr = `PIC_OFF;
+    #10 $display("Reading ISR value...");
+    pic_addr = `PIC_ISR;
     pic_read = 1;
     wait(pic_done);
     pic_read = 0;
-    $display("RDATA (OFF): %d", pic_rdata);
-    if (pic_rdata != 39) begin
-        $display("FATAL: OFF is not 39!");
+    $display("RDATA (ISR): %0d", pic_rdata);
+    if (pic_rdata != 0) begin
+        $display("FATAL: ISR is not 0!");
         $finish;
     end
+
     $display("\n----- Test PASS -----");
     $finish;
 end
