@@ -382,7 +382,7 @@ struct Word {
         Real r;
         bool b;
         Alfa a;
-        char c;
+        int64_t  c;
         IdClass cl;
         Bitset m;
     };
@@ -897,7 +897,7 @@ void addToHashTab(IdentRecPtr arg)
 {
     // curVal.m := arg->id.m * hashMask.m;
     // mapai(curVal.a, curVal.i);
-    curVal.i = (curVal.m.val % 65535) % 128;
+    curVal.i = (arg->id.m.val % 65535) % 128;
     arg->next = symHashTabBase[curVal.i];
     symHashTabBase[curVal.i] = arg;
 } /* addToHashTab */
@@ -1281,9 +1281,17 @@ void P0715(int64_t mode, int64_t arg)
     goto L1;
 } /* P0715 */
 
+void prInsn(int insn) {
+    if ((insn >> 19) & 1)
+        printf("%02o %02o %05o", insn >> 20, (insn >> 15) & 037, insn & 077777);
+    else
+        printf("%02o %03o %04o", insn >> 20, (insn >> 12) & 0177, insn & 07777);
+}
+
 void OBPROG(Bitset & start, Bitset & fin) {
     for (Bitset * p = &start; p <= &fin; ++p) {
-        printf("%016lo ", p->val);
+        if (p != &start && (p - &start) % 4 == 0) putchar('\n');
+        prInsn(int(p->val >> 24)); putchar(' '); prInsn(p->val & 0xFFFFFF); printf("     ");
     }
     putchar('\n');
 }
@@ -1352,7 +1360,7 @@ void requiredSymErr(Symbol sym)
 
 void readToPos80()
 {
-    while (linePos < 81) {
+    while (!feof(pasinput) && linePos < 81 && PASINPUT != '\n') {
         linePos = linePos + 1;
         lineBufBase[linePos] = PASINPUT;
         if (linePos != 81) PASINPUT = char(getc(pasinput));
@@ -1361,8 +1369,6 @@ void readToPos80()
 } /* readToPos80 */
 
 struct inSymbol {
-// label    1473, 1, 2, 2175, 2233, 2320;
-
     unsigned char localBuf[131];
     int64_t tokenLen, tokenIdx;
     bool expSign;
@@ -1370,7 +1376,6 @@ struct inSymbol {
     Real expMultiple, expValue;
     char curChar;
     Word numstr[17]; // array [1..16] of Word;
-//    l3vars2: array [155..159] of Word;
     int64_t expLiteral;
     int64_t expMagnitude;
     int64_t l3int162z;
@@ -1549,15 +1554,12 @@ L1:             curToken.m.val = 0;
                     if (keyWordHashPtr->w.m == curToken.m) {
                         SY = keyWordHashPtr->sym;
                         charClass = keyWordHashPtr->op;
-                        fprintf(stderr, "Found keyword %s\n", toAscii(curToken.m).c_str());
                         goto exitLexer;
                     }
                     keyWordHashPtr = keyWordHashPtr->next;
                 }
                 isDefined = false;
                 SY = IDENT;
-                fprintf(stderr, "Lookup mode %ld, looking at ID %s\n",
-                        int93z, toAscii(curIdent.m).c_str());
                 switch (int93z) {
                 case 0: {
                     hashTravPtr = symHashTabBase[bucket];
@@ -4327,6 +4329,7 @@ void formFileInit()
 
 formOperator::formOperator(OpGen l3arg1z)
 { /* formOperator */
+    super.push_back(this);
     l3bool13z = true;
     if ((errors and (l3arg1z != SETREG)) or curExpr == NULL)
         return;
@@ -8983,33 +8986,33 @@ Bitset helperNames[100] = { {0L},
        {06017624500000000L}     /*"P/RE    "*/};
 
 int64_t systemProcNames[30] = {
-/*0*/   606564L                /*"     PUT"*/,
-        474564L                /*"     GET"*/,
-        62456762516445L        /*" REWRITE"*/,
-        6245634564L            /*"   RESET"*/,
-        564567L                /*"     NEW"*/,
-        44516360576345L        /*" DISPOSE"*/,
-        50415464L              /*"    HALT"*/,
-        63645760L              /*"    STOP"*/,
-        6345646560L            /*"   SETUP"*/,
-        625754546560L          /*"  ROLLUP"*/,
-/*10*/  6762516445L            /*"   WRITE"*/,
-        67625164455456L        /*" WRITELN"*/,
-        62454144L              /*"    READ"*/,
-        624541445456L          /*"  READLN"*/,
-        45705164L              /*"    EXIT"*/,
-        4445426547L            /*"   DEBUG"*/,
-        42456355L              /*"    BESM"*/,
-        5541605141L            /*"   MAPIA"*/,
-        5541604151L            /*"   MAPAI"*/,
-        604353L                /*"     PCK"*/,
-/*20*/  6556604353L            /*"   UNPCK"*/,
-        60414353L              /*"    PACK"*/,
-        655660414353L          /*"  UNPACK"*/,
-        5760455644L            /*"   OPEND"*/,
-        44455444L              /*"    DELD"*/,
-        56456744L              /*"    NEWD"*/,
-        60656444L              /*"    PUTD"*/,
-        47456444L              /*"    GETD"*/,
-        55574444L              /*"    MODD"*/,
-        46515644L              /*"    FIND"*/};
+/*0*/   0606564L                /*"     PUT"*/,
+        0474564L                /*"     GET"*/,
+        062456762516445L        /*" REWRITE"*/,
+        06245634564L            /*"   RESET"*/,
+        0564567L                /*"     NEW"*/,
+        044516360576345L        /*" DISPOSE"*/,
+        050415464L              /*"    HALT"*/,
+        063645760L              /*"    STOP"*/,
+        06345646560L            /*"   SETUP"*/,
+        0625754546560L          /*"  ROLLUP"*/,
+/*10*/  06762516445L            /*"   WRITE"*/,
+        067625164455456L        /*" WRITELN"*/,
+        062454144L              /*"    READ"*/,
+        0624541445456L          /*"  READLN"*/,
+        045705164L              /*"    EXIT"*/,
+        04445426547L            /*"   DEBUG"*/,
+        042456355L              /*"    BESM"*/,
+        05541605141L            /*"   MAPIA"*/,
+        05541604151L            /*"   MAPAI"*/,
+        0604353L                /*"     PCK"*/,
+/*20*/  06556604353L            /*"   UNPCK"*/,
+        060414353L              /*"    PACK"*/,
+        0655660414353L          /*"  UNPACK"*/,
+        05760455644L            /*"   OPEND"*/,
+        044455444L              /*"    DELD"*/,
+        056456744L              /*"    NEWD"*/,
+        060656444L              /*"    PUTD"*/,
+        047456444L              /*"    GETD"*/,
+        055574444L              /*"    MODD"*/,
+        046515644L              /*"    FIND"*/};
