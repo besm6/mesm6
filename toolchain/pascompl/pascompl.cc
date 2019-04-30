@@ -976,7 +976,7 @@ int64_t getObjBufIdxPlus()
 } /* getObjBufIdxPlus */
 
 
-void formJump(int64_t arg)
+void formJump(int64_t & arg)
 {
     int64_t pos;
     bool isLeft;
@@ -1243,10 +1243,10 @@ void P0715(int64_t mode, int64_t arg)
             if (isLarge) {
                 curVal.m = insn * mkbsr(9, 23);
                 curVal.m = curVal.m >> 24;
-                curVal.m = curVal.m + intZero;
+                // curVal.m = curVal.m + intZero;
                 insn = insn * (mkbsr(0,8)+mkbsr(24,47)) + leftHalf;
             } else {
-                curVal.m = intZero + insn * mkbsr(33, 47);
+                curVal.m = /* intZero + */ insn * mkbsr(33, 47);
                 insn = insn * mkbsr(0, 32) + addr;
             };
             objBuffer[arg] = insn;
