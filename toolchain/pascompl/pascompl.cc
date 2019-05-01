@@ -291,7 +291,7 @@ struct Real {
 };
 
 int64_t heap[32768];
-int64_t avail;
+int64_t avail = 100;
 
 void * besm6_alloc(size_t s) throw (std::bad_alloc) {
     s = (s + 7) & ~7;
@@ -324,7 +324,10 @@ void rollup(void * p) {
     }
 }
 
+// We need to be able to produce NULL, which must not be equal to ptr(0).
+// In the BESM-6, NIL was equal to 074000. 
 void * ptr(int64_t x) {
+    if (x == 074000) return NULL;
     if (x < 0 || x >= avail) {
         fprintf(stderr, "Cannot convert %ld to a pointer, avail = %ld\n", x, avail);
         exit(1);
@@ -333,6 +336,9 @@ void * ptr(int64_t x) {
 }
 
 int64_t ord(void * p) {
+    int64_t ret = reinterpret_cast<int64_t>(p);
+    if (p == NULL) return 074000;
+    if (ret < avail || ret <= 100) return ret;
     if (p < heap || p >= heap + avail) {
         fprintf(stderr, "Invalid pointer to integer conversion, %p is outside of valid heap range %p-%p\n",
                 p, (void*)heap, (void*)(heap + avail));
@@ -538,9 +544,11 @@ struct KeyWord {
 };
 
 struct StrLabel {
+    /*
     void * operator new(size_t s) throw (std::bad_alloc) {
         return besm6_alloc(s);
     }
+    */
     StrLabel * next;
     Word ident;
     int64_t offset;
@@ -556,6 +564,20 @@ struct NumLabel {
     NumLabel * next;
     bool defined;
 };
+
+std::string toAscii(Bitset val) {
+    std::string ret;
+    for (int i = 0; i < 8; ++i) {
+        int c = (val.val >> (42-(i*6))) & 077;
+        if (c == 0) ret += ' ';
+        else if (020 <= c && c <= 031) ret += char(c-020+'0');
+        else if (041 <= c && c <= 072) ret += char (c-041+'A');
+        else if (c == 012) ret += '*';
+        else if (c == 017) ret += '/';
+        else ret += '?';
+    }
+    return ret;
+}
 
 struct IdentRec {
     void * operator new(size_t s) throw (std::bad_alloc) {
@@ -589,6 +611,20 @@ struct IdentRec {
             Bitset flags;
         };
     };
+    std::string p() const {
+        std::string ret;
+        char * strp;
+        switch (cl) {
+        default: return  std::string();
+        case ROUTINEID:
+            ret = toAscii(id.m) + ": routine";
+            asprintf(&strp, "low: %ld high: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
+                     low, high, ord(argList), ord(preDefLink), level, pos, flags.val);
+            ret += strp;
+            free(strp);
+        }
+        return ret;
+    }
     IdentRec(Word id_, int64_t o_, IdentRecPtr n_, TypesPtr t_, IdClass cl_) :
         id(id_), offset(o_), next(n_), typ(t_), cl(cl_) { }
     IdentRec(Word id_, int64_t o_, IdentRecPtr n_, TypesPtr t_, IdClass cl_, IdentRecPtr l_, int64_t v_) :
@@ -777,7 +813,9 @@ struct programme {
     int64_t l2int18z, ii, localSize, l2int21z, jj;
     static std::vector<programme *> super;
     programme();
-    ~programme() { super.pop_back(); }
+    ~programme() {
+        super.pop_back();
+    }
 };
 
 std::vector<programme *> programme::super;
@@ -809,6 +847,7 @@ const char * pasmitxt(int64_t errNo) {
     case 52: return "EOF encountered";
     case 54: return "Error in pseudo-comment";
     case 55: return "More than 16 digits in a number";
+    case 63: return "Bad base type for set";
     case 81: return "Procedure nesting is too deep";
     case 82: return "Previous declaration was not FORWARD";
     case 84: return "Error in declarations";
@@ -834,26 +873,12 @@ void printErrMsg(int64_t errNo)
         printf("%s ", pasmitxt(errNo));
         if (errNo == 17) 
             printf("%ld", int97z);
-        else
+        else if (errNo == 22)
             printf("%6s", stmtName.c_str());
-    };
+    }
     if (errNo != 86)
         putchar('\n');
 } /* PrintErrMsg */
-
-std::string toAscii(Bitset val) {
-    std::string ret;
-    for (int i = 0; i < 8; ++i) {
-        int c = (val.val >> (42-(i*6))) & 077;
-        if (c == 0) ret += ' ';
-        else if (020 <= c && c <= 031) ret += char(c-020+'0');
-        else if (041 <= c && c <= 072) ret += char (c-041+'A');
-        else if (c == 012) ret += '*';
-        else if (c == 017) ret += '/';
-        else ret += '?';
-    }
-    return ret;
-}
 
 void printTextWord(Word val)
 {
@@ -1202,10 +1227,10 @@ void defineRange(TypesPtr & res, int64_t l, int64_t r)
         temp->checker = 0;
         temp->k = kindRange;
         curVal.i = l;
-        curVal.m = curVal.m + intZero;
+        // curVal.m = curVal.m + intZero;
         temp->left = curVal.i;
         curVal.i = r;
-        curVal.m = curVal.m + intZero;
+        // curVal.m = curVal.m + intZero;
         temp->right = curVal.i;
         if (temp->left >= 0)
             temp->bits = nrOfBits(curVal.ii);
@@ -3285,7 +3310,7 @@ void genGetElt() {
         l5ilm28z = insnList->ilm;
         if (l5ilm28z == ilCONST) {
             curVal = insnList->ilf5;
-            curVal.m = curVal.m +  intZero;
+            // curVal.m = curVal.m +  intZero;
             if (curVal.i < l5var7z or
                 l5var27z->right < curVal.i)
                 error(29); /* errIndexOutOfBounds */
@@ -4585,7 +4610,7 @@ struct parseRecordDecl {
     void addFieldToHash() {
         IdentRecPtr &curEnum = parseTypeRef::super.back()->curEnum;
         TypesPtr &curType = parseTypeRef::super.back()->curType;
-        bool isPacked = parseTypeRef::super.back()->isPacked;
+        bool &isPacked = parseTypeRef::super.back()->isPacked;
         curEnum->id = curIdent;
         curEnum->next = typeHashTabBase[bucket];
         curEnum->cl = FIELDID;
@@ -4610,7 +4635,7 @@ void packFields()
     parseTypeRef::caserec &cases = parseTypeRef::super.back()->cases;
     bool &isOuterDecl = parseRecordDecl::super.back()->isOuterDecl;
     IdentRecPtr &curEnum = parseTypeRef::super.back()->curEnum;
-    bool isPacked = parseTypeRef::super.back()->isPacked;
+    bool &isPacked = parseTypeRef::super.back()->isPacked;
  
     parseTypeRef(selType, skipTarget + mkbs(CASESY));
     if (curType->ptr2 == NULL) {
@@ -4695,7 +4720,7 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_) : isOuterD
     TypesPtr &tempType = parseTypeRef::super.back()->tempType;
     IdentRecPtr &curField = parseTypeRef::super.back()->curField;
     IdentRecPtr &curEnum = parseTypeRef::super.back()->curEnum;
-    bool isPacked = parseTypeRef::super.back()->isPacked;
+    bool &isPacked = parseTypeRef::super.back()->isPacked;
     parseTypeRef::caserec &cases = parseTypeRef::super.back()->cases;
     Bitset &skipTarget = parseTypeRef::super.back()->skipTarget;
 
@@ -4842,6 +4867,7 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_) : isOuterD
 parseTypeRef::parseTypeRef(TypesPtr & newType, Bitset skipTarget_) : skipTarget(skipTarget_)
 {
     bool &inTypeDef = programme::super.back()->inTypeDef;
+    super.push_back(this);
     isPacked = false;
 L12247:
     if (SY == LPAREN) {
@@ -6150,7 +6176,7 @@ bool structBranch(bool isGoto) {
     StrLabel * curLab;
     int ii;
     bool ret = true;
-    StrLabel * strLabList = programme::super.back()->strLabList;
+    StrLabel * &strLabList = programme::super.back()->strLabList;
 
     if (SY == IDENT or not isGoto) {
         curLab = strLabList;
@@ -7193,7 +7219,7 @@ struct standProc {
 Statement::Statement()
 { /* Statement */
     NumLabel * &l2var16z = programme::super.back()->l2var16z;
-    StrLabel * strLabList = programme::super.back()->strLabList;
+    StrLabel * &strLabList = programme::super.back()->strLabList;
 
     super.push_back(this);
     setup(boundary);
@@ -8052,7 +8078,7 @@ programme::programme(int64_t & l2arg1z, IdentRecPtr const l2idr2z_) : l2idr2z(l2
         initScalars();
         return;
     }
-    preDefHead = NULL; // ptr(0)
+    preDefHead = reinterpret_cast<IdentRec*>(ptr(0));
     inTypeDef = false;
     l2int11z = 0;
     strLabList = NULL;
@@ -8436,7 +8462,7 @@ programme::programme(int64_t & l2arg1z, IdentRecPtr const l2idr2z_) : l2idr2z(l2
         (not allowCompat or not blockBegSys.has(SY)))
         errAndSkip(84 /* errErrorInDeclarations */, skipToSet);
     } while (!statBegSys.has(SY));
-    if (preDefHead != NULL)  { // ptr(0)
+    if (preDefHead != ptr(0))  {
         error(85); /* errNotFullyDefinedProcedures */
         while (preDefHead != NULL) {
             printTextWord(preDefHead->id);
