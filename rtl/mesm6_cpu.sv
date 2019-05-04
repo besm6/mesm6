@@ -147,9 +147,6 @@ reg  [47:0] acc;                    // A: accumulator
 reg  [14:0] M[16];                  // M1-M15: index registers (modifiers)
 reg  [14:0] C;                      // C: address modifier
 
-reg  [47:0] isr;                    // Interrupt status register
-reg  [47:0] imr;                    // Interrupt mask register
-
 reg  [5:0]  R;                      // R: rounding mode register
 wire no_ovf   = R[5];               // no interrupt on overflow
 wire grp_add  = R[4];               // additive group
@@ -187,14 +184,11 @@ wire op_xta0 = ((opcode == 'o00100000) |        // xta 0(0)
                !c_active;
 wire op_sti  = (opcode == 'o00410000);          // sti
 
-wire op_mod  = !op_lflag & (op_scmd == 'o002);  // mod
-
 // Stack mode.
 wire stack_mode = (op_ir == 15) & (op_sti ? (Uaddr == 15) :
                                             (Vaddr_next == 0));
 
 assign uentry =
-    op_mod  ? `UADDR_NOP :                      // mod executes in Control unit
     op_utc0 ? `UADDR_NOP :                      // fast utc 0(0)
     op_xta0 ? `UADDR_NOP :                      // fast xta 0(0) or ita 0(0)
    op_lflag ? jumptab16({op_lcmd,stack_mode}) : // long format opcodes
@@ -284,8 +278,7 @@ always @(posedge clk) begin
         R[4:2] <= 3'b100;       // set additive group
     else if (set_mul)
         R[4:2] <= 3'b010;       // set multiplicative group
-    else if (set_log | (op_xta0 & decode & is_op_cached & ~irq)
-                     | (op_mod  & decode & is_op_cached & opcode[7]))
+    else if (set_log | (op_xta0 & decode & is_op_cached & ~irq))
         R[4:2] <= 3'b001;       // set logical group
 end
 
@@ -301,14 +294,6 @@ always @(posedge clk) begin
                           /*SEL_ACC_ALU*/  alu_result;  // from ALU
     else if (decode & op_xta0 & is_op_cached)
         acc <= 0;
-    else if (decode & op_mod) begin
-        if (opcode[7]) begin
-            case (opcode[4:0])
-                'o36: acc <= imr;
-                'o37: acc <= isr;
-            endcase
-        end
-    end
 end
 
 // Status of accumulator.
@@ -377,26 +362,11 @@ assign is_op_cached = (pc[15:1] == pc_cached) ? 1'b1 : 1'b0;
 //--------------------------------------------------------------
 // Handle interrupts.
 //
-// Internal interrupt requested
-wire int_irq = (isr & imr) != 0;
-
-always @(posedge clk) begin
-    if (reset) begin
-        isr <= 0;
-        imr <= 0;
-    end else if (decode & op_mod) begin
-        case (opcode[4:0])
-            'o36: imr <= acc;
-            'o37: isr <= isr & acc;
-        endcase
-    end
-end
-
 always @(posedge clk) begin
     if (reset)
         irq <= 0;
     else
-        irq <= (interrupt | int_irq) & gie;         // interrupt requested
+        irq <= interrupt & gie;         // interrupt requested
 end
 
 //--------------------------------------------------------------
