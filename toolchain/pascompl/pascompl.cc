@@ -1414,8 +1414,7 @@ void nextCH()
     do {
         atEOL = PASINPUT == '\n' || feof(pasinput);
         CH = PASINPUT;
-        PASINPUT = char(getc(pasinput));
-        if (PASINPUT >= 'a' && PASINPUT <= 'z') PASINPUT -= 32;
+        PASINPUT = char(toupper(getc(pasinput)));
         linePos = linePos + 1;
         lineBufBase[linePos] = CH;
     } while (not ((maxLineLen >= linePos) or atEOL));
@@ -5170,7 +5169,8 @@ void formPMD()
             /*13066*/
             while (curIdRec != NULL and
                    l2idr2z < curIdRec) /* with curIdRec@ do */ {
-                l3var2z.i = curIdRec->typ->size;
+                if (curIdRec->typ != NULL) // check added; in the BESM-6 dereferencing NULL is OK
+                    l3var2z.i = curIdRec->typ->size;
                 if ((curIdRec->cl == VARID || curIdRec->cl == FORMALID) and
                     (curIdRec->value < 074000)) {
                     curVal = curIdRec->id;
@@ -7798,7 +7798,7 @@ initScalars::initScalars() :
         entryPtTable[4] = mkbs(1);
         entryPtCnt = 5;
         Bitset foo;
-        foo.val = (010<<20|024740001)>>24|003074002; /*10 24 74001 00 30 74002*/
+        foo.val = (010L<<20|02474001L)<<24|003074002L; /*10 24 74001 00 30 74002*/
         CHILD.push_back(foo);
         moduleOffset = 040001;
     } else {
@@ -8675,6 +8675,10 @@ void finalize() {
     sizes[10] = int93z;
     curVal.i = moduleOffset - 040000;
     symTab[074001] = mkbs(24,29) + curVal.m - intZero;
+    // Forming the compact form of the module header.
+    CHILD[7].val = sizes[1] | (sizes[2] << 12);
+    CHILD[8].val = sizes[5] << 30 | sizes[9] << 15 | sizes[10];
+    CHILD[9].val = sizes[8] << 30 | sizes[7] << 15 | sizes[6];
     /*
     reset(FCST);
     while not eof(FCST) do {
@@ -8703,15 +8707,16 @@ void finalize() {
     entryPtTable[entryPtCnt] = mkbs();
 //    PASINFOR.entryptr@ := entryPtTable;
 //    PASINFOR.sizes := sizes;
+    
 } /* finalize */
 
 void initOptions() {
-    // PASINFOR.startOffset := PASINFOR.startOffset - 16384;
+    PASINFOR.startOffset = PASINFOR.startOffset - 16384;
     commentModeCH = ' ';
     lineNesting = 0;
     maxLineLen = 72;
     CH = ' ';
-    PASINPUT = ' ';
+    PASINPUT = char(toupper(getc(pasinput)));
     linePos = 0;
     prevErrPos = 0;
     errsInLine = 0;
@@ -8860,6 +8865,15 @@ int main() {
         finalize();
         // PASINFOR.errors@ := false;
         // Dump CHILD here
+        if (FILE * f = fopen("temp.obj", "w")) {
+            for (size_t i = 7; i < CHILD.size(); ++i) {
+                for (int j = 40; j >= 0; j -= 8)
+                    fputc((CHILD[i].val >> j) & 0xFF, f);
+            }
+            fclose(f);
+        } else {
+            OBPROG(CHILD[7], CHILD.back());
+        }
         exit(0);
     }
 }
