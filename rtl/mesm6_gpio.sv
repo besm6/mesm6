@@ -28,63 +28,64 @@
 // register addresses
 `define REG_TRIS   'o7
 `define REG_PORT   'o6
-`define REG_CNIE   'o5
-`define REG_CNEN   'o4
+`define REG_VAL	 'o5
+`define REG_CNIE   'o4
+`define REG_CNEN   'o3
 
 
 // -----
-// read-only GPIO stub
+// GPIO stub
 // -----
-
 module mesm6_gpio(
     input   wire        clk,
     input   wire        reset,
     output  wire        interrupt,      // interrupt request to CPU
-
-    input  wire [47:0]  gpio_inputs,    // inputs from board
 
     input  wire [14:0]  gpio_addr,      // register address
     input  wire         gpio_read,      // request data read
     input  wire         gpio_write,     // request data write
     output wire [47:0]  gpio_rdata,
     input  wire [47:0]  gpio_wdata,
-    output reg          gpio_done       // operation completed
+    output reg          gpio_done,       // operation completed
+	 
+	 input  wire [47:0]  gpio_inputs,    // inputs from board
+    output wire [47:0]  gpio_outputs    // output to board
 );
 
 reg  [47:0] TRIS;
-reg  [47:0] PORT;
+reg  [47:0] PORT; // sets outputs
+reg  [47:0] VAL;  // data from input pins
 reg         CNIE;
 reg  [47:0] CNEN;
 
-reg  [47:0] old_data;
-
-assign interrupt = CNIE & ((old_data ^ PORT & CNEN) != '0);
+assign interrupt = 0; // CNIE & ((old_data ^ PORT & CNEN) != '0);
 
 assign gpio_rdata = gpio_addr [2:0] == `REG_TRIS ? TRIS :
+						  gpio_addr [2:0] == `REG_VAL  ? VAL :
                     gpio_addr [2:0] == `REG_CNEN ? CNEN :
                     gpio_addr [2:0] == `REG_CNIE ? {47'b0, CNIE} :
                    /* REG_PORT */                  PORT;
 
+// read/write logic
+always @(posedge clk) begin
+	gpio_done <= gpio_read | gpio_write;
+end
+
+always @(posedge clk) begin
+	VAL <= gpio_inputs;
+end
+
+// PORT reg
+assign gpio_outputs = PORT;
+
 always @(posedge clk) begin
     if (reset) begin
-        TRIS     <= '0;
         PORT     <= '0;
-        CNIE     <=  0;
-        CNEN     <= '0;
-        old_data <= '0;
     end else if (gpio_write) begin
         case (gpio_addr [2:0]) 
-            `REG_TRIS  : TRIS <= gpio_wdata;
-            //`REG_PORT  : PORT <= gpio_wdata;
-            `REG_CNIE  : CNIE <= gpio_wdata != '0;
-            `REG_CNEN  : CNEN <= gpio_wdata;
+            `REG_PORT  : PORT <= gpio_wdata;
         endcase
     end
-
-    old_data <= PORT;
-    PORT     <= gpio_inputs;
-
-    gpio_done <= gpio_read | gpio_write;
 end
 
 endmodule
