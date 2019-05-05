@@ -225,6 +225,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_mmu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_gpio.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_cpu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_alu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_debouncer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE imemory.sv
 set_global_assignment -name SYSTEMVERILOG_FILE dmemory.sv
 set_global_assignment -name SDC_FILE de10-lite.sdc

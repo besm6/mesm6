@@ -28,7 +28,7 @@
 // register addresses
 `define REG_TRIS   'o7
 `define REG_PORT   'o6
-`define REG_VAL	 'o5
+`define REG_VAL    'o5
 `define REG_CNIE   'o4
 `define REG_CNEN   'o3
 
@@ -48,20 +48,22 @@ module mesm6_gpio(
     input  wire [47:0]  gpio_wdata,
     output reg          gpio_done,       // operation completed
 	 
-	 input  wire [47:0]  gpio_inputs,    // inputs from board
+    input  wire [47:0]  gpio_inputs,    // inputs from board
     output wire [47:0]  gpio_outputs    // output to board
 );
 
-reg  [47:0] TRIS;
+reg  [47:0] TRIS; // set direction -- unimplemented
 reg  [47:0] PORT; // sets outputs
 reg  [47:0] VAL;  // data from input pins
-reg         CNIE;
-reg  [47:0] CNEN;
+reg         CNIE; // global enable interrupts
+reg  [47:0] CNEN; // pin mask
 
-assign interrupt = 0; // CNIE & ((old_data ^ PORT & CNEN) != '0);
+reg  [47:0] old_data; 
+
+assign interrupt = CNIE & (((old_data ^ VAL) & CNEN) != '0);
 
 assign gpio_rdata = gpio_addr [2:0] == `REG_TRIS ? TRIS :
-						  gpio_addr [2:0] == `REG_VAL  ? VAL :
+                    gpio_addr [2:0] == `REG_VAL  ? VAL  :
                     gpio_addr [2:0] == `REG_CNEN ? CNEN :
                     gpio_addr [2:0] == `REG_CNIE ? {47'b0, CNIE} :
                    /* REG_PORT */                  PORT;
@@ -79,13 +81,36 @@ end
 assign gpio_outputs = PORT;
 
 always @(posedge clk) begin
-    if (reset) begin
-        PORT     <= '0;
-    end else if (gpio_write) begin
+    if (gpio_write) begin
         case (gpio_addr [2:0]) 
-            `REG_PORT  : PORT <= gpio_wdata;
+            `REG_PORT : PORT <= gpio_wdata;
         endcase
     end
+end
+
+// CNIE register
+always @(posedge clk) begin
+    if (reset) begin
+        CNIE <= '0;
+    end else if (gpio_write) begin
+        case (gpio_addr [2:0]) 
+            `REG_CNIE : CNIE <= gpio_wdata[0];
+        endcase
+    end
+end
+
+// CNEN register
+always @(posedge clk) begin
+    if (gpio_write) begin
+        case (gpio_addr [2:0]) 
+            `REG_CNEN : CNEN <= gpio_wdata;
+        endcase
+    end
+end
+
+// cache old input data
+always @(posedge clk) begin
+    old_data <= VAL;
 end
 
 endmodule
