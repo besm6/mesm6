@@ -42,7 +42,7 @@ try:
                 else:
                     word += (int(rop,   8) << 12)
                     word += (int(raddr, 8) & 0o07777)
-                irom.write("{} : {};\n".format(i, oct(word)[2:]))
+                irom.write("{} : {:016o};\n".format(i, word))
 
             if fields[0].startswith('d'):
                 key, i, lm, laddr, rm, raddr = fields
@@ -55,7 +55,7 @@ try:
                 word += (int(rm, 8)    << 12)
                 word += (int(raddr, 8))
 
-                dram.write("{} : {};\n".format(i, oct(word)[2:]))
+                dram.write("{} : {:016o};\n".format(i, word))
 except:
     print("Something bad happened:")
     print(sys.exc_info())
