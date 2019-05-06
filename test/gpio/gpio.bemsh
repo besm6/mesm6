@@ -4,7 +4,7 @@
 start   start   '1'
         xta     '77755'
         atx     '77756'
-*        uj start
+        uj start
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)
 *-------------------------

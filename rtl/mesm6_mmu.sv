@@ -92,7 +92,7 @@ assign tim_wdata  = cpu_wdata;
 // Connect PIC interrupt signals
 assign pic_irq[0]    = gpio_int;
 assign pic_irq[1]    = tim_int;
-assign pic_irq[47:1] = '0;
+assign pic_irq[47:2] = '0;
 
 
 // Chip select mux

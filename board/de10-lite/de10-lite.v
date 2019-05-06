@@ -131,12 +131,14 @@ assign HEX0 = ~(gpio_outputs[ 7: 0]);
 assign HEX1 = ~(gpio_outputs[15: 8]);
 assign HEX2 = ~(gpio_outputs[23:16]);
 assign HEX3 = ~(gpio_outputs[31:24]);
+assign HEX4 = ~(gpio_outputs[39:32]);
+assign HEX5 = ~(gpio_outputs[47:40]);
 
 /*assign HEX2 = ~to_hex(dbus_input[3:0]);
 assign HEX3 = ~to_hex(dbus_input[7:4]);*/
 
-assign HEX4 = ~to_hex(ibus_addr[3:0]);
-assign HEX5 = ~to_hex(ibus_addr[7:4]);
+/*assign HEX4 = ~to_hex(ibus_addr[3:0]);
+assign HEX5 = ~to_hex(ibus_addr[7:4]);*/
 
 /*
 assign HEX0 = ~to_hex(ibus_addr[ 3: 0]);
@@ -166,6 +168,24 @@ mesm6_gpio gpio(
     gpio_outputs
 );
 
+// Timer signals
+wire        tim_irq;
+wire [14:0] tim_addr;
+wire        tim_read;
+wire        tim_write;
+wire [47:0] tim_rdata;
+wire [47:0] tim_wdata;
+wire        tim_done;
+
+mesm6_timer tim(
+    clk, reset, tim_irq,
+
+    tim_addr,
+    tim_read, tim_write,
+    tim_rdata, tim_wdata,
+    tim_done
+);
+
 mesm6_mmu mmu(
     dbus_addr,
     dbus_rd, dbus_wr,
@@ -187,7 +207,13 @@ mesm6_mmu mmu(
     gpio_read, gpio_write,
     gpio_rdata, gpio_wdata,
     gpio_done,
-    gpio_int
+    gpio_int,
+
+    tim_addr,
+    tim_read, tim_write,
+    tim_rdata, tim_wdata,
+    tim_done,
+    tim_irq
 );
 
 

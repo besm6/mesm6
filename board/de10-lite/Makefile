@@ -9,6 +9,7 @@ help:
 	$(info make create - create the board project)
 	$(info make open   - open the board project)
 	$(info make build  - build the board project)
+	$(info make mif    - update MIF files for project)
 	$(info make load   - program the FPGA board)
 	@true
 
@@ -36,6 +37,9 @@ open:
 
 build:
 	cd $(BUILD_DIR) && quartus_sh --flow compile $(PROJECT_NAME)
+
+mif:
+	cd $(BUILD_DIR) && quartus_cdb --update_mif $(PROJECT_NAME) && quartus_asm $(PROJECT_NAME)
 
 load:
 	cd $(BUILD_DIR)/output_files && quartus_pgm -c $(CABLE_NAME) -m JTAG -o "p;$(PROJECT_NAME).sof"
