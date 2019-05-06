@@ -18,3 +18,6 @@ run:    $(TEST).oct
 	vsim -c -lib ../../rtl/work -do 'run -all; quit' testbench $(OPTS)
 
 test:   run
+
+view:
+	gtkwave output.vcd bus.gtkw &

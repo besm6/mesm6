@@ -1,0 +1,38 @@
+[*]
+[*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
+[*] Thu May  2 18:56:05 2019
+[*]
+[dumpfile] "/home/vak/Stuff/Besm-6/mesm6/test/uj/output.vcd"
+[dumpfile_mtime] "Thu May  2 18:53:29 2019"
+[dumpfile_size] 108248
+[savefile] "/home/vak/Stuff/Besm-6/mesm6/test/uj/bus.gtkw"
+[timestart] 0
+[size] 1481 600
+[pos] -1 -1
+*-12.417441 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] testbench.
+[sst_width] 235
+[signals_width] 166
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+testbench.clk
+@22
+testbench.ibus_addr[14:0]
+@28
+testbench.ibus_rd
+testbench.ibus_done
+@22
+testbench.ibus_input[47:0]
+testbench.dbus_addr[14:0]
+@28
+testbench.dbus_rd
+testbench.dbus_done
+@22
+testbench.dbus_input[47:0]
+@29
+testbench.dbus_wr
+@22
+testbench.dbus_output[47:0]
+[pattern_trace] 1
+[pattern_trace] 0
