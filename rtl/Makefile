@@ -5,6 +5,7 @@
 SOURCES         = mesm6_alu.sv \
                   mesm6_pic.sv \
                   mesm6_gpio.sv \
+                  mesm6_timer.sv \
                   mesm6_mmu.sv \
                   mesm6_cpu.sv \
                   mesm6_uart.sv \

@@ -65,38 +65,42 @@ module mesm6_mmu(
     input  wire [47:0]  gpio_rdata,     // data word written
     output wire [47:0]  gpio_wdata,     // data word read
     input  wire         gpio_done,      // operation completed
-    input  wire         gpio_int       // request CPU interrupt
+    input  wire         gpio_int,       // request CPU interrupt
 
     // Signals to Timer 0, 1
-    /*output wire [14:0]  tim_addr,      // register address
+    output wire [14:0]  tim_addr,      // register address
     output wire         tim_read,      // request data read
     output wire         tim_write,     // request data write
     input  wire [47:0]  tim_rdata,     // data word written
     output wire [47:0]  tim_wdata,     // data word read
     input  wire         tim_done,      // operation completed
-    input  wire         tim_int*/        // request CPU interrupt
+    input  wire         tim_int        // request CPU interrupt
 );
 
 // Connect CPU address bus to all devices
 assign mem_addr  = cpu_addr;
 assign pic_addr  = cpu_addr;
 assign gpio_addr = cpu_addr;
-//assign tim_addr = cpu_addr;
+assign tim_addr  = cpu_addr;
 
 // Connect CPU write bus to all devices
 assign mem_wdata  = cpu_wdata;
 assign pic_wdata  = cpu_wdata;
 assign gpio_wdata = cpu_wdata;
-//assign tim_wdata  = cpu_addr;
+assign tim_wdata  = cpu_wdata;
 
 // Connect PIC interrupt signals
 assign pic_irq[0]    = gpio_int;
-assign pic_irq[47:1] = '0; //tim_int;
+assign pic_irq[1]    = tim_int;
+assign pic_irq[47:1] = '0;
 
 
 // Chip select mux
 assign pic_read  = cpu_addr[14:3] == `MMU_ADDR_PIC ? cpu_read  : 0;
 assign pic_write = cpu_addr[14:3] == `MMU_ADDR_PIC ? cpu_write : 0;
+
+assign tim_read  = cpu_addr[14:3] == `MMU_ADDR_TIM ? cpu_read  : 0;
+assign tim_write = cpu_addr[14:3] == `MMU_ADDR_TIM ? cpu_write : 0;
 
 assign mem_read  = cpu_addr[14:9] != 6'o77 ? cpu_read  : 0;
 assign mem_write = cpu_addr[14:9] != 6'o77 ? cpu_write : 0;
@@ -104,41 +108,14 @@ assign mem_write = cpu_addr[14:9] != 6'o77 ? cpu_write : 0;
 assign gpio_read  = cpu_addr[14:3] == `MMU_ADDR_GPIO ? cpu_read  : 0;
 assign gpio_write = cpu_addr[14:3] == `MMU_ADDR_GPIO ? cpu_write : 0;
 
-assign cpu_rdata  = cpu_addr[14:3] == `MMU_ADDR_PIC  ? pic_rdata  :
+assign cpu_rdata  = cpu_addr[14:3] == `MMU_ADDR_PIC  ?  pic_rdata :
                     cpu_addr[14:3] == `MMU_ADDR_GPIO ? gpio_rdata :
-                                                      mem_rdata;
+                    cpu_addr[14:3] == `MMU_ADDR_TIM  ?  tim_rdata :
+                                                        mem_rdata;
 
-assign cpu_done  = cpu_addr[14:3] == `MMU_ADDR_PIC  ? pic_done  :
+assign cpu_done  = cpu_addr[14:3] == `MMU_ADDR_PIC  ?  pic_done :
                    cpu_addr[14:3] == `MMU_ADDR_GPIO ? gpio_done :
-                                              mem_done;
-
-/*always @* begin
-    case (cpu_addr[14:3])
-        `MMU_ADDR_PIC: begin
-            pic_read  = cpu_read;
-            pic_write = cpu_write;
-            cpu_rdata = pic_rdata;
-            cpu_done  = pic_done;
-        end
-       `MMU_ADDR_TIM: begin
-            tim_read  = cpu_read;
-            tim_write = cpu_write;
-            cpu_rdata = tim_rdata;
-            cpu_done  = tim_done;
-        end
-        `MMU_ADDR_GPIO: begin
-            gpio_read  = cpu_read;
-            gpio_write = cpu_write;
-            cpu_rdata  = gpio_rdata;
-            cpu_done   = gpio_done;
-        end
-        default: begin  // Memory
-            mem_read  = cpu_read;
-            mem_write = cpu_write;
-            cpu_rdata = mem_rdata;
-            cpu_done  = mem_done;
-        end
-    endcase
-end*/
+                   cpu_addr[14:3] == `MMU_ADDR_TIM  ?  tim_done :
+                                                       mem_done;
 
 endmodule

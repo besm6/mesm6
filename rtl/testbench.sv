@@ -99,6 +99,7 @@ dmemory ram(
 // GPIO signals
 wire        gpio_int;
 reg  [47:0] gpio_inputs;
+wire [47:0] gpio_outputs;
 wire [14:0] gpio_addr;
 wire        gpio_read;
 wire        gpio_write;
@@ -109,13 +110,16 @@ wire        gpio_done;
 mesm6_gpio gpio(
     clk, reset, gpio_int,
 
-    gpio_inputs,
+    
     gpio_addr,
     gpio_read,
     gpio_write,
     gpio_rdata,
     gpio_wdata,
-    gpio_done
+    gpio_done,
+
+    gpio_inputs,
+    gpio_outputs
 );
 
 wire [47:0] pic_irq;
@@ -139,6 +143,24 @@ mesm6_pic pic(
     pic_done
 );
 
+// Timer signals
+wire        tim_irq;
+wire [14:0] tim_addr;
+wire        tim_read;
+wire        tim_write;
+wire [47:0] tim_rdata;
+wire [47:0] tim_wdata;
+wire        tim_done;
+
+mesm6_timer tim(
+    clk, reset, tim_irq,
+
+    tim_addr,
+    tim_read, tim_write,
+    tim_rdata, tim_wdata,
+    tim_done
+);
+
 mesm6_mmu mmu(
     dbus_addr,
     dbus_rd, dbus_wr,
@@ -160,7 +182,13 @@ mesm6_mmu mmu(
     gpio_read, gpio_write,
     gpio_rdata, gpio_wdata,
     gpio_done,
-    gpio_int
+    gpio_int,
+
+    tim_addr,
+    tim_read, tim_write,
+    tim_rdata, tim_wdata,
+    tim_done,
+    tim_irq
 );
 
 string tracefile;

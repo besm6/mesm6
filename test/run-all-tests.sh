@@ -17,6 +17,7 @@ tests+=" hello"
 # Peripherals.
 #
 tests+=" pic"
+tests+=" timer"
 
 #
 # Legacy ALU test from BESM-6.

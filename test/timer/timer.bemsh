@@ -1,0 +1,18 @@
+*
+* Simple timer test.
+*
+start   start   '1'
+        xta     '0'
+        atx     '77765'  , disable timer
+        xta     =b'1'
+        atx     '77767'  , set prescaler tim_clk = clk/4
+        xta     =b'20'   , period = 020
+        atx     '77766'  , PRD = 020
+        xta     =b'1'
+        atx     '77765'  , enable timer
+loop    xta     '77765'  , wait
+        u1a     loop        
+        стоп    '12345'(6)
+*-------------------------
+align   адрес   start+'1777'            , данные с адреса 2000
+        fin
