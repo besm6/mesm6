@@ -94,8 +94,8 @@
 
 // Dedicated microcode addresses
 `define UADDR_RESET             0   // start from zero
-`define UADDR_NOP               23  // no operation
-`define UADDR_INTERRUPT         24  // defined by mesm6_microcode.sv at runtime
+`define UADDR_NOP               39  // no operation
+`define UADDR_INTERRUPT         40  // defined by mesm6_microcode.sv at runtime
 
 // Micro-instruction fields
 `define P_IMM                   0   // microcode address (9 bits) or constant to be used at microcode level

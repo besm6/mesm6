@@ -181,11 +181,27 @@ if (`UADDR_RESET != c) begin
     print_message();
     $display("`define UADDR_RESET %0d", c);
 end
-op(`MD_A | `MW_IMM(0) | `W_M);                          // m0 = 0
-op(`ACC_REG | `MR_IMM(0) | `W_A);                       // acc = m0
-op(`RR_REG | `MR_IMM(0) | `W_RR);                       // rr = m0
-op(`MD_A | `MW_IMM(1) | `W_M |                          // m1 = 0
+op(`MD_A | `MW_IMM(0) | `W_M);                          // k0 = 0
+op(`ACC_REG | `MR_IMM(0) | `W_A);                       // acc = k0
+op(`RR_REG | `MR_IMM(0) | `W_RR);                       // rr = k0
+op(`MD_A | `MW_IMM(1) | `W_M |                          // k1 = 0
     `BRANCHIF_A_ZERO(0));                               // y = acc
+op(`MD_A | `MW_IMM(2) | `W_M);                          // k2 = 0
+op(`MD_A | `MW_IMM(3) | `W_M);                          // k3 = 0
+op(`MD_A | `MW_IMM(4) | `W_M);                          // k4 = 0
+op(`MD_A | `MW_IMM(5) | `W_M);                          // k5 = 0
+op(`MD_A | `MW_IMM(6) | `W_M);                          // k6 = 0
+op(`MD_A | `MW_IMM(7) | `W_M);                          // k7 = 0
+op(`MD_A | `MW_IMM(8) | `W_M);                          // k8 = 0
+op(`MD_A | `MW_IMM(9) | `W_M);                          // k9 = 0
+op(`MD_A | `MW_IMM(10) | `W_M);                         // k10 = 0
+op(`MD_A | `MW_IMM(11) | `W_M);                         // k11 = 0
+op(`MD_A | `MW_IMM(12) | `W_M);                         // k12 = 0
+op(`MD_A | `MW_IMM(13) | `W_M);                         // k13 = 0
+op(`MD_A | `MW_IMM(14) | `W_M);                         // k14 = 0
+op(`MD_A | `MW_IMM(15) | `W_M | `EXIT_INTERRUPT);       // ksp = 0, enable interrupts
+op(`MD_A | `MW_IMM(0) | `W_M);                          // m0 = 0
+op(`MD_A | `MW_IMM(1) | `W_M);                          // m1 = 0
 op(`MD_A | `MW_IMM(2) | `W_M);                          // m2 = 0
 op(`MD_A | `MW_IMM(3) | `W_M);                          // m3 = 0
 op(`MD_A | `MW_IMM(4) | `W_M);                          // m4 = 0
@@ -200,7 +216,7 @@ op(`MD_A | `MW_IMM(12) | `W_M);                         // m12 = 0
 op(`MD_A | `MW_IMM(13) | `W_M);                         // m13 = 0
 op(`MD_A | `MW_IMM(14) | `W_M);                         // m14 = 0
 op(`MD_A | `MW_IMM(15) | `W_M);                         // sp = 0
-op(`PC_IMM(`RESET_VECTOR) | `W_PC | `EXIT_INTERRUPT);   // pc = RESET_VECTOR, enable interrupts on reset
+op(`PC_IMM(`RESET_VECTOR) | `W_PC);                     // pc = RESET_VECTOR
 // fall throught fetch/decode
 
 //--------------------------------------------------------------

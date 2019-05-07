@@ -144,10 +144,12 @@ always @(posedge clk)
 //
 reg  [15:0] pc;                     // program counter (half word granularity)
 reg  [47:0] acc;                    // A: accumulator
-reg  [14:0] M[16];                  // M1-M15: index registers (modifiers)
+reg  [14:0] M[32];                  // M1-M15: index registers (modifiers) user mode,
+                                    // K1-K15: additional register set for interrupt mode
 reg  [14:0] C;                      // C: address modifier
 
-reg  [5:0]  R;                      // R: rounding mode register
+reg  [6:0]  R;                      // R: rounding mode register
+wire k_mode   = R[6];               // interrupt mode
 wire no_ovf   = R[5];               // no interrupt on overflow
 wire grp_add  = R[4];               // additive group
 wire grp_mul  = R[3] & !R[4];       // multiplicative group
@@ -271,15 +273,21 @@ end
 //
 always @(posedge clk) begin
     if (w_r)
-        R <= (sel_rr == `SEL_RR_MEM) ? dbus_input[46:41] :  // from memory
-             (sel_rr == `SEL_RR_REG) ? Mr[5:0] :            // from M[m_ra] -- for IJ (TODO)
-                       /*SEL_RR_UA*/   Uaddr[5:0];          // from Uaddr
+        R[5:0] <=
+            (sel_rr == `SEL_RR_MEM) ? dbus_input[46:41] :   // from memory
+            (sel_rr == `SEL_RR_REG) ? Mr[5:0] :             // from M[m_ra] -- for IJ (TODO)
+                      /*SEL_RR_UA*/   Uaddr[5:0];           // from Uaddr
     else if (set_add)
         R[4:2] <= 3'b100;       // set additive group
     else if (set_mul)
         R[4:2] <= 3'b010;       // set multiplicative group
     else if (set_log | (op_xta0 & decode & is_op_cached & ~irq))
         R[4:2] <= 3'b001;       // set logical group
+
+    if (reset)
+        R[6] <= 1;                              // k_mode: start in interrupt mode
+    else if (exit_interrupt)
+        R[6] <= 0;
 end
 
 //--------------------------------------------------------------
@@ -290,7 +298,7 @@ always @(posedge clk) begin
         acc <= (sel_acc == `SEL_ACC_MEM) ? dbus_input : // from memory
                (sel_acc == `SEL_ACC_REG) ? Mr :         // M[m_ra]
                (sel_acc == `SEL_ACC_RR)  ?              // R register
-                    { 1'b0, R & Uaddr[5:0], 41'b0 } :
+                    { 1'b0, R[5:0] & Uaddr[5:0], 41'b0 } :
                           /*SEL_ACC_ALU*/  alu_result;  // from ALU
     else if (decode & op_xta0 & is_op_cached)
         acc <= 0;
@@ -331,13 +339,14 @@ wire [3:0]  m_wa = (sel_mw == `SEL_MW_IMM) ? uop_imm :      // constant
                    (sel_mw == `SEL_MW_UA)  ? Uaddr :        // addr + C + M[i]
                              /*SEL_MW_REG*/  reg_index;     // opcode[24:21] latched
 // Read results.
-assign Mi = M[reg_index];
-assign Mr = M[m_ra];
+assign Mi = M[{k_mode, reg_index}];
+assign Mr = M[{k_mode, m_ra}];
 assign Mi_is_zero = (Mi == 0);
 
 always @(posedge clk) begin
     if (w_m)
-        M[m_wa] <= (m_wa == 0)                    ? 0 :             // M[0]
+        M[{k_mode, m_wa}] <=
+                   (m_wa == 0)                    ? 0 :             // M[0]
                    (sel_md == `SEL_MD_PC)         ? (pc + 1) >> 1 : // PC
                    (sel_md == `SEL_MD_A)          ? acc :           // accumulator
                    (sel_md == `SEL_MD_REG)        ? Mr :            // M[m_ra]

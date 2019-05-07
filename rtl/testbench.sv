@@ -110,7 +110,7 @@ wire        gpio_done;
 mesm6_gpio gpio(
     clk, reset, gpio_int,
 
-    
+
     gpio_addr,
     gpio_read,
     gpio_write,
@@ -660,16 +660,20 @@ endtask
 // Print BESM opcode and changed registers
 //
 task print_insn_regs();
-    static string ir_name[16] = '{
+    static string ir_name[32] = '{
         0:"M[0]",   1:"M[1]",   2:"M[2]",   3:"M[3]",
         4:"M[4]",   5:"M[5]",   6:"M[6]",   7:"M[7]",
         8:"M[8]",   9:"M[9]",  10:"M[10]", 11:"M[11]",
-       12:"M[12]", 13:"M[13]", 14:"M[14]", 15:"SP"
+       12:"M[12]", 13:"M[13]", 14:"M[14]", 15:"SP",
+       16:"K[0]",  17:"K[1]",  18:"K[2]",  19:"K[3]",
+       20:"K[4]",  21:"K[5]",  22:"K[6]",  23:"K[7]",
+       24:"K[8]",  25:"K[9]",  26:"K[10]", 27:"K[11]",
+       28:"K[12]", 29:"K[13]", 30:"K[14]", 31:"KSP"
     };
     static logic [15:0] old_pc;
     static logic [47:0] old_acc, old_Y;
-    static logic  [5:0] old_R;
-    static logic [14:0] old_M[16], old_C;
+    static logic  [6:0] old_R;
+    static logic [14:0] old_M[32], old_C;
     static logic        old_gie;
 
     // PC
@@ -683,7 +687,7 @@ task print_insn_regs();
     //
     // Index-registers: print before opcode
     //
-    for (int i=0; i<16; i+=1) begin
+    for (int i=0; i<32; i+=1) begin
         if (cpu.M[i] !== old_M[i]) begin
             $fdisplay(tracefd, "(%0d)        %0s = %o",
                 ctime, ir_name[i], cpu.M[i]);
@@ -720,6 +724,7 @@ task print_insn_regs();
     // R register
     if (cpu.R !== old_R) begin
         $fwrite(tracefd, "(%0d)        R = %o (", ctime, cpu.R);
+        if (cpu.R[6]) $fwrite(tracefd, "k,");
         if (cpu.R[5]) $fwrite(tracefd, "no-ovf,");
         casez (cpu.R[4:2])
             3'b1??:  $fwrite(tracefd, "add");
