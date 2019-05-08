@@ -841,7 +841,7 @@ Bitset longSyms[91]; // array [1..90] of Bitset;
 Word constVals[501]; // array [1..500] of Alfa;
 int64_t constNums[501]; // array [1..500] of Integer;
 Bitset objBuffer[1025]; // array [1..1024] of Bitset;
-char iso2text[128]; // array ['_052'..'_177'] of '_000'..'_077';
+char koi2text[256];
 std::vector<Bitset> FCST; // file of Bitset; /* last */
 
 std::vector<Bitset> CHILD; // file of Bitset;
@@ -1450,26 +1450,25 @@ void requiredSymErr(Symbol sym)
 } /* requiredSymErr */
 
 static unsigned char
-unicode_to_koi7 (int val)
+unicode_to_koi8(int val)
 {
-    std::map<int, unsigned char> uni2koi7;
-    if (uni2koi7.empty()) {
-        static wchar_t cyr[] = L"ЮАБЦДЕФГХИЙКЛМНОПЯРСТУЖВЬЫЗШЭЩЧ";
+    static std::map<int, unsigned char> uni2koi8;
+    if (uni2koi8.empty()) {
+        static wchar_t cyr[] = L"юабцдефгхийклмнопярстужвьызшэщч"
+                               L"ЮАБЦДЕФГХИЙКЛМНОПЯРСТУЖВЬЫЗШЭЩЧ";
         for (int i = 0; cyr[i]; ++i)
-            uni2koi7[cyr[i]] = (unsigned char)(i + 0x60);
-        uni2koi7[L'×'] = 6;
-        uni2koi7[L'#'] = uni2koi7[L'≠'] = 030;
-        uni2koi7[L'≤'] = 016;
-        uni2koi7[L'≥'] = 017;
-        uni2koi7[L'÷'] = 032;
-        uni2koi7[L'∨'] = 036;
-        uni2koi7[L'~'] = 037;
+            uni2koi8[cyr[i]] = (unsigned char)(i + 0300);
+        uni2koi8[L'×'] = 6;
+        uni2koi8[L'#'] = uni2koi8[L'≠'] = 030;
+        uni2koi8[L'≤'] = 016;
+        uni2koi8[L'≥'] = 017;
+        uni2koi8[L'÷'] = 032;
+        uni2koi8[L'∨'] = 036;
+        uni2koi8[L'~'] = 037;
     }
-    if (iswlower(val))
-        return unicode_to_koi7(towupper(val));
-    else if (uni2koi7.count(val))
-        return uni2koi7[val];
-    else if (val < 0x60)
+    if (uni2koi8.count(val))
+        return uni2koi8[val];
+    else if (val < 0177)
         return (unsigned char)val;
     else return ' ';
 }
@@ -1489,7 +1488,7 @@ static int utf8_getc(FILE *fin)
 }
 
 static unsigned char ugetc(FILE * fin) {
-    return unicode_to_koi7(utf8_getc(fin));
+    return unicode_to_koi8(utf8_getc(fin));
 }
 
 void readToPos80()
@@ -1570,19 +1569,21 @@ parseComment::parseComment()
             nextCH();
             badOpt = true;
             switch (CH) {
-            case 'D': {
+            case 'D': case 'd': {
                 curVal.i = readOptVal(15);
                 optSflags.m = optSflags.m * mkbsr(0, 40) + curVal.m * mkbsr(41, 47);
             } break;
-            case 'Y': readOptFlag(allowCompat);
+            case 'Y': case 'y':
+                readOptFlag(allowCompat);
                 break;
-            case 'E': readOptFlag(declExternal);
+            case 'E': case 'e':
+                readOptFlag(declExternal);
                 break;
-            case 'U': {
+            case 'U': case 'u': {
                 readOptFlag(flag);
                 if (flag) maxLineLen = 72; else maxLineLen = 120;
             }; break;
-            case 'S': {
+            case 'S': case 's': {
                 curVal.i = readOptVal(9);
                 if (curVal.i == 3)
                     lineCnt = 1;
@@ -1592,27 +1593,38 @@ parseComment::parseComment()
                     extSymAdornment = curVal.i;
                 }
             } break;
-            case 'F': readOptFlag(checkFortran);
+            case 'F': case 'f':
+                readOptFlag(checkFortran);
                 break;
-            case 'L': PASINFOR.listMode = readOptVal(3);
+            case 'L': case 'l':
+                PASINFOR.listMode = readOptVal(3);
                 break;
-            case 'P': readOptFlag(doPMD);
+            case 'P': case 'p':
+                readOptFlag(doPMD);
                 break;
-            case 'T': readOptFlag(checkBounds);
+            case 'T': case 't':
+                readOptFlag(checkBounds);
                 break;
-            case 'A': charEncoding = readOptVal(3);
+            case 'A': case 'a':
+                charEncoding = readOptVal(3);
                 break;
-            case 'C': readOptFlag(checkTypes);
+            case 'C': case 'c':
+                readOptFlag(checkTypes);
                 break;
-            case 'R': readOptFlag(fuzzReals);
+            case 'R': case 'r':
+                readOptFlag(fuzzReals);
                 break;
-            case 'M': readOptFlag(fixMult);
+            case 'M': case 'm':
+                readOptFlag(fixMult);
                 break;
-            case 'B': fileBufSize = readOptVal(4);
+            case 'B': case 'b':
+                fileBufSize = readOptVal(4);
                 break;
-            case 'K': heapSize = readOptVal(23);
+            case 'K': case 'k':
+                heapSize = readOptVal(23);
                 break;
-            case 'Z': readOptFlag(pseudoZ);
+            case 'Z': case 'z':
+                readOptFlag(pseudoZ);
                 break;
             }
             if (badOpt)
@@ -1671,7 +1683,7 @@ L1473:
 L1:             curToken.m.val = 0;
                 tokenLen = 1;
                 do {
-                    curVal.c = iso2text[CH];
+                    curVal.c = koi2text[CH];
                     nextCH();
                     if (8 >= tokenLen) {
                         tokenLen = tokenLen + 1;
@@ -1927,7 +1939,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                                     if (ch < '*') or ('_176' < CH) then
                                         curChar := chr(0)
                                     else {
-                                        curChar := iso2text[CH];
+                                        curChar := koi2text[CH];
                                     }
                                 } else if '_176' < CH then {
                                     curChar := CH;
@@ -8739,8 +8751,8 @@ struct initTables {
         initArrays();
         initInsnTemplates();
         initSets();
-        // unpack(PASINFOR.a3@, iso2text, '_052'); /* '*' */
-        memcpy(&iso2text['*'],
+        // unpack(PASINFOR.a3@, koi2text, '_052'); /* '*' */
+        memcpy(&koi2text['*'],
                "\012\036\000\035\000\017" // 052-057 (* + , - . /)
                "\020\021\022\023\024\025\026\027" // 060-067 (0 - 7)
                "\030\031\000\000\000\000\000\000" // 070-077 (8 9 : ; < = > ?)
@@ -8748,11 +8760,21 @@ struct initTables {
                "\050\051\052\053\054\055\056\057" // 110-117 (H - O)
                "\060\061\062\063\064\065\066\067" // 120-127 (P - W)
                "\070\071\072\000\000\000\000\000" // 130-137 (X Y Z [ \ ] ^ _)
-               "\077\041\002\003\004\045\005\006" // 140-147 (Ю - Г)
-               "\070\007\013\053\014\055\050\057" // 150-157 (Х - О)
-               "\034\015\060\043\064\071\016\042" // 160-167 (П - В)
-               "\032\037\040\073\074\075\076\000" // 170-177 (Ь - Ъ)
+               "\000\041\042\043\044\045\046\047" // 140-147 (` - g)
+               "\050\051\052\053\054\055\056\057" // 150-157 (h - o)
+               "\060\061\062\063\064\065\066\067" // 160-167 (p - w)
+               "\070\071\072\000\000\000\000\000" // 170-177 (x y z { | } ~ )
                , 86);
+        memcpy(&koi2text[0300],
+               "\077\041\002\003\004\045\005\006" // 300-307 (ю - г)
+               "\070\007\013\053\014\055\050\057" // 310-317 (х - о)
+               "\034\015\060\043\064\071\016\042" // 320-327 (п - в)
+               "\032\037\040\073\074\075\076\000" // 330-337 (ь - ъ)
+               "\077\041\002\003\004\045\005\006" // 340-347 (Ю - Г)
+               "\070\007\013\053\014\055\050\057" // 350-357 (Х - О)
+               "\034\015\060\043\064\071\016\042" // 360-367 (П - В)
+               "\032\037\040\073\074\075\076\000" // 370-377 (Ь - Ъ)
+               , 64);
         CHILD.clear();
         for (jdx = 1; jdx <= 10; ++jdx)
             CHILD.push_back(Bitset());
@@ -8914,6 +8936,8 @@ int main() {
     for (int i = 0; i < 26; ++i) {
         charSymTabBase[i+'A'] = IDENT;
         chrClassTabBase[i+'A'] = ALNUM;
+        charSymTabBase[i+'a'] = IDENT;
+        chrClassTabBase[i+'a'] = ALNUM;
     }
 
     charSymTabBase['\''] = CHARCONST;
@@ -9025,6 +9049,8 @@ int64_t resWordNameBase[30] = {
 // Non-ASCII chars ignored so far
     charSymTabBase['Ю'] := IDENT:31;
     chrClassTabBase['Ю'] := ALNUM:31;
+    charSymTabBase['ю'] := IDENT:31;
+    chrClassTabBase['ю'] := ALNUM:31;
     charSymTabBase[chr(27)] := CHARCONST;
     charSymTabBase[chr(22)] := ARROW;
     chrClassTabBase['÷'] := IDIVOP;
