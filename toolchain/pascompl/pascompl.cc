@@ -8885,7 +8885,7 @@ void initOptions() {
     PASINFOR.startOffset = PASINFOR.startOffset - 16384;
     commentModeCH = ' ';
     lineNesting = 0;
-    maxLineLen = 72;
+    maxLineLen = 120;
     CH = ' ';
     PASINPUT = ugetc(pasinput);
     linePos = 0;
