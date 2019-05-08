@@ -159,7 +159,8 @@ enum Symbol {
         FORSY,      WITHSY,     GOTOSY,     ENDSY,
 /*50B*/ ELSESY,     UNTILSY,    OFSY,       DOSY,
         TOSY,       DOWNTOSY,   THENSY,     SELECTSY,
-/*60B*/ PROGRAMSY,  OTHERSY,    NOSY
+/*60B*/ PROGRAMSY,  OTHERSY,    LBRACE,     RBRACE,
+        NOSY
 };
 
 enum IdClass {
@@ -1631,18 +1632,21 @@ parseComment::parseComment()
                 error(54); /* errErrorInPseudoComment */
         } while (CH == ',');
     }; /* 1446 */
+    bool brace;
     do {
-        while (CH != '*') {
-          c = commentModeCH;
-          commentModeCH = '*';
+        while (CH != '*' && CH != '}') {
+            c = commentModeCH;
+            commentModeCH = '*';
             if (atEOL)
                 endOfLine();
             nextCH();
-          commentModeCH = c;
+            commentModeCH = c;
         };
+        brace = (CH == '}');
         nextCH();
-    } while (CH != ')');
-    nextCH();
+    } while (!brace && CH != ')');
+    if (!brace)
+        nextCH();
 } /* parseComment */
 
 inSymbol::inSymbol() {
@@ -2020,6 +2024,10 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                     parseComment();
                     goto L1473;
                 }
+            } break;
+            case LBRACE: {
+                parseComment();
+                goto L1473;
             } break;
             case COLON: {
                 nextCH();
@@ -8972,6 +8980,8 @@ int main() {
     charSymTabBase['='] = RELOP;
     charSymTabBase[':'] = COLON;
     charSymTabBase['~'] = NOTSY;
+    charSymTabBase['{'] = LBRACE;
+    charSymTabBase['}'] = RBRACE;
 
     iAddOpMap[PLUSOP] = INTPLUS;
     iAddOpMap[MINUSOP] = INTMINUS;
