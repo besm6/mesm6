@@ -287,8 +287,10 @@ struct Real {
     unsigned exponent:7;
     void operator=(int64_t i) {
         mantissa = i  & ((1L<<48)-1); exponent = 104;
-        if (mantissa == 0) exponent = 0;
-        while ((mantissa >> 39) == 0 || (mantissa >> 39) == -1) { exponent--; mantissa <<= 1; }
+        if (mantissa == 0)
+            exponent = 0;
+        else
+            while ((mantissa >> 39) == 0 || (mantissa >> 39) == -1) { exponent--; mantissa <<= 1; }
     }
     void operator=(Integer i) { (*this) = i.ival; }
     operator double() const {
@@ -902,14 +904,17 @@ const char * pasmitxt(int64_t errNo) {
 //    errNoCommaOrParenOrTooFewArgs = 41,
 //    errVarTooComplex = 48,
 //    errFirstDigitInCharLiteralGreaterThan3 = 60;
-    case 29: return "Index out of bounds";    
+    case 1: return "No comma nor semicolon";
+    case 29: return "Index out of bounds";
     case 49: return "Too many instructions in a block";
     case 50: return "Symbol table overflow";
     case 51: return "Long symbol overflow";
     case 52: return "EOF encountered";
     case 54: return "Error in pseudo-comment";
     case 55: return "More than 16 digits in a number";
+    case 62: return "Integer needed";
     case 63: return "Bad base type for set";
+    case 79: return "Not fully defined";
     case 81: return "Procedure nesting is too deep";
     case 82: return "Previous declaration was not FORWARD";
     case 84: return "Error in declarations";
@@ -917,6 +922,10 @@ const char * pasmitxt(int64_t errNo) {
     case 86: return "Required token not found: ";
     case 88: return "Different types of case labels and expression";
     case 89: return "integer";
+    case 103: return "SEMICOLON";
+    case 104: return "PERIOD";
+    case 105: return "ARROW";
+    case 106: return "COLON";
     }
     return "Dunno";
 }
@@ -946,6 +955,14 @@ void printErrMsg(int64_t errNo)
 void printTextWord(Word val)
 {
     fputs(toAscii(val.m).c_str(), stdout);
+}
+
+int64_t toText(const char * str) {
+    int64_t ret;
+    ret = 0;
+    for (; *str; ++str)
+        ret = ret << 6 | koi2text[*str & 0xFF];
+    return ret;
 }
 
 void makeStringType(TypesPtr & res)
@@ -1880,6 +1897,9 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                     if (CH == '.') {
                         CH = ':';
                         goto exitLexer;
+                    } else if (CH == ')') {
+                        CH = ']';
+                        goto exitLexer;
                     }
                     curToken.r = curToken.i;
                     SY = REALCONST;
@@ -2059,6 +2079,10 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                 if (CH == '*') {
                     parseComment();
                     goto L1473;
+                } else if (CH == '.') {
+                    nextCH();
+                    SY = LBRACK;
+                    charClass = NOOP;
                 }
             } break;
             case LBRACE: {
@@ -2082,6 +2106,10 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                 if (CH == '.') {
                     nextCH();
                     SY = COLON;
+                    charClass = NOOP;
+                } else if (CH == ')') {
+                    nextCH();
+                    SY = RBRACK;
                     charClass = NOOP;
                 } else {
                     if (prevSY == ENDSY)
@@ -2171,13 +2199,15 @@ void parseLiteral(TypesPtr & litType, Word & litValue,
             l3var1z = charClass;
             inSymbol();
             parseLiteral(litType, litValue, false);
-            if (litType != IntegerType) {
+            if (litType != IntegerType && litType != RealType) {
                 error(62); /* errIntegerNeeded */
                 litType = IntegerType;
                 litValue.i = 1;
-            } else {
-                if (l3var1z == MINUSOP)
+            } else if (l3var1z == MINUSOP) {
+                if (litType == IntegerType)
                     litValue.i = -litValue.i;
+                else
+                    litValue.r = -litValue.r;
             }
         } else
 L99:    {
@@ -7864,6 +7894,8 @@ initScalars::initScalars() :
 
     smallStringType[6] = AlfaType;
     regSysType(051566445474562L/*" INTEGER"*/, IntegerType);
+    temptype = IntegerType;
+    regSysEnum(toText("MAXINT"), 0xD0FFFFFFFFFFL);
     regSysType(042575754454156L/*" BOOLEAN"*/, BooleanType);
     regSysType(043504162L/*"    CHAR"*/, CharType);
     regSysType(062454154L/*"    REAL"*/, RealType);
