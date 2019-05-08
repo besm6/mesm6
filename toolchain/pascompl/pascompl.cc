@@ -825,9 +825,9 @@ int64_t frameRegTemplate = 04000000,
 
 char lineBufBase[132]; // array [1..130] of char;
 int64_t errMapBase[10]; // array [0..9] of Integer;
-Operator chrClassTabBase[128]; // array ['_000'..'_177'] of Operator;
+Operator chrClassTabBase[256]; // array ['_000'..'_177'] of Operator;
 KeyWord * KeyWordHashTabBase[128]; // array [0..127] of @KeyWord;
-Symbol charSymTabBase[128]; // array ['_000'..'_177'] of Symbol;
+Symbol charSymTabBase[256]; // array ['_000'..'_177'] of Symbol;
 IdentRecPtr symHashTabBase[128]; // array [0..127] of IdentRecPtr;
 IdentRecPtr typeHashTabBase[128]; //array [0..127] of IdentRecPtr;
 int64_t helperMap[100]; // array [1..99] of Integer;
@@ -902,7 +902,7 @@ const char * pasmitxt(int64_t errNo) {
 //    errNoCommaOrParenOrTooFewArgs = 41,
 //    errVarTooComplex = 48,
 //    errFirstDigitInCharLiteralGreaterThan3 = 60;
-
+    case 29: return "Index out of bounds";    
     case 49: return "Too many instructions in a block";
     case 50: return "Symbol table overflow";
     case 51: return "Long symbol overflow";
@@ -1390,7 +1390,17 @@ void OBPROG(Bitset & start, Bitset & fin) {
 
 static const char *koi2utf(uint8_t c)
 {
+    static char buf[2];
+    buf[0] = c;
     switch (c) {
+    case 006: return "×";
+    case 016: return "≤";
+    case 017: return "≥";
+    case 027: return "≡";
+    case 030: return "#";
+    case 032: return "÷";
+    case 036: return "∨";
+    case 037: return "~";
     case 0300: return "ю"; case 0301: return "а"; case 0302: return "б"; case 0303: return "ц";
     case 0304: return "д"; case 0305: return "е"; case 0306: return "ф"; case 0307: return "г";
     case 0310: return "х"; case 0311: return "и"; case 0312: return "й"; case 0313: return "к";
@@ -1408,7 +1418,7 @@ static const char *koi2utf(uint8_t c)
     case 0370: return "Ь"; case 0371: return "Ы"; case 0372: return "З"; case 0373: return "Ш";
     case 0374: return "Э"; case 0375: return "Щ"; case 0376: return "Ч"; case 0377: return "Ъ";
     default:
-        return "?";
+        return buf;
     }
 }
 
@@ -1436,10 +1446,7 @@ void endOfLine()
         while ((lineBufBase[linePos]  == ' ') and (linePos != 0));
         for (err = 1; err <= linePos; ++err) {
             uint8_t c = lineBufBase[err];
-            if (c < 0300)
-                putchar(c);
-            else
-                fputs(koi2utf(c), stdout);
+            fputs(koi2utf(c), stdout);
         };
         putchar('\n');
         if (errsInLine != 0)  {
@@ -1483,14 +1490,15 @@ unicode_to_koi8(int val)
 {
     static std::map<int, unsigned char> uni2koi8;
     if (uni2koi8.empty()) {
-        static wchar_t cyr[] = L"юабцдефгхийклмнопярстужвьызшэщч"
-                               L"ЮАБЦДЕФГХИЙКЛМНОПЯРСТУЖВЬЫЗШЭЩЧ";
+        static wchar_t cyr[] = L"юабцдефгхийклмнопярстужвьызшэщчъ"
+                               L"ЮАБЦДЕФГХИЙКЛМНОПЯРСТУЖВЬЫЗШЭЩЧЪ";
         for (int i = 0; cyr[i]; ++i)
             uni2koi8[cyr[i]] = (unsigned char)(i + 0300);
         uni2koi8[L'×'] = 6;
         uni2koi8[L'#'] = uni2koi8[L'≠'] = 030;
         uni2koi8[L'≤'] = 016;
         uni2koi8[L'≥'] = 017;
+        uni2koi8[L'≡'] = 027;
         uni2koi8[L'÷'] = 032;
         uni2koi8[L'∨'] = 036;
         uni2koi8[L'~'] = 037;
