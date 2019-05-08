@@ -16,10 +16,12 @@
 * 1. Removed check for '(.' and '.) alternatives for '[' and ']'.             *
 *    Not supported by BESM-6 compiler.                                        *
 *                                                                             *
-* 2. Removed 'set of char' construct and all dependencies.                    *
-*    BESM-6 Pascal supports only sets up to 48 elements.                      *
+* 2. Removed 'set of char' and 'set of 'a'..'z'' constructs, and              *
+*    all dependencies. BESM-6 Pascal supports only sets up to 48 elements.    *
 *                                                                             *
-* 3. TODO                                                                     *
+* 3. Upper bound of 'set of 1..100' reduced to 47.                            *
+*                                                                             *
+* 4. Removed 'array of text' constructs, and all dependencies.                *
 *                                                                             *
 ******************************************************************************}
 
@@ -136,12 +138,10 @@ var
     as, bs, cs, ds, es, gs, hs : integer;
     vnum: -maxint..maxint;
     ra, rb, rc, rd, re: real;
-    sta,   stb, stc, std: set of 1..100;
+    sta,   stb, stc, std: set of 1..47;
     ste:   set of 1..10;
     stf:   packed set of 1..10;
     stg:   packed set of 1..20;
-    cste:  set of 'a'..'z';
-    cstf:  packed set of 'a'..'f';
     ci:    char;
     sena,  senb, senc, send: set of enum;
     sene:  set of one..five;
@@ -176,8 +176,6 @@ var
     paves: packed array [1..10] of esub;
     avrc:  array [1..10] of recs;
     pavrc: packed array [1..10] of recs;
-    avf:   array [1..10] of text;
-    pavf:  packed array [1..10] of text;
     avp:   array [1..10] of iptr;
     pavp:  packed array [1..10] of iptr;
     bia:   array [boolean] of integer;
@@ -2144,16 +2142,6 @@ begin
    for i := 10 downto 1 do write(pavrc[i].a:1, ' ', pavrc[i].b, ' ');
    writeln;
    writeln('     s/b:  20 k 19 j 18 i 17 h 16 g 15 f 14 e 13 d 12 c 11 b');
-   write('Array21:  ');
-   for i := 1 to 10 do begin rewrite(avf[i]); writeln(avf[i], i+10) end;
-   for i := 10 downto 1 do
-      begin reset(avf[i]); readln(avf[i], x); write(x:1, ' ') end;
-   writeln('s/b 20 19 18 17 16 15 14 13 12 11');
-   write('Array22:  ');
-   for i := 1 to 10 do begin rewrite(pavf[i]); writeln(pavf[i], i+10) end;
-   for i := 10 downto 1 do
-      begin reset(pavf[i]); readln(pavf[i], x); write(x:1, ' ') end;
-   writeln('s/b 20 19 18 17 16 15 14 13 12 11');
    write('Array23:  ');
    for i := 1 to 10 do begin new(avp[i]); avp[i]^ := i+10 end;
    for i := 10 downto 1 do write(avp[i]^:1, ' ');
