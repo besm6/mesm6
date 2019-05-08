@@ -287,8 +287,10 @@ struct Real {
     unsigned exponent:7;
     void operator=(int64_t i) {
         mantissa = i  & ((1L<<48)-1); exponent = 104;
-        if (mantissa == 0) exponent = 0;
-        while ((mantissa >> 39) == 0 || (mantissa >> 39) == -1) { exponent--; mantissa <<= 1; }
+        if (mantissa == 0)
+            exponent = 0;
+        else
+            while ((mantissa >> 39) == 0 || (mantissa >> 39) == -1) { exponent--; mantissa <<= 1; }
     }
     void operator=(Integer i) { (*this) = i.ival; }
     operator double() const {
@@ -825,9 +827,9 @@ int64_t frameRegTemplate = 04000000,
 
 char lineBufBase[132]; // array [1..130] of char;
 int64_t errMapBase[10]; // array [0..9] of Integer;
-Operator chrClassTabBase[128]; // array ['_000'..'_177'] of Operator;
+Operator chrClassTabBase[256]; // array ['_000'..'_177'] of Operator;
 KeyWord * KeyWordHashTabBase[128]; // array [0..127] of @KeyWord;
-Symbol charSymTabBase[128]; // array ['_000'..'_177'] of Symbol;
+Symbol charSymTabBase[256]; // array ['_000'..'_177'] of Symbol;
 IdentRecPtr symHashTabBase[128]; // array [0..127] of IdentRecPtr;
 IdentRecPtr typeHashTabBase[128]; //array [0..127] of IdentRecPtr;
 int64_t helperMap[100]; // array [1..99] of Integer;
@@ -902,14 +904,17 @@ const char * pasmitxt(int64_t errNo) {
 //    errNoCommaOrParenOrTooFewArgs = 41,
 //    errVarTooComplex = 48,
 //    errFirstDigitInCharLiteralGreaterThan3 = 60;
-
+    case 1: return "No comma nor semicolon";
+    case 29: return "Index out of bounds";
     case 49: return "Too many instructions in a block";
     case 50: return "Symbol table overflow";
     case 51: return "Long symbol overflow";
     case 52: return "EOF encountered";
     case 54: return "Error in pseudo-comment";
     case 55: return "More than 16 digits in a number";
+    case 62: return "Integer needed";
     case 63: return "Bad base type for set";
+    case 79: return "Not fully defined";
     case 81: return "Procedure nesting is too deep";
     case 82: return "Previous declaration was not FORWARD";
     case 84: return "Error in declarations";
@@ -917,6 +922,10 @@ const char * pasmitxt(int64_t errNo) {
     case 86: return "Required token not found: ";
     case 88: return "Different types of case labels and expression";
     case 89: return "integer";
+    case 103: return "SEMICOLON";
+    case 104: return "PERIOD";
+    case 105: return "ARROW";
+    case 106: return "COLON";
     }
     return "Dunno";
 }
@@ -946,6 +955,14 @@ void printErrMsg(int64_t errNo)
 void printTextWord(Word val)
 {
     fputs(toAscii(val.m).c_str(), stdout);
+}
+
+int64_t toText(const char * str) {
+    int64_t ret;
+    ret = 0;
+    for (; *str; ++str)
+        ret = ret << 6 | koi2text[*str & 0xFF];
+    return ret;
 }
 
 void makeStringType(TypesPtr & res)
@@ -1390,7 +1407,17 @@ void OBPROG(Bitset & start, Bitset & fin) {
 
 static const char *koi2utf(uint8_t c)
 {
+    static char buf[2];
+    buf[0] = c;
     switch (c) {
+    case 006: return "×";
+    case 016: return "≤";
+    case 017: return "≥";
+    case 027: return "≡";
+    case 030: return "#";
+    case 032: return "÷";
+    case 036: return "∨";
+    case 037: return "~";
     case 0300: return "ю"; case 0301: return "а"; case 0302: return "б"; case 0303: return "ц";
     case 0304: return "д"; case 0305: return "е"; case 0306: return "ф"; case 0307: return "г";
     case 0310: return "х"; case 0311: return "и"; case 0312: return "й"; case 0313: return "к";
@@ -1408,7 +1435,7 @@ static const char *koi2utf(uint8_t c)
     case 0370: return "Ь"; case 0371: return "Ы"; case 0372: return "З"; case 0373: return "Ш";
     case 0374: return "Э"; case 0375: return "Щ"; case 0376: return "Ч"; case 0377: return "Ъ";
     default:
-        return "?";
+        return buf;
     }
 }
 
@@ -1436,10 +1463,7 @@ void endOfLine()
         while ((lineBufBase[linePos]  == ' ') and (linePos != 0));
         for (err = 1; err <= linePos; ++err) {
             uint8_t c = lineBufBase[err];
-            if (c < 0300)
-                putchar(c);
-            else
-                fputs(koi2utf(c), stdout);
+            fputs(koi2utf(c), stdout);
         };
         putchar('\n');
         if (errsInLine != 0)  {
@@ -1483,14 +1507,15 @@ unicode_to_koi8(int val)
 {
     static std::map<int, unsigned char> uni2koi8;
     if (uni2koi8.empty()) {
-        static wchar_t cyr[] = L"юабцдефгхийклмнопярстужвьызшэщч"
-                               L"ЮАБЦДЕФГХИЙКЛМНОПЯРСТУЖВЬЫЗШЭЩЧ";
+        static wchar_t cyr[] = L"юабцдефгхийклмнопярстужвьызшэщчъ"
+                               L"ЮАБЦДЕФГХИЙКЛМНОПЯРСТУЖВЬЫЗШЭЩЧЪ";
         for (int i = 0; cyr[i]; ++i)
             uni2koi8[cyr[i]] = (unsigned char)(i + 0300);
         uni2koi8[L'×'] = 6;
         uni2koi8[L'#'] = uni2koi8[L'≠'] = 030;
         uni2koi8[L'≤'] = 016;
         uni2koi8[L'≥'] = 017;
+        uni2koi8[L'≡'] = 027;
         uni2koi8[L'÷'] = 032;
         uni2koi8[L'∨'] = 036;
         uni2koi8[L'~'] = 037;
@@ -1872,6 +1897,9 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                     if (CH == '.') {
                         CH = ':';
                         goto exitLexer;
+                    } else if (CH == ')') {
+                        CH = ']';
+                        goto exitLexer;
                     }
                     curToken.r = curToken.i;
                     SY = REALCONST;
@@ -2051,6 +2079,10 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                 if (CH == '*') {
                     parseComment();
                     goto L1473;
+                } else if (CH == '.') {
+                    nextCH();
+                    SY = LBRACK;
+                    charClass = NOOP;
                 }
             } break;
             case LBRACE: {
@@ -2074,6 +2106,10 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                 if (CH == '.') {
                     nextCH();
                     SY = COLON;
+                    charClass = NOOP;
+                } else if (CH == ')') {
+                    nextCH();
+                    SY = RBRACK;
                     charClass = NOOP;
                 } else {
                     if (prevSY == ENDSY)
@@ -2163,13 +2199,15 @@ void parseLiteral(TypesPtr & litType, Word & litValue,
             l3var1z = charClass;
             inSymbol();
             parseLiteral(litType, litValue, false);
-            if (litType != IntegerType) {
+            if (litType != IntegerType && litType != RealType) {
                 error(62); /* errIntegerNeeded */
                 litType = IntegerType;
                 litValue.i = 1;
-            } else {
-                if (l3var1z == MINUSOP)
+            } else if (l3var1z == MINUSOP) {
+                if (litType == IntegerType)
                     litValue.i = -litValue.i;
+                else
+                    litValue.r = -litValue.r;
             }
         } else
 L99:    {
@@ -7856,6 +7894,8 @@ initScalars::initScalars() :
 
     smallStringType[6] = AlfaType;
     regSysType(051566445474562L/*" INTEGER"*/, IntegerType);
+    temptype = IntegerType;
+    regSysEnum(toText("MAXINT"), 0xD0FFFFFFFFFFL);
     regSysType(042575754454156L/*" BOOLEAN"*/, BooleanType);
     regSysType(043504162L/*"    CHAR"*/, CharType);
     regSysType(062454154L/*"    REAL"*/, RealType);
