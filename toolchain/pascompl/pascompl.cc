@@ -1388,6 +1388,30 @@ void OBPROG(Bitset & start, Bitset & fin) {
     putchar('\n');
 }
 
+static const char *koi2utf(uint8_t c)
+{
+    switch (c) {
+    case 0300: return "ю"; case 0301: return "а"; case 0302: return "б"; case 0303: return "ц";
+    case 0304: return "д"; case 0305: return "е"; case 0306: return "ф"; case 0307: return "г";
+    case 0310: return "х"; case 0311: return "и"; case 0312: return "й"; case 0313: return "к";
+    case 0314: return "л"; case 0315: return "м"; case 0316: return "н"; case 0317: return "о";
+    case 0320: return "п"; case 0321: return "я"; case 0322: return "р"; case 0323: return "с";
+    case 0324: return "т"; case 0325: return "у"; case 0326: return "ж"; case 0327: return "в";
+    case 0330: return "ь"; case 0331: return "ы"; case 0332: return "з"; case 0333: return "ш";
+    case 0334: return "э"; case 0335: return "щ"; case 0336: return "ч"; case 0337: return "ъ";
+    case 0340: return "Ю"; case 0341: return "А"; case 0342: return "Б"; case 0343: return "Ц";
+    case 0344: return "Д"; case 0345: return "Е"; case 0346: return "Ф"; case 0347: return "Г";
+    case 0350: return "Х"; case 0351: return "И"; case 0352: return "Й"; case 0353: return "К";
+    case 0354: return "Л"; case 0355: return "М"; case 0356: return "Н"; case 0357: return "О";
+    case 0360: return "П"; case 0361: return "Я"; case 0362: return "Р"; case 0363: return "С";
+    case 0364: return "Т"; case 0365: return "У"; case 0366: return "Ж"; case 0367: return "В";
+    case 0370: return "Ь"; case 0371: return "Ы"; case 0372: return "З"; case 0373: return "Ш";
+    case 0374: return "Э"; case 0375: return "Щ"; case 0376: return "Ч"; case 0377: return "Ъ";
+    default:
+        return "?";
+    }
+}
+
 void endOfLine()
 {
     int64_t err, errPos, prevPos, listMode,
@@ -1411,7 +1435,11 @@ void endOfLine()
             linePos = linePos-1;
         while ((lineBufBase[linePos]  == ' ') and (linePos != 0));
         for (err = 1; err <= linePos; ++err) {
-            putchar(lineBufBase[err]);
+            uint8_t c = lineBufBase[err];
+            if (c < 0300)
+                putchar(c);
+            else
+                fputs(koi2utf(c), stdout);
         };
         putchar('\n');
         if (errsInLine != 0)  {
