@@ -1,7 +1,7 @@
 /*
  * A straightforward conversion of the Pascal-Monitor compiler
  * to C++. The compiler must be called with two arguments, infile and outfile.
- * Infile is the Pascal source in ASCII/UTF-8; outfile is a big-endian 
+ * Infile is the Pascal source in ASCII/UTF-8; outfile is a big-endian
  * bytestream representation of the object module.
  * The original compiler was forming the object module in an
  * "unpacked" form: the section lengths occupied one word each.
@@ -81,7 +81,7 @@ macro = 0100000000,
     mcCARD = 23;
 
 const int64_t    ASN64 = 0360100,
-    
+
     ASCII0 =    04000007,
     E1 =        04000010,
     ZERO =      04000011,
@@ -93,7 +93,7 @@ const int64_t    ASN64 = 0360100,
     REAL05 =    04000023,
     ALLONES =   04000024,
     HEAPPTR =   04000027,
-    
+
     KATX =      0000000,
     KXTS =      0030000,
     KADD =      0040000,
@@ -106,17 +106,17 @@ const int64_t    ASN64 = 0360100,
     KARX =      0130000,
     KAVX =      0140000,
     KAOX =      0150000,
-    KDIV =      0160000,
+//    KDIV =      0160000,
     KMUL =      0170000,
     KAPX =      0200000,
     KAUX =      0210000,
     KACX =      0220000,
     KANX =      0230000,
     KYTA =      0310000,
-    KASN =      0360000,
+//    KASN =      0360000,
     KNTR =      0370000,
     KATI =      0400000,
-    KSTI =      0410000,
+//    KSTI =      0410000,
     KITA =      0420000,
     KITS =      0430000,
     KMTJ =      0440000,
@@ -128,12 +128,12 @@ const int64_t    ASN64 = 0360100,
 //    CWTC =      02300000,
     KVTM =      02400000,
     KUTM =      02500000,
-    KUZA =      02600000,
-    KU1A =      02700000,
+//    KUZA =      02600000,
+//    \KU1A =      02700000,
     KUJ =       03000000,
     KVJM =      03100000,
     KVZM =      03400000,
-    KV1M =      03500000,
+//    KV1M =      03500000,
     KVLM =      03700000,
 
     I7 =        034000000,      /* frame pointer */
@@ -311,7 +311,7 @@ std::string Real::print() const {
 int64_t heap[32768];
 int64_t avail = 100;
 
-void * besm6_alloc(size_t s) throw (std::bad_alloc) {
+void * besm6_alloc(size_t s) {
     s = (s + 7) & ~7;
     s /= sizeof(int64_t);
     if (avail + s > 32768) {
@@ -343,7 +343,7 @@ void rollup(void * p) {
 }
 
 // We need to be able to produce NULL, which must not be equal to ptr(0).
-// In the BESM-6, NIL was equal to 074000. 
+// In the BESM-6, NIL was equal to 074000.
 void * ptr(int64_t x) {
     if (x == 074000) return NULL;
     if (x < 0 || x >= avail) {
@@ -430,7 +430,7 @@ struct Word {
 typedef struct OneInsn * OneInsnPtr;
 
 struct OneInsn {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
     OneInsnPtr next;
@@ -442,7 +442,7 @@ enum state {st0, st1, st2};
 
 
 struct InsnList {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
 
@@ -460,7 +460,7 @@ struct InsnList {
 typedef InsnList * InsnListPtr;
 
 struct Types {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
 
@@ -469,7 +469,7 @@ struct Types {
     Kind k;
     union {
 //    kindReal:   ();
-    
+
 //    kindRange:
         struct {
             TypesPtr base;
@@ -523,8 +523,8 @@ std::string Types::p() const {
         return "REAL";
     case kindRange:
         ostr << "base: " << base->p() << " range: " << left << ".." << right;
-        return ostr.str(); 
-    case kindArray: 
+        return ostr.str();
+    case kindArray:
         if (pck) ostr << "packed ";
         ostr << "array [" << range->p() << "] of " << base->p();
         return ostr.str();
@@ -545,7 +545,7 @@ std::string Types::p() const {
 }
 
 struct TypeChain {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
     TypeChain * next;
@@ -560,7 +560,7 @@ typedef int64_t four[5]; // [1..4]
 typedef Bitset Entries[43]; // [1..42]
 
 struct Expr {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
     union {
@@ -595,7 +595,7 @@ struct Expr {
 };
 
 struct KeyWord {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
     Word w;
@@ -606,7 +606,7 @@ struct KeyWord {
 
 struct StrLabel {
     /*
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
     */
@@ -617,7 +617,7 @@ struct StrLabel {
 };
 
 struct NumLabel {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
     Word id;
@@ -641,7 +641,7 @@ std::string toAscii(Bitset val) {
 }
 
 struct IdentRec {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
     Word id;
@@ -663,7 +663,7 @@ struct IdentRec {
             bool pckfield;
             int64_t shift, width;
         };
-        
+
         // ROUTINEID:
         struct {
             int64_t low, high;
@@ -694,7 +694,7 @@ struct IdentRec {
 };
 
 struct ExtFileRec {
-    void * operator new(size_t s) throw (std::bad_alloc) {
+    void * operator new(size_t s) {
         return besm6_alloc(s);
     }
     Word id;
@@ -777,7 +777,7 @@ IdentRecPtr outputFile,
     uProcPtr;
 
 ExtFileRec * externFileList;
-TypesPtr 
+TypesPtr
 typ120z, typ121z,
     pointerType,
     setType,
@@ -901,7 +901,7 @@ const char * pasmitxt(int64_t errNo) {
 //    errNoCommaOrParenOrTooFewArgs = 41,
 //    errVarTooComplex = 48,
 //    errFirstDigitInCharLiteralGreaterThan3 = 60;
-       
+
     case 49: return "Too many instructions in a block";
     case 50: return "Symbol table overflow";
     case 51: return "Long symbol overflow";
@@ -926,14 +926,14 @@ void printErrMsg(int64_t errNo)
     if (errNo >= 200)
         printf("Internal error %ld", errNo);
     else {
-        if (errNo > 88) 
+        if (errNo > 88)
             printErrMsg(86);
         else if (errNo == 20)
             errNo = (SY == IDENT)*2 + 1;
         else if (16 <= errNo && errNo <= 18)
             printf("%ld ", int64_t(curToken.i));
         printf("%s ", pasmitxt(errNo));
-        if (errNo == 17) 
+        if (errNo == 17)
             printf("%ld", int97z);
         else if (errNo == 22)
             printf("%6s", stmtName.c_str());
@@ -944,7 +944,7 @@ void printErrMsg(int64_t errNo)
 
 void printTextWord(Word val)
 {
-    printf(toAscii(val.m).c_str());
+    fputs(toAscii(val.m).c_str(), stdout);
 }
 
 void makeStringType(TypesPtr & res)
@@ -1107,7 +1107,7 @@ int64_t allocExtSymbol(Bitset l3arg1z)
     int64_t l3var2z;
     int64_t ret = symTabPos;
     if (curVal.m * halfWord) {
-        for (l3var2z = 1; l3var2z <= longSymCnt; ++l3var2z) 
+        for (l3var2z = 1; l3var2z <= longSymCnt; ++l3var2z)
             if (curVal.m == longSyms[l3var2z]) {
                 ret = longSymTabBase[l3var2z];
                 return ret;
@@ -1157,7 +1157,7 @@ int64_t addCurValToFCST()
         do {
             mid = (low + high) / 2;
             if (curVal.m == constVals[mid].m) {
-              return constNums[mid];                
+              return constNums[mid];
             }
             if (curVal.a < constVals[mid].a)
                 high = mid - 1;
@@ -1166,7 +1166,7 @@ int64_t addCurValToFCST()
         } while (low <= high);
         ret = FcstCnt;
         if (FcstCountTo500 != 500) {
-            if (curVal.a < constVals[mid].a) 
+            if (curVal.a < constVals[mid].a)
                 high = mid;
             else
                 high = mid + 1;
@@ -1228,7 +1228,7 @@ int64_t allocSymtab(Bitset l3arg1z)
     return ret;
 } /* allocSymtab */
 
-int64_t getFCSToffset() 
+int64_t getFCSToffset()
 {
     int64_t ret;
     Word offset;
@@ -1420,7 +1420,7 @@ void endOfLine()
                 errPos = errMapBase[err];
                 prevPos = errMapBase[err-1];
                 if (errPos != prevPos) {
-                    if (prevPos + 1 != errPos) 
+                    if (prevPos + 1 != errPos)
                         printf("%*c", int(errPos-prevPos-1), ' ');
                     putchar(char(err + 48));
                 }
@@ -1595,7 +1595,7 @@ parseComment::parseComment()
             case 'F': readOptFlag(checkFortran);
                 break;
             case 'L': PASINFOR.listMode = readOptVal(3);
-                break;                
+                break;
             case 'P': readOptFlag(doPMD);
                 break;
             case 'T': readOptFlag(checkBounds);
@@ -1700,7 +1700,7 @@ L1:             curToken.m.val = 0;
                     while (hashTravPtr != NULL) {
                         if (hashTravPtr->offset == curFrameRegTemplate)
                         {
-                            if (hashTravPtr->id.m != curIdent.m) 
+                            if (hashTravPtr->id.m != curIdent.m)
                                 hashTravPtr = hashTravPtr->next;
                             else {
                                 isDefined = true;
@@ -1737,7 +1737,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                             expr62z = expr62z->expr1;
                         }
                     }
-                    goto L2; 
+                    goto L2;
                 } break;
                 case 3: {
                     hashTravPtr = typeHashTabBase[bucket];
@@ -1754,7 +1754,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
             } break; /* IDENT */
             case REALCONST: {
                 nextCH();
-                if (charSymTabBase[CH] == IDENT) 
+                if (charSymTabBase[CH] == IDENT)
                     goto L1;
                 if (CH == '(')
                     SY = BEGINSY;
@@ -1771,7 +1771,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                 tokenLen = 0;
                 do {
                     tokenLen = tokenLen + 1;
-                    if (16 >= tokenLen) 
+                    if (16 >= tokenLen)
                         numstr[tokenLen] = CH - '0';
                     else {
                         error(55); /* errMoreThan16DigitsInNumber */
@@ -1831,7 +1831,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                     }
                     curToken.r = curToken.i;
                     SY = REALCONST;
-                    if (charSymTabBase[CH] != INTCONST) 
+                    if (charSymTabBase[CH] != INTCONST)
                         error(56); /* errNeedMantissaAfterDecimal */
                     else
                         do {
@@ -1895,7 +1895,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                         nextCH();
                         if (charSymTabBase[CH] == CHARCONST) {
                             nextCH();
-                            if (charSymTabBase[CH] != CHARCONST) 
+                            if (charSymTabBase[CH] != CHARCONST)
                                 goto exitLoop;
                             else
                                 goto L2233;
@@ -1922,7 +1922,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                         } else {
                           L2233:
                             /* with PASINFOR do */ {
-/*                                
+/*
                                 if charEncoding = 3 then {
                                     if (ch < '*') or ('_176' < CH) then
                                         curChar := chr(0)
@@ -1939,7 +1939,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                                     curChar := a4@[CH];
                                 } else
 */
-                                {                                    
+                                {
                                     curChar = CH;
                                 }
                                 localBuf[tokenIdx] = curChar;
@@ -2153,7 +2153,7 @@ L99:    {
             litType = pointerType;
             litValue.ii = 074000;
             } break;
-        default: break;    
+        default: break;
         } /* case */
 } /* parseLiteral */
 
@@ -2204,7 +2204,7 @@ bool knownInType(IdentRecPtr & rec)
         rec = programme::super.back()->typelist;
         while (rec != NULL) {
             if (rec->id == curIdent) {
-                return true;                
+                return true;
             }
             rec = rec->next;
         }
@@ -2214,7 +2214,7 @@ bool knownInType(IdentRecPtr & rec)
 
 void checkSymAndRead(Symbol sym)
 {
-    if (SY != sym) 
+    if (SY != sym)
         requiredSymErr(sym);
     else
         inSymbol();
@@ -2352,7 +2352,7 @@ typeCheck::typeCheck(TypesPtr type1, TypesPtr type2)
             if (kind1 == kindRange) {
                     rangeMismatch = true;
                     typ120z = type2;
-                    if (type1->base == type2) 
+                    if (type1->base == type2)
                         goto L1;
                 } else if ((kind2 == kindRange) and
                            (type1 == type2->base))
@@ -2401,7 +2401,7 @@ struct formOperator {
     static std::vector<formOperator*> super;
     formOperator(OpGen l3arg1z);
     ~formOperator() { super.pop_back(); }
-    
+
     int64_t l3int1z, l3int2z, l3int3z;
     int64_t nextInsn;
     ExprPtr l3var5z;
@@ -2715,7 +2715,7 @@ struct genOneOp {
                 form1Insn(InsnTemp[UJ] + 2 + moduleOffset);
                 padToLeft();
                 if (curInsn.i != 0) {
-                    if (not F3413()) 
+                    if (not F3413())
                         error(211);
                     P0715(0, l4inl7z->code);
                 };
@@ -2753,7 +2753,7 @@ struct genOneOp {
         set146z = set146z - set145z;
     }
 }; /* genOneOp */
-    
+
 
 void addToInsnList(int64_t insn)
 {
@@ -3050,7 +3050,7 @@ void P5117(Operator op)
 {
     int64_t & localSize = programme::super.back()->localSize;
     int64_t & l2int21z = programme::super.back()->l2int21z;
-    
+
     addInsnAndOffset(curFrameRegTemplate, localSize);
     curExpr = new Expr;
     /* with curExpr@ do */
@@ -3209,7 +3209,7 @@ struct genFullExpr {
             insnList->regsused = insnList->regsused ^ mkbs(16);
         }
     }; /* negateCond */
-    
+
     void tryFlip(bool commutes) {
         int64_t l5var1z;
         InsnList * l5var2z;
@@ -3269,10 +3269,10 @@ struct genFullExpr {
         Word l5var9z;
 
         if (arg1Const) {
-            if (arg1Val.b) 
+            if (arg1Val.b)
               insnList = otherIns;
         } else if (arg2Const) {
-            if (not arg2Val.b) 
+            if (not arg2Val.b)
                 insnList = otherIns;
         } else {
             l5var1z = insnList->regsused.has(16);
@@ -3392,7 +3392,7 @@ void genGetElt() {
     InsnListPtr getEltInsns[11]; // array [1..10] of InsnListPtr;
     ExprPtr & exprToGen = genFullExpr::super.back()->exprToGen;
     InsnList * &saved = formOperator::super.back()->saved;
-    
+
     dimCnt = 0;
     l5var29z = exprToGen;
     while (l5var29z->op == GETELT) {
@@ -3603,7 +3603,7 @@ int64_t allocGlobalObject(IdentRecPtr l6arg1z)
 
 void genEntry::traceEntry(bool isEntry)
 {
-    if (not optSflags.m.has(DebugEntry)) 
+    if (not optSflags.m.has(DebugEntry))
         return;
     curVal = l5idr5z->id;
     addToInsnList(KVTM+I10 + addCurValToFCST());
@@ -3856,7 +3856,7 @@ void genCopy()
     InsnList * &saved = formOperator::super.back()->saved;
     int64_t &work = genFullExpr::super.back()->work;
     InsnList * &otherIns = genFullExpr::super.back()->otherIns;
-    
+
     size = insnList->typ->size;
     if (size == 1) {
         saved = insnList;
@@ -4009,9 +4009,9 @@ genFullExpr::genFullExpr(ExprPtr exprToGen_) : exprToGen(exprToGen_) {
     OpFlg &flags = formOperator::super.back()->flags;
     InsnList * &saved = formOperator::super.back()->saved;
     IdentRecPtr &curIdRec = programme::super.back()->curIdRec;
-    
+
     super.push_back(this);
-    
+
     if (exprToGen == NULL)
         return;
 L7567:
@@ -4347,7 +4347,7 @@ L7567:
                         break;
                     case fnSQRI:  arg1Val.i = arg1Val.i*arg1Val.i;
                         break;
-                    case fnEOF: 
+                    case fnEOF:
                     case fnREF:
                     case fnEOLN:
                         error(201);
@@ -4747,7 +4747,7 @@ void packFields()
     bool &isOuterDecl = parseRecordDecl::super.back()->isOuterDecl;
     IdentRecPtr &curEnum = parseTypeRef::super.back()->curEnum;
     bool &isPacked = parseTypeRef::super.back()->isPacked;
- 
+
     parseTypeRef(selType, skipTarget + mkbs(CASESY));
     if (curType->ptr2 == NULL) {
         curType->ptr2 = curField;
@@ -4836,7 +4836,7 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_) : isOuterD
     Bitset &skipTarget = parseTypeRef::super.back()->skipTarget;
 
     super.push_back(this);
-    
+
     int93z = 3;
     inSymbol();
     while (SY == IDENT) {
@@ -5014,7 +5014,7 @@ L12247:
         if (curField == NULL) {
             curType = BooleanType;
             error(errNoIdent);
-        } else {            
+        } else {
             // curType@ := [1, nrOfBits(span - 1), kindScalar, , span, 0];
             curType->size = 1;
             curType->bits = nrOfBits(span - 1);
@@ -5095,7 +5095,7 @@ L12247:
             checkSymAndRead(ENDSY);
         } else if (SY == ARRAYSY) {
             inSymbol();
-            if (SY == LBRACK) 
+            if (SY == LBRACK)
                 inSymbol();
             tempType = NULL;
           L12476:
@@ -6670,7 +6670,7 @@ struct ParseData {
 
     void P16432(int64_t l5arg1z) {
         DATAREC l5var1z;
-        
+
         l5var1z.assn(0, allocDataRef(l4var4z.i));
         if (FcstCnt == l4var3z.i) {
             curVal = l4var8z;
@@ -7452,7 +7452,7 @@ Statement::Statement()
                     skip(bigSkipSet);
                     if (statBegSys.has(SY))
                         goto skip;
-                    if (SY != SEMICOLON) 
+                    if (SY != SEMICOLON)
                         goto exit_rep;
                     goto rep;
                 }
@@ -7607,7 +7607,7 @@ void outputObjFile() {
 void defineRoutine() {
     int64_t l3var1z;
     Word l3var2z;
-    // Word l3var3z; unused 
+    // Word l3var3z; unused
     int64_t l3int4z;
     IdentRecPtr l3idr5z;
     // Word l3var6z; unused
@@ -7776,7 +7776,7 @@ struct initScalars {
 initScalars::initScalars() :
     curIdRec(programme::super.back()->curIdRec)
 { /* initScalars */
-    BooleanType = new Types(1, 1, kindScalar); 
+    BooleanType = new Types(1, 1, kindScalar);
     BooleanType->numen = 2;
     BooleanType->start = 0;
 
@@ -8740,7 +8740,7 @@ struct initTables {
         initInsnTemplates();
         initSets();
         // unpack(PASINFOR.a3@, iso2text, '_052'); /* '*' */
-        memcpy(iso2text+'*',
+        memcpy(&iso2text['*'],
                "\012\036\000\035\000\017" // 052-057 (* + , - . /)
                "\020\021\022\023\024\025\026\027" // 060-067 (0 - 7)
                "\030\031\000\000\000\000\000\000" // 070-077 (8 9 : ; < = > ?)
@@ -8820,7 +8820,7 @@ void finalize() {
     entryPtTable[entryPtCnt] = mkbs();
 //    PASINFOR.entryptr@ := entryPtTable;
 //    PASINFOR.sizes := sizes;
-    
+
 } /* finalize */
 
 void initOptions() {
@@ -8959,7 +8959,7 @@ int main() {
     setOpMap[RDIVOP] = SETXOR;
 
     // Main program starts here
-    
+
     PASINFOR.listMode = 1;
     if (PASINFOR.listMode != 0)
         printf("%s\n", boilerplate);
