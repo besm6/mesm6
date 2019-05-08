@@ -1,82 +1,34 @@
 {******************************************************************************
 *                                                                             *
-*                      TEST SUITE FOR ISO 7185 PASCAL                         *
-*                                                                             *
-*                       The "PASCAL ACCEPTANCE TEST"                          *
-*                                                                             *
-*                              Version 1.1                                    *
-*                                                                             *
-*            Copyright (C) 2010 S. A. Moore - All rights reserved             *
+*                       TEST SUITE FOR BESM6 PASCAL                           *
 *                                                                             *
 * This program attempts to use and display the results of each feature of     *
-* standard pascal. It is a "positive" test in that it should compile and run  *
+* BESM6 pascal. It is a "positive" test in that it should compile and run     *
 * error free, and thus does not check error conditions/detection.             *
 *                                                                             *
-* Each test is labeled and numbered, and the expected result also output, so  *
-* that the output can be self evidently hand checked.                         *
+* The test is based on the "PASCAL ACCEPTANCE TEST" Version 1.1,              *
+* by S. A. Moore. See comments in file iso7185pat.pas for details about       *
+* the original test.                                                          *
 *                                                                             *
-* The output can be redirected to a printer or a file to facillitate such     *
-* checking.                                                                   *
+* This test was modified to match the BESM6 compiler.                         *
+* Changes are listed below.                                                   *
 *                                                                             *
-* The output can also be automatically checked by comparing a known good file *
-* to the generated file. To this end, we have regularized the output,         *
-* specifying all output field widths that are normally compiler dependent.    *
+* 1. Removed check for '(.' and '.) alternatives for '[' and ']'.             *
+*    Not supported by BESM-6 compiler.                                        *
 *                                                                             *
-* Only the following factors exist that are allowed to be compiler dependent, *
-* but could cause a miscompare of the output:                                 *
+* 2. Removed 'set of char' construct and all dependencies.                    *
+*    BESM-6 Pascal supports only sets up to 48 elements.                      *
 *                                                                             *
-*    1. The case of output booleans. We have choosen a standard format of     *
-*       LOWER case for such output. Note that compilers can choose any case,  *
-*       or mixture of cases.                                                  *
-*                                                                             *
-* Because of this, it may be required to return to hand checking when         *
-* encountering a differing compiler system.                                   *
-*                                                                             *
-* Notes:                                                                      *
-*                                                                             *
-* 1. This test will not run or compile unless "set of char" is possible.      *
-* This does not mean that compilers lacking in "set of char" capability are   *
-* not standard. However, in the authors opinion, this is a crippling          *
-* limitation for any Pascal compiler.                                         *
-*                                                                             *
-* 2. Because there is no "close" function in ISO 7185 Pascal, the file        *
-* handling contained with is likely to generate a large number of open        *
-* temporary files. This may cause some implementations to trip a limit on the *
-* number of total open files. If this occurs, turn the constant "testfile"    *
-* below to "false". This will cause the temporary files test to be skipped.   *
-*                                                                             *
-* The following sections need to be completed:                                *
-*                                                                             *
-* 1. Buffer variables. The full suite of handing tests need to be applied to  *
-* file buffer variables as well. This means all integer, character, boolean,  *
-* etc.                                                                        *
-*                                                                             *
-* 2. Arrays, records and pointers containing files.                           *
-*                                                                             *
-* 3. Pointer variables, array variables, and other complex accesses need to   *
-* subjected to the same extentive tests that base variables are.              *
-*                                                                             *
-* 4. Need a test for access to locals of a surrounding procedure. This tests  *
-* access to a procedure that is local, but not in the same scope.             *
-*                                                                             *
-* 5. Need a dynamic storage test that allocates various sizes, not just       *
-* integers.                                                                   *
-*                                                                             *
-* 6. Tests for reads from the "input" file, as well as explictly specifying   *
-* the output file.                                                            *
-*                                                                             *
-* 7. Test for page. This would just perform it, and leave it up to the reader *
-* as to what the effect is, since the action is undefined.                    *
+* 3. TODO                                                                     *
 *                                                                             *
 ******************************************************************************}
 
-program iso7185pat(output);
+program besm6pat(output);
 
 label
       0, 3, 9999, 0004;
 
 const
-
       { flags to control run }
 
       { the pointer torture test takes time and isn't run for interpreted
@@ -102,11 +54,8 @@ type
      enum  = (one, two, three, four, five, six, seven, eight, nine, ten);
      esub  = three..six;
      subr  = 10..20;
-     (* Note use of alternatives for '[' and ']'. The availablity of these
-        alternates is implementation defined. *)
-     arri  = array (.1..10.) of integer;
+     arri  = array [1..10] of integer;
      arrim = array [1..2, 1..2] of array [1..2, 1..2, 1..2, 1..2] of integer;
-     cset  = set of char;
      { Note that the availability of the alternate '@' is implementation
        defined }
      iptr  = @integer;
@@ -128,7 +77,6 @@ type
               st:  string10;
               a:   arri;
               rc:  recs;
-              stc: cset;
               p:   iptr
 
            end;
@@ -144,7 +92,6 @@ type
               st:  string10;
               a:   arri;
               rc:  recs;
-              stc: cset;
               p:   iptr
 
            end;
@@ -161,7 +108,7 @@ type
 
             end;
      arrr = array [1..10] of recs;
-     vart = (vti, vtb, vtc, vte, vtes, vts, vtr, vtst, vta, vtrc, vtstc, vtp);
+     vart = (vti, vtb, vtc, vte, vtes, vts, vtr, vtst, vta, vtrc, vtp);
      intalias = integer;
 
 var
@@ -193,10 +140,8 @@ var
     ste:   set of 1..10;
     stf:   packed set of 1..10;
     stg:   packed set of 1..20;
-    csta,  cstb, cstc, cstd: set of char;
     cste:  set of 'a'..'z';
     cstf:  packed set of 'a'..'f';
-    cstg:  packed set of char;
     ci:    char;
     sena,  senb, senc, send: set of enum;
     sene:  set of one..five;
@@ -229,8 +174,6 @@ var
     pave:  packed array [1..10] of enum;
     aves:  array [1..10] of esub;
     paves: packed array [1..10] of esub;
-    avs:   array [1..10] of cset;
-    pavs:  packed array [1..10] of cset;
     avrc:  array [1..10] of recs;
     pavrc: packed array [1..10] of recs;
     avf:   array [1..10] of text;
@@ -264,7 +207,6 @@ var
                  vtst:  (vdst:  string10; h: integer);
                  vta:   (vda:   arri;     j: integer);
                  vtrc:  (vdrc:  recs;     k: integer);
-                 vtstc: (vdstc: cset;     l: integer);
                  vtp:   (vdp:   iptr;     m: integer)
 
               { end }
@@ -382,8 +324,6 @@ var
     pfa:   packed file of arri;
     frc:   file of recs;
     pfrc:  packed file of recs;
-    fstc:  file of cset;
-    pfstc: packed file of cset;
     fp:    file of iptr;
     pfp:   packed file of iptr;
     ft:    text;
@@ -398,7 +338,6 @@ var
     ptst:  ^string10;
     pta:   ^arri;
     ptrc:  ^recs;
-    ptstc: ^cset;
     ptp:   ^iptr;
     ipa,       ipb, ipc, ipd, ipe: ^integer;
     iap:       array [1..100] of ^integer;
@@ -480,7 +419,7 @@ begin
 end;
 
 procedure junk8(a: integer; b: boolean; c: char; e: enum; es: esub; s: subr;
-                r: real; st: string10; ar: arri; rc: rec; rv: recv; stc: cset;
+                r: real; st: string10; ar: arri; rc: rec; rv: recv;
                 p: iptr);
 
 var i:  integer;
@@ -495,13 +434,9 @@ begin
            ' ', rc.s:1, ' ', rc.r:15, ' ', rc.st);
    for i := 1 to 10 do write(rc.a[i]:1, ' '); writeln;
    writeln(rc.rc.a:1, ' ', rc.rc.b:1);
-   for ci := 'a' to 'j' do if ci in rc.stc then write(ci) else write('_');
-   writeln;
    writeln(rc.p^:1);
    writeln(rv.a:1, ' ', rv.b:1, ' ', rv.c:5);
    if rv.c then writeln(ord(rv.e):1) else writeln(rv.d);
-   for ci := 'a' to 'j' do if ci in stc then write(ci) else write('_');
-   writeln;
    writeln(p^:1)
 
 end;
@@ -691,8 +626,6 @@ begin
    rewrite(pfa);
    rewrite(frc);
    rewrite(pfrc);
-   rewrite(fstc);
-   rewrite(pfstc);
    rewrite(fp);
    rewrite(pfp);
    rcastt := 1;
@@ -1703,61 +1636,6 @@ begin
    i := 10;
    writeln('Set16: ', 5 in [cone..i], ' s/b true');
 
-   { sets of characters }
-   write('Set17: ');
-   csta := [];
-   for ci := 'a' to 'j' do
-      if odd(ord(ci)) then csta := csta+[ci, chr(ord(ci)+10)];
-   for ci := 'a' to 't' do if ci in csta then write(ci) else write('_');
-   write(' s/b ');
-   writeln('a_c_e_g_i_k_m_o_q_s_');
-   write('Set18: ');
-   csta := ['a', 'c', 'f'];
-   cstb := ['c', 'd', 'g'];
-   for ci := 'a' to 'j' do if ci in csta+cstb then write(ci) else write('_');
-   write(' s/b ');
-   writeln('a_cd_fg___');
-   write('Set19: ');
-   csta := ['d', 'f', 'h', 'a'];
-   cstb := ['a', 'b', 'i', 'h'];
-   for ci := 'a' to 'j' do if ci in csta*cstb then write(ci) else write('_');
-   write(' s/b ');
-   writeln('a______h__');
-   write('Set20: ');
-   csta := ['b', 'd', 'i', 'j'];
-   cstb := ['i', 'h', 'd', 'e'];
-   for ci := 'a' to 'j' do if ci in csta-cstb then write(ci) else write('_');
-   write(' s/b ');
-   writeln('_b_______j');
-   csta := ['b', 'd', 'h', 'j'];
-   cstb := ['a', 'd', 'h', 'c'];
-   cstc := ['b', 'd', 'h', 'j'];
-   writeln('Set21: ', csta = cstb:5, ' s/b false');
-   writeln('Set22: ', csta = cstc:5, ' s/b true');
-   writeln('Set23: ', csta <> cstb:5, ' s/b true');
-   writeln('Set24: ', csta <> cstc:5, ' s/b false');
-   csta := ['a', 'b', 'f', 'g', 'j'];
-   cstb := ['a', 'f', 'g'];
-   cstc := ['a', 'f', 'g', 'h'];
-   cstd := ['a', 'b', 'f', 'g', 'j'];
-   writeln('Set25: ', cstb <= csta:5, ' s/b true');
-   writeln('Set26: ', cstb <= cstd:5, ' s/b true');
-   writeln('Set27: ', cstc <= csta:5, ' s/b false');
-   writeln('Set28: ', csta >= cstb:5, ' s/b true');
-   writeln('Set29: ', cstd >= cstb:5, ' s/b true');
-   writeln('Set30: ', csta >= cstc:5, ' s/b false');
-   write('Set31: ');
-   ci := 'a';
-   i := 4;
-   csta := [ci, chr(ord(ci)+i)];
-   for ci := 'a' to 'j' do if ci in csta then write(ci) else write('_');
-   write(' s/b ');
-   writeln('a___e_____');
-   { these are just compile time tests }
-   cste := cstd;
-   cstf := ['a', 'b', 'e', 'f'];
-   cstg := cstf;
-
    { sets of enumerated }
    write('Set32: ');
    sena := [];
@@ -1934,11 +1812,6 @@ begin
    ptrc^.a := 7234;
    ptrc^.b := 'y';
    writeln(ptrc^.a:1, ' ', ptrc^.b, ' s/b 7234 y');
-   write('Pointer12:   ');
-   new(ptstc);
-   ptstc^ := ['b', 'd', 'i'..'j'];
-   for ci := 'a' to 'j' do if ci in ptstc^ then write(ci) else write('_');
-   writeln(' s/b _b_d____ij');
    write('Pointer13:  ');
    new(ptp);
    new(ptp^);
@@ -2259,16 +2132,6 @@ begin
    for ei := three to six do paves[ord(ei)+1] := ei;
    for ei := six downto three do write(ord(paves[ord(ei)+1]):1, ' ');
    writeln('s/b 5 4 3 2');
-   write('Array17:  ');
-   for i := 1 to 10 do avs[i] := [chr(i+ord('a'))];
-   for i := 10 downto 1 do
-      for ci := 'a' to 'z' do if ci in avs[i] then write(ci, ' ');
-   writeln('s/b k j i h g f e d c b');
-   write('Array18:  ');
-   for i := 1 to 10 do pavs[i] := [chr(i+ord('a'))];
-   for i := 10 downto 1 do
-      for ci := 'a' to 'z' do if ci in pavs[i] then write(ci, ' ');
-   writeln('s/b k j i h g f e d c b');
    write('Array19:  ');
    for i := 1 to 10 do
       begin avrc[i].a := i+10; avrc[i].b := chr(i+ord('a')) end;
@@ -2477,7 +2340,6 @@ begin
    for i := 1 to 10 do arec.a[i] := i+20;
    arec.rc.a := 2324;
    arec.rc.b := 'y';
-   arec.stc := ['b'..'e', 'i'];
    new(arec.p);
    arec.p^ := 8454;
    writeln(arec.i:1, ' ', arec.b:5, ' ', arec.c:1, ' ', ord(arec.e):1, ' ',
@@ -2485,8 +2347,6 @@ begin
            ' ', arec.s:1, ' ', arec.r:15, ' ', arec.st);
    for i := 1 to 10 do write(arec.a[i]:1, ' '); writeln;
    writeln(arec.rc.a:1, ' ', arec.rc.b:1);
-   for ci := 'a' to 'j' do if ci in arec.stc then write(ci) else write('_');
-   writeln;
    writeln(arec.p^:1);
    writeln('s/b:');
    writeln('64 false j 1 3 12  4.54512000e-29 what ? who');
@@ -2506,7 +2366,6 @@ begin
    for i := 1 to 10 do parec.a[i] := i+20;
    parec.rc.a := 2324;
    parec.rc.b := 'y';
-   parec.stc := ['b'..'e', 'i'];
    new(parec.p);
    parec.p^ := 8454;
    writeln(parec.i:1, ' ', parec.b:5, ' ', parec.c:1, ' ', ord(parec.e):1, ' ',
@@ -2514,8 +2373,6 @@ begin
            ' ', parec.s:1, ' ', parec.r:15, ' ', parec.st);
    for i := 1 to 10 do write(parec.a[i]:1, ' '); writeln;
    writeln(parec.rc.a:1, ' ', parec.rc.b:1);
-   for ci := 'a' to 'j' do if ci in parec.stc then write(ci) else write('_');
-   writeln;
    writeln(parec.p^:1);
    writeln('s/b:');
    writeln('64 false j 1 3 12  4.54512000e-29 what ? who');
@@ -2601,11 +2458,8 @@ begin
    writeln(' s/b:  873 9 2387 t 427');
    write('Record13:  ');
    vra.i := 873;
-   vra.vt := vtstc;
    vra.l := 427;
-   vra.vdstc := ['b'..'g', 'i'];
    write(vra.i:1, ' ', ord(vra.vt):1, ' ');
-   for ci := 'j' downto 'a' do if ci in vra.vdstc then write(ci) else write('_');
    writeln(' ', vra.l:1);
    writeln('      s/b:  873 10 _i_gfedcb_ 427');
    write('Record14:  ');
@@ -3077,7 +2931,6 @@ end;
    for i := 1 to 10 do arec.a[i] := i+20;
    arec.rc.a := 2324;
    arec.rc.b := 'y';
-   arec.stc := ['b'..'e', 'i'];
    new(arec.p);
    arec.p^ := 8454;
    vrec.a := 23487;
@@ -3087,7 +2940,7 @@ end;
    new(ip);
    ip^ := 734;
    junk8(93, true, 'k', eight, five, 10, 3.1414, 'hello, guy', ai, arec, vrec,
-         ['a'..'d', 'h'], ip);
+         ip);
    writeln('s/b:');
    writeln('93  true k 7 4 10  3.14140000e+00 hello, guy');
    writeln('11 12 13 14 15 16 17 18 19 20');
