@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstring>
 #include <sstream>
+#include <wctype.h>
 
 FILE * pasinput = stdin;
 unsigned char PASINPUT;
@@ -292,13 +293,20 @@ struct Real {
     operator double() const {
         return ldexp(mantissa, exponent-104);
     }
+    std::string print() const;
     void operator=(double d) {
         int exp;
         double mant = frexp(d, &exp);
-        mantissa = mant * int64_t(ldexp(2, 40));
+        mantissa = ldexp(mant, 40);
         exponent = exp + 64;
     }
 };
+
+std::string Real::print() const {
+    std::ostringstream ostr;
+    ostr << double(*this);
+    return ostr.str();
+}
 
 int64_t heap[32768];
 int64_t avail = 100;
@@ -372,8 +380,15 @@ struct Alfa {
         c ^= (*this)[i];
         val = (val ^ (uint64_t(c) << (48-8*i))) & 0xFFFFFFFFFFFFL;
     }
-    // May have to be modified to mimic BESM-6 exactly
-    bool operator<(const Alfa & x) const { return val < x.val; }
+    // Mimics BESM-6 exactly, but is not transitive: the list of literals can have repetitions.
+    bool operator<(const Alfa & x) const {
+        uint64_t tmp = val + (x.val ^ 0xFFFFFFFFFFFFL);
+        tmp = (tmp + (tmp >> 48)) & 0xFFFFFFFFFFFFL;
+        return tmp >> 47;
+    }
+    // Better use
+    // bool operator<(const Alfa & x) const { return val < x.val; }
+
     std::string print() const;
 };
 
@@ -899,6 +914,7 @@ const char * pasmitxt(int64_t errNo) {
     case 84: return "Error in declarations";
     case 85: return "Routines left undefined";
     case 86: return "Required token not found: ";
+    case 88: return "Different types of case labels and expression";
     case 89: return "integer";
     }
     return "Dunno";
@@ -1143,14 +1159,14 @@ int64_t addCurValToFCST()
             if (curVal.m == constVals[mid].m) {
               return constNums[mid];                
             }
-            if (curVal.m.val < constVals[mid].m.val)
+            if (curVal.a < constVals[mid].a)
                 high = mid - 1;
             else
                 low = mid + 1;
         } while (low <= high);
         ret = FcstCnt;
         if (FcstCountTo500 != 500) {
-            if (curVal.m.val < constVals[mid].m.val) 
+            if (curVal.a < constVals[mid].a) 
                 high = mid;
             else
                 high = mid + 1;
@@ -1230,7 +1246,7 @@ int64_t getFCSToffset()
 
 int64_t minel(Bitset b) {
     if (!b.val) return -1;
-    int64_t ret = 1;
+    int64_t ret = 0;
     uint64_t t = b.val;
     while (((t >> 47) & 1) == 0) {
         ret++;
@@ -1338,7 +1354,11 @@ void P0715(int64_t mode, int64_t arg)
             work = getHelperProc(68) + (-064200000); /* P/DA */
         else
             work = -mode;
-        curVal.i = arg;
+        // A trick here: if curVal had no integer exponent, it should not have it after the assignment.
+        if (curVal.i.exp == 104)
+            curVal.i = arg;
+        else
+            curVal.ii = arg;
         arg = getFCSToffset();
         form3Insn(KATX+SP+1, KSUB+I8 + offset, work);
         form3Insn(KRSUB+I8 + arg, work, KXTA+SP+1);
@@ -1429,12 +1449,55 @@ void requiredSymErr(Symbol sym)
         error(sym + 88);
 } /* requiredSymErr */
 
+static unsigned char
+unicode_to_koi7 (int val)
+{
+    std::map<int, unsigned char> uni2koi7;
+    if (uni2koi7.empty()) {
+        static wchar_t cyr[] = L"ЮАБЦДЕФГХИЙКЛМНОПЯРСТУЖВЬЫЗШЭЩЧ";
+        for (int i = 0; cyr[i]; ++i)
+            uni2koi7[cyr[i]] = (unsigned char)(i + 0x60);
+        uni2koi7[L'×'] = 6;
+        uni2koi7[L'#'] = uni2koi7[L'≠'] = 030;
+        uni2koi7[L'≤'] = 016;
+        uni2koi7[L'≥'] = 017;
+        uni2koi7[L'÷'] = 032;
+        uni2koi7[L'∨'] = 036;
+        uni2koi7[L'~'] = 037;
+    }
+    if (iswlower(val))
+        return unicode_to_koi7(towupper(val));
+    else if (uni2koi7.count(val))
+        return uni2koi7[val];
+    else if (val < 0x60)
+        return (unsigned char)val;
+    else return ' ';
+}
+
+static int utf8_getc(FILE *fin)
+{
+    int c1, c2, c3;
+    c1 = getc (fin);
+    if (c1 < 0 || ! (c1 & 0x80))
+        return c1;
+    c2 = getc (fin);
+    if (! (c1 & 0x20))
+        return (c1 & 0x1f) << 6 | (c2 & 0x3f);
+    c3 = getc (fin);
+    return (c1 & 0x0f) << 12 | (c2 & 0x3f) << 6 | (c3 & 0x3f);
+
+}
+
+static unsigned char ugetc(FILE * fin) {
+    return unicode_to_koi7(utf8_getc(fin));
+}
+
 void readToPos80()
 {
     while (!feof(pasinput) && linePos < 81 && PASINPUT != '\n') {
         linePos = linePos + 1;
         lineBufBase[linePos] = PASINPUT;
-        if (linePos != 81) PASINPUT = char(getc(pasinput));
+        if (linePos != 81) PASINPUT = ugetc(pasinput);
     }
     endOfLine();
 } /* readToPos80 */
@@ -1460,7 +1523,7 @@ void nextCH()
     do {
         atEOL = PASINPUT == '\n' || feof(pasinput);
         CH = PASINPUT;
-        PASINPUT = char(toupper(getc(pasinput)));
+        PASINPUT = ugetc(pasinput);
         linePos = linePos + 1;
         lineBufBase[linePos] = CH;
     } while (not ((maxLineLen >= linePos) or atEOL));
@@ -2561,7 +2624,7 @@ struct genOneOp {
                 if (tempInsn.m.has(28)) {
                     addInsnToBuf(getValueOrAllocSymtab(curInsn.i)+tempInsn.i);
                 } else {
-                    curVal.i = curInsn.i % 32768;
+                    curVal.i = curInsn.i & 077777;
                     if (curVal.i < 2048)
                         addInsnToBuf(tempInsn.i + curInsn.i);
                     else
@@ -2858,7 +2921,7 @@ struct setAddrTo {
 
     void P4613() {
         l4var1z.i = insnList->ilf6;
-        l4var1z.i = l4var1z.i % 32768;
+        l4var1z.i = l4var1z.i & 077777;
         l4var6z = l4var1z.i;
     }; /* P4613 */
 
@@ -3309,6 +3372,7 @@ struct genFullExpr {
     void genConstDiv() {
         // TODO correctly
         curVal.ii = (1L<<47)|(1L << 40)/arg2Val.i; // PASDIV(1/arg2Val.i);
+        ++curVal.ii;
         addToInsnList(KMUL+I8 + getFCSToffset());
     }; /* genConstDiv */
 
@@ -4051,6 +4115,7 @@ L7567:
                         prepLoad();
                         if (card(arg2Val.m) == 4) { // check for integer with 1 bit set, incl. the exponent
                             // compute the mask
+                            curVal.m = arg2Val.m;
                             curVal.i = curVal.i - 1;
                             addToInsnList(KAAX+I8 +getFCSToffset());
                             l3int3z = 0;
@@ -8764,7 +8829,7 @@ void initOptions() {
     lineNesting = 0;
     maxLineLen = 72;
     CH = ' ';
-    PASINPUT = char(toupper(getc(pasinput)));
+    PASINPUT = ugetc(pasinput);
     linePos = 0;
     prevErrPos = 0;
     errsInLine = 0;
