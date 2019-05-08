@@ -138,7 +138,9 @@ std::string strprintf(const char * fmt, ...) {
     char * str;
     va_list ap;
     va_start (ap, fmt);
-    vasprintf(&str, fmt, ap);
+    if (vasprintf(&str, fmt, ap) < 0) {
+        perror("vasprintf");
+    }
     va_end(ap);
     ret = str;
     free(str);
@@ -193,8 +195,8 @@ struct Dtran {
         comment_off = debug_off + debug_len;
         printf(" %s:,NAME, NEW DTRAN\n",
                get_text_word(memory[table_off-0]).c_str());
-        printf("C Commands: %o\n", cmd_len); 
-        printf("C Constants: %o\n", const_len); 
+        printf("C Commands: %o\n", cmd_len);
+        printf("C Constants: %o\n", const_len);
         printf("C BSS: %o\n", bss_len);
         printf("C Memory size: %o\n", cmd_len+const_len+bss_len);
         printf("C Header: %o\n", head_len);
@@ -208,7 +210,7 @@ struct Dtran {
             printf(" /:,BSS,\n");
         }
     }
-    
+
     uint64 memory[32768];
 
 /*
@@ -283,7 +285,7 @@ mklabels(uint32 memaddr, uint32 opcode, bool litconst) {
                                 strprintf("*%05o", off);
     }
 }
-    
+
 void
 prinsn (uint32 memaddr, uint32 opcode)
 {
@@ -323,7 +325,7 @@ prinsn (uint32 memaddr, uint32 opcode)
                 operand = strprintf("%d", val);
             else if (type == OPCODE_IMM64) {
                 operand = strprintf("64%+d", val-64);
-            } else 
+            } else
                 operand = strprintf(nooctal ? "%d" : "%oB", val);
         }
     }
@@ -366,12 +368,12 @@ std::string get_literal(uint32 addr) {
     }
     return ret;
 }
-    
+
 void prconst (uint32 addr, uint32 len, bool litconst) {
     for (uint cur = addr; cur < addr + len; ++cur) {
         uint64 val = memory[cur+3];
         if (litconst) {
-            printf(" /%d:", cur-cmd_len);                  
+            printf(" /%d:", cur-cmd_len);
         } else if (labels[cur].empty()) {
             printf(" ");
         } else {
@@ -425,7 +427,7 @@ void prsets() {
         }
         printf(" %d,SET,%s\n", len, src.c_str());
         printf(" %d,   ,%s\n", cnt, symtab[to].c_str());
-    }    
+    }
 }
 
 void prdata() {
@@ -469,7 +471,7 @@ void prdata() {
                 for (uint fromcnt = 0; fromcnt < len; ++fromcnt) {
                     printf(" ,XTA,%s\n", get_literal(off+fromcnt).c_str());
                     std::string temp;
-                    size_t plus = symtab[to].find('+'); 
+                    size_t plus = symtab[to].find('+');
                     if (plus != std::string::npos && (tocnt || fromcnt)) {
                         uint was = atoi(symtab[to].c_str() + plus + 1);
                         temp = strprintf("%.*s+%d", plus, symtab[to].c_str(),
@@ -486,10 +488,10 @@ void prdata() {
             printf(" %d,SET,%s\n", len, src.c_str());
             printf(" %d,   ,%s\n", cnt, symtab[to].c_str());
         }
-    }    
+    }
 }
 
-    
+
 void prbss (uint32 addr, uint32 limit)
 {
     // TODO: support BSS section
@@ -663,7 +665,7 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
         }
         return true;
     }
-    
+
     std::string gak(uint i) {
         std::string ret("G");
         ret += 'A'+i/128;
@@ -675,7 +677,7 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
 
     std::vector<std::string> symtab;
     std::vector<std::string> labels;
-    
+
     void dump_sym(uint i, uint offset) {
         uint64 word = memory[i+offset];
         if ((word >> 15) == 0400) {
@@ -724,7 +726,7 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
             }
         }
     }
-    
+
     void dump_symtab() {
         printf("C Symbol table offset is %o\n", table_off);
         for (uint i = head_len; i < head_len + sym_len; ++i) {
