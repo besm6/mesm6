@@ -13,15 +13,13 @@
 * This test was modified to match the BESM6 compiler.                         *
 * Changes are listed below.                                                   *
 *                                                                             *
-* 1. Removed check for '(.' and '.) alternatives for '[' and ']'.             *
-*    Not supported by BESM-6 compiler.                                        *
+* 1. Removed 'set of char' and 'set of 'a'..'z'' constructs, and              *
+*    all dependencies. BESM-6 Pascal supports only sets of integers           *
+*    in range 0..47.                                                          *
 *                                                                             *
-* 2. Removed 'set of char' and 'set of 'a'..'z'' constructs, and              *
-*    all dependencies. BESM-6 Pascal supports only sets up to 48 elements.    *
+* 2. Upper bound of 'set of 1..100' reduced to 47.                            *
 *                                                                             *
-* 3. Upper bound of 'set of 1..100' reduced to 47.                            *
-*                                                                             *
-* 4. Removed 'array of text' constructs, and all dependencies.                *
+* 3. Removed 'array of text' constructs, and all dependencies.                *
 *                                                                             *
 ******************************************************************************}
 
@@ -56,7 +54,9 @@ type
      enum  = (one, two, three, four, five, six, seven, eight, nine, ten);
      esub  = three..six;
      subr  = 10..20;
-     arri  = array [1..10] of integer;
+     (* Note use of alternatives for '[' and ']'. The availablity of these
+        alternates is implementation defined. *)
+     arri  = array (.1..10.) of integer;
      arrim = array [1..2, 1..2] of array [1..2, 1..2, 1..2, 1..2] of integer;
      { Note that the availability of the alternate '@' is implementation
        defined }
