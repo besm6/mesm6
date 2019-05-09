@@ -24,6 +24,8 @@
 * 4. Removed succ() and pred() with integer argument:                         *
 *    not supported on BESM-6.                                                 *
 *                                                                             *
+* 5. Exponent in real constants limited to -18..18 range.                     *
+*                                                                             *
 ******************************************************************************}
 
 program besm6pat(output);
@@ -1215,11 +1217,11 @@ begin
    { formats, input (compiler) and output }
    writeln('Real1:   ', 1.554:15, ' s/b  1.554000e+00');
    writeln('Real2:   ', 0.00334:15, ' s/b  3.340000e-03');
-   writeln('Real3:   ', 0.00334e-21:15, ' s/b  3.34000e-24');
-   writeln('Real4:   ', 4e-45:15, ' s/b  4.000000e-45');
+   writeln('Real3:   ', 0.00334e-13:15, ' s/b  3.34000e-16');
+   writeln('Real4:   ', 4e-18:15, ' s/b  4.000000e-18');
    writeln('Real5:   ', -5.565:15, ' s/b -5.565000e+00');
    writeln('Real6:   ', -0.00944:15, ' s/b -9.440000e-03');
-   writeln('Real7:   ', -0.006364E+32:15, ' s/b -6.364000e+29');
+   writeln('Real7:   ', -0.006364E+18:15, ' s/b -6.364000e+15');
    writeln('Real8:   ', -2e-14:15, ' s/b -2.000000e-14');
    writeln('Real9:');
    writeln('         11111111112222222222333333333344444444445');
@@ -2191,7 +2193,7 @@ begin
    arec.e := two;
    arec.es := four;
    arec.s := 12;
-   arec.r := 4545.12e-32;
+   arec.r := 4545.12e-16;
    arec.st := 'what ? who';
    for i := 1 to 10 do arec.a[i] := i+20;
    arec.rc.a := 2324;
@@ -2205,7 +2207,7 @@ begin
    writeln(arec.rc.a:1, ' ', arec.rc.b:1);
    writeln(arec.p^:1);
    writeln('s/b:');
-   writeln('64 false j 1 3 12  4.54512000e-29 what ? who');
+   writeln('64 false j 1 3 12  4.54512000e-15 what ? who');
    writeln('21 22 23 24 25 26 27 28 29 30');
    writeln('2324 y');
    writeln('_bcde___i_');
@@ -2217,7 +2219,7 @@ begin
    parec.e := two;
    parec.es := four;
    parec.s := 12;
-   parec.r := 4545.12e-32;
+   parec.r := 4545.12e-16;
    parec.st := 'what ? who';
    for i := 1 to 10 do parec.a[i] := i+20;
    parec.rc.a := 2324;
@@ -2231,7 +2233,7 @@ begin
    writeln(parec.rc.a:1, ' ', parec.rc.b:1);
    writeln(parec.p^:1);
    writeln('s/b:');
-   writeln('64 false j 1 3 12  4.54512000e-29 what ? who');
+   writeln('64 false j 1 3 12  4.54512000e-15 what ? who');
    writeln('21 22 23 24 25 26 27 28 29 30');
    writeln('2324 y');
    writeln('_bcde___i_');
@@ -2312,12 +2314,6 @@ begin
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', vra.vdrc.a:1, ' ', vra.vdrc.b, ' ',
          vra.k:1);
    writeln(' s/b:  873 9 2387 t 427');
-   write('Record13:  ');
-   vra.i := 873;
-   vra.l := 427;
-   write(vra.i:1, ' ', ord(vra.vt):1, ' ');
-   writeln(' ', vra.l:1);
-   writeln('      s/b:  873 10 _i_gfedcb_ 427');
    write('Record14:  ');
    vra.i := 873;
    vra.vt := vtp;
@@ -2782,7 +2778,7 @@ end;
    arec.e := two;
    arec.es := four;
    arec.s := 12;
-   arec.r := 4545.12e-32;
+   arec.r := 4545.12e-16;
    arec.st := 'what ? who';
    for i := 1 to 10 do arec.a[i] := i+20;
    arec.rc.a := 2324;
@@ -2800,7 +2796,7 @@ end;
    writeln('s/b:');
    writeln('93  true k 7 4 10  3.14140000e+00 hello, guy');
    writeln('11 12 13 14 15 16 17 18 19 20');
-   writeln('64 false j 1 3 12  4.54512000e-29 what ? who');
+   writeln('64 false j 1 3 12  4.54512000e-15 what ? who');
    writeln('21 22 23 24 25 26 27 28 29 30');
    writeln('2324 y');
    writeln('_bcde___i_');

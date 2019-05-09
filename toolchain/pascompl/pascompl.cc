@@ -1908,12 +1908,14 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                         error(56); /* errNeedMantissaAfterDecimal */
                     else
                         do {
-                            curToken.r = 10.0*curToken.r + CH - 48;
-                            expMagnitude = expMagnitude-1;
+                            if (expMagnitude > -18) {
+                                curToken.r = 10.0*curToken.r + CH - 48;
+                                expMagnitude = expMagnitude-1;
+                            }
                             nextCH();
                         } while (charSymTabBase[CH] == INTCONST);
                 } /*2062*/
-                if (CH == 'E') {
+                if (CH == 'E' || CH == 'e') {
                     if (expMagnitude == 0) {
                         curToken.r = curToken.i;
                         SY = REALCONST;
