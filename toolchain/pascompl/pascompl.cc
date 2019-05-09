@@ -7196,7 +7196,7 @@ struct standProc {
             error(45); /* errNoOpenParenForStandProc */
         if ((mkbsr(0,9)-mkbs(6,7)).has(procNo)) {
             inSymbol();
-            if (hashTravPtr->cl < VARID)
+            if (procNo != 5 and hashTravPtr->cl < VARID)
                 error(46); /* errNoVarForStandProc */
             parseLval();
             arg1Type = curExpr->typ;
