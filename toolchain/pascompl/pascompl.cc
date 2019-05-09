@@ -922,6 +922,11 @@ const char * pasmitxt(int64_t errNo) {
     case 86: return "Required token not found: ";
     case 88: return "Different types of case labels and expression";
     case 89: return "integer";
+    case 95: return "LPAREN";
+    case 96: return "LBRACK";
+    case 100: return "RPAREN";
+    case 101: return "RBRACK";
+    case 102: return "COMMA";
     case 103: return "SEMICOLON";
     case 104: return "PERIOD";
     case 105: return "ARROW";
@@ -1484,7 +1489,9 @@ void endOfLine()
     lineStartOffset = moduleOffset;
     linePos = 0;
     lineCnt = lineCnt + 1;
-    if (feof(pasinput)) {
+    // One EOF is OK when the file doesn't have any extra characters after "END."
+    static int eofs;
+    if (feof(pasinput) && eofs++) {
         error(errEOFEncountered);
         throw 9999;
     }
@@ -2110,6 +2117,9 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                         dataCheck = true;
                 }
             } break;
+            case RBRACE:
+                dataCheck = true;
+                break;
             default: break;
             } /* switch */
         } else { /* 2444 */
@@ -7469,7 +7479,7 @@ Statement::Statement()
             lineNesting = lineNesting + 1;
 /*(ident)*/
         if (SY == IDENT) {
-            if (hashTravPtr != NULL) {
+            if (hashTravPtr != NULL) try {
                 l3var6z = hashTravPtr->cl;
                 if (l3var6z >= VARID) {
                     assignStatement(true);
@@ -7492,7 +7502,10 @@ Statement::Statement()
                     }
                 }
                 (void) formOperator(gen7);
-            } else {
+                } catch (int foo) {
+                    if (foo != 8888) throw;
+                }
+            else {
                 error(errNotDefined);
               L8888:
                 skip(skipToSet + statEndSys);
