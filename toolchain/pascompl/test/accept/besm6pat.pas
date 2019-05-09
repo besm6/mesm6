@@ -21,6 +21,9 @@
 *                                                                             *
 * 3. Removed 'array of text' constructs, and all dependencies.                *
 *                                                                             *
+* 4. Removed succ() and pred() with integer argument:                         *
+*    not supported on BESM-6.                                                 *
+*                                                                             *
 ******************************************************************************}
 
 program besm6pat(output);
@@ -345,7 +348,7 @@ var
     rcastt: integer;
     rcast: record case rcastt: boolean of true: (); false: () end;
     pi1, pi2: ^integer;
-    intaliasv: intalias;
+    vintalias: intalias;
 
 procedure junk1(z, q : integer);
 
@@ -439,127 +442,6 @@ begin
 
 end;
 
-procedure junk9(procedure junk9(junk9, b: integer; c: char);
-                function y(a: integer): integer);
-
-begin
-
-   junk9(9834, 8383, 'j');
-   write(' ', y(743):1);
-
-end;
-
-procedure junk10(x, y: integer; junk10: char);
-
-begin
-
-   write(x:1, ' ', y:1, ' ', junk10:1)
-
-end;
-
-function junk11(x: integer): integer;
-
-begin
-
-   junk11 := succ(x)
-
-end;
-
-procedure junk12(procedure xq(function yq(z: integer): integer);
-                 function q(n: integer): integer);
-
-begin
-
-   xq(q)
-
-end;
-
-procedure junk13(function xz(z: integer): integer);
-
-begin
-
-   write(xz(941):1)
-
-end;
-
-procedure junk14;
-
-var i, x: integer;
-
-procedure junk15;
-
-begin
-
-   write(i:1, ' ', x:1)
-
-end;
-
-begin
-
-   i := 62;
-   x := 76;
-   junk15
-
-end;
-
-procedure junk16; begin end;
-
-procedure junk17(procedure x; i: integer);
-
-procedure junk18;
-
-begin
-
- write(i:1)
-
-end;
-
-begin
-
-   x;
-   if i=52 then junk17(junk18, 83)
-
-end;
-
-{ test preference of pointer bonding to current scope }
-
-procedure junk19;
-
-type pt = ^intalias;
-     intalias = char;
-
-var p: pt;
-
-begin
-
-   new(p);
-   p^ := 'a';
-   write(p^);
-   dispose(p)
-
-end;
-
-{ test ability to assign function result to nested function }
-
-function junk20: integer;
-
-var i: integer;
-
-function inner: integer;
-
-begin
-
-   inner := 12;
-   junk20 := 37
-
-end;
-
-begin
-
-   i := inner
-
-end;
-
 function frp: iptr;
 
 begin
@@ -628,7 +510,7 @@ begin
    rewrite(pfp);
    rcastt := 1;
    rcast.rcastt := true;
-   intaliasv := 1;
+   vintalias := 1;
 
 {******************************************************************************
 
@@ -785,8 +667,6 @@ begin
    writeln('Integer3:   ', x * y:1, ' s/b 3354');
    writeln('Integer4:   ', y div x:1, ' s/b 1');
    writeln('Integer5:   ', y mod x:1, ' s/b 35');
-   writeln('Integer6:   ', succ(x):1, ' s/b 44');
-   writeln('Integer7:   ', pred(x):1, ' s/b 42');
    writeln('Integer8:   ', sqr(x):1, ' s/b 1849');
    writeln('Integer9:   ', chr(y), ' s/b N');
    writeln('Integer10:  ', ord(chr(x)):1, ' s/b 43');
@@ -814,8 +694,6 @@ begin
    writeln('Integer30:  ', 56 * 34:1, ' s/b 1904');
    writeln('Integer31:  ', 56 div 34:1, ' s/b 1');
    writeln('Integer32:  ', 56 mod 34:1, ' s/b 22');
-   writeln('Integer33:  ', succ(5):1, ' s/b 6');
-   writeln('Integer34:  ', pred(5):1, ' s/b 4');
    writeln('Integer35:  ', sqr(7):1, ' s/b 49');
    writeln('Integer36:  ', chr(65), ' s/b A');
    writeln('Integer37:  ', ord(chr(65)):1, ' s/b 65');
@@ -859,8 +737,6 @@ begin
    writeln('Integer65:  ', ds div as:1, ' s/b -1');
    writeln('Integer66:  ', bs div ds:1, ' s/b -1');
    writeln('Integer67:  ', bs div as:1, ' s/b 2');
-   writeln('Integer68:  ', succ(as):1, ' s/b -13');
-   writeln('Integer69:  ', pred(bs):1, ' s/b -33');
    writeln('Integer70: ', sqr(as):1, ' s/b 196');
    writeln('Integer71:  ', odd(as):5, ' s/b false');
    writeln('Integer72:  ', odd(es):5, ' s/b true');
@@ -905,11 +781,7 @@ begin
    writeln('Integer109: ', 30 div (-5):1, ' s/b -6');
    writeln('Integer110: ', (-50) div 2:1, ' s/b -25');
    writeln('Integer111: ', (-20) div (-4):1, ' s/b 5');
-   writeln('Integer112: ', succ(-10):1, ' s/b -9');
-   writeln('Integer113: ', succ(-1):1, ' s/b 0');
-   writeln('Integer114: ', pred(-1):1, ' s/b -2');
    writeln('Integer115: ', sqr(-8):1, ' s/b 64');
-   writeln('Integer116: ', pred(-54):1, ' s/b -55');
    writeln('Integer117: ', odd(-20):5, ' s/b false');
    writeln('Integer118: ', odd(-15):5, ' s/b true');
    writeln('Integer119: ', -5 = -5:5, ' s/b true');
@@ -958,8 +830,6 @@ begin
    writeln('Subrange3:   ', srx * sry:1, ' s/b 3354');
    writeln('Subrange4:   ', sry div srx:1, ' s/b 1');
    writeln('Subrange5:   ', sry mod srx:1, ' s/b 35');
-   writeln('Subrange6:   ', succ(srx):1, ' s/b 44');
-   writeln('Subrange7:   ', pred(srx):1, ' s/b 42');
    writeln('Subrange8:   ', chr(sry), ' s/b N');
    writeln('Subrange9:   ', ord(chr(srx)):1, ' s/b 43');
    writeln('Subrange10:  ', odd(srx):5, ' s/b true');
@@ -998,8 +868,6 @@ begin
    writeln('Subrange36:  ', srds div sras:1, ' s/b -1');
    writeln('Subrange37:  ', srbs div srds:1, ' s/b -1');
    writeln('Subrange38:  ', srbs div sras:1, ' s/b 2');
-   writeln('Subrange39:  ', succ(sras):1, ' s/b -13');
-   writeln('Subrange40:  ', pred(srbs):1, ' s/b -33');
    writeln('Subrange41:  ', odd(sras):5, ' s/b false');
    writeln('Subrange42:  ', odd(sres):5, ' s/b true');
    writeln('Subrange43:  ', sras = srcs:5, ' s/b true');
@@ -2941,22 +2809,5 @@ end;
    writeln('help me123');
    writeln('abcd___h__');
    writeln('734');
-   write('ProcedureFunction8:   ');
-   junk9(junk10, junk11);
-   writeln(' s/b 9834 8383 j 744');
-   write('ProcedureFunction9:   ');
-   junk12(junk13, junk11);
-   writeln(' s/b 942');
-   write('ProcedureFunction10:   ');
-   junk14;
-   writeln(' s/b 62 76');
-   write('ProcedureFunction11:   ');
-   junk17(junk16, 52);
-   writeln(' s/b 52');
-   write('ProcedureFunction12:   ');
-   junk19;
-   writeln(' s/b a');
-   write('ProcedureFunction13:   ');
-   writeln(junk20:1, ' s/b 37');
 
 end.
