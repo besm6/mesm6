@@ -26,6 +26,11 @@
 *                                                                             *
 * 5. Exponent in real constants limited to -18..18 range.                     *
 *                                                                             *
+* 6. Procedure dispose() requires a variable as argument (not expression).    *
+*                                                                             *
+* 7. Procedures pack() and unpack() don't accept arrays with different        *
+*    types of indexes, for example array of[integer] and array of[char].      *
+*                                                                             *
 ******************************************************************************}
 
 program besm6pat(output);
@@ -164,7 +169,7 @@ var
     ip:    iptr;
     avi:   arri;
     avi2:  arri;
-    pavi:  packed array [1..10] of integer;
+    pavi:  packed array [1..10] of 0..32767;
     avis:  array [1..10] of 10..20;
     pavis: packed array [1..10] of 10..20;
     avb:   array [1..10] of boolean;
@@ -465,193 +470,8 @@ begin
   random := rndseq div (maxint div (hi-low+1))+low
 end {of random};
 
+procedure part1;
 begin
-
-   write('****************************************************************');
-   writeln('***************');
-   writeln;
-   writeln('                 TEST SUITE FOR ISO 7185 PASCAL');
-   writeln;
-   write('                 Copyright (C) 1995 S. A. Moore - All rights ');
-   writeln('reserved');
-   writeln;
-   write('****************************************************************');
-   writeln('***************');
-   writeln;
-
-{******************************************************************************
-
-                          Reference dangling defines
-
-******************************************************************************}
-
-{ unused declarations are always a problem, because it is always concievable
-  that there is a compiler test that will reveal they are not used. We use
-  assign to references here because a simple read of a variable could fault
-  on an undefined reference. Its also possible that a never used fault could
-  occur (written, but never used), in which case the code would have to be
-  more complex. The best solution, of course, is to write a real test that
-  uses the variables. }
-
-   a[1] :=  1;
-   esia[two] := 1;
-   pesia[two] := 1;
-   rewrite(fes);
-   rewrite(pfes);
-   rewrite(fs);
-   rewrite(pfs);
-   rewrite(fr);
-   rewrite(pfr);
-   rewrite(fst);
-   rewrite(pfst);
-   rewrite(fa);
-   rewrite(pfa);
-   rewrite(frc);
-   rewrite(pfrc);
-   rewrite(fp);
-   rewrite(pfp);
-   rcastt := 1;
-   rcast.rcastt := true;
-   vintalias := 1;
-
-{******************************************************************************
-
-                                 Metering
-
-******************************************************************************}
-
-   writeln('The following are implementation defined characteristics');
-   writeln;
-   writeln('Maxint: ', maxint:1);
-   i := maxint;
-   x := 0;
-   while i > 0 do begin i := i div 2;  x := x+1 end;
-   writeln('Bit length of integer without sign bit appears to be: ', x:1);
-   writeln('Integer default output field');
-   writeln('         1111111111222222222233333333334');
-   writeln('1234567890123456789012345678901234567890');
-   writeln(1);
-   writeln('Real default output field');
-   writeln('         1111111111222222222233333333334');
-   writeln('1234567890123456789012345678901234567890');
-   writeln(1.2);
-   writeln('Note that the exponent character ''e'' or ''E'' is implementation');
-   writeln('defined as well as the number of exponent digits');
-   writeln('Boolean default output field');
-   writeln('         1111111111222222222233333333334');
-   writeln('1234567890123456789012345678901234567890');
-   writeln(false);
-   writeln(true);
-   writeln('Note that the upper or lower case state of the characters in');
-   writeln('''true'' and ''false'' are implementation defined');
-   writeln('Char default output field');
-   writeln('         1111111111222222222233333333334');
-   writeln('1234567890123456789012345678901234567890');
-   writeln('a');
-   if (ord('a') = 97) and (ord('(') = 40) and (ord('^') = 94) then
-      writeln('Appears to be ASCII')
-   else
-      writeln('Appears to not be ASCII');
-
-{******************************************************************************
-
-                           Control structures
-
-******************************************************************************}
-
-   writeln;
-   writeln('******************* Control structures tests *******************');
-   writeln;
-   write('Control1: ');
-   for i := 1 to 10 do write(i:1, ' ');
-   writeln('s/b 1 2 3 4 5 6 7 8 9 10');
-   write('Control2: ');
-   for i := 10 downto 1 do write(i:1, ' ');
-   writeln('s/b 10 9 8 7 6 5 4 3 2 1');
-   write('Control3: ');
-   i := 1;
-   while i <=10 do begin write(i:1, ' '); i := i + 1 end;
-   writeln('s/b 1 2 3 4 5 6 7 8 9 10');
-   write('Control4: ');
-   i := 1; repeat write(i:1, ' '); i := i + 1 until i > 10;
-   writeln('s/b 1 2 3 4 5 6 7 8 9 10');
-   write('Control5: ');
-   i := 1;
-   0: write(i:1, ' '); i := i + 1; if i <= 10 then goto 0;
-   writeln('s/b 1 2 3 4 5 6 7 8 9 10');
-   write('Control6: ');
-   if true then write('yes') else write('no');
-   writeln(' s/b yes');
-   write('Control7: ');
-   if false then write('no') else write('yes');
-   writeln(' s/b yes');
-   write('Control8: ');
-   if true then write('yes '); write('stop');
-   writeln(' s/b yes stop');
-   write('Control9: ');
-   if false then write('no '); write('stop');
-   writeln(' s/b stop');
-   write('Control10: ');
-   for i := 1 to 10 do
-      case i of
-         1:     write('one ');
-         2:     write('two ');
-         3:     write('three ');
-         4:     write('four ');
-         5:     write('five ');
-         6:     write('six ');
-         7:     write('seven ');
-         8:     write('eight ');
-         9, 10: write('nine-ten ')
-
-      end;
-   writeln;
-   write('Control10: s/b ');
-   write('one two three four five ');
-   writeln('six seven eight nine-ten nine-ten');
-   write('Control11: start ');
-   junk6;
-   write('!! BAD !!');
-   9999: writeln('stop s/b start stop');
-   write('Control12: start ');
-   goto 003;
-   write('!! BAD !!');
-   3: writeln('stop s/b start stop');
-   write('Control13: start ');
-   { self defined fors }
-   i := 10;
-   for i := 1 to i do write(i:3);
-   writeln(' s/b start  1  2  3  4  5  6  7  8  9 10');
-   write('Control14: start ');
-   { self defined fors }
-   i := 10;
-   for i := i downto 1 do write(i:3);
-   writeln(' s/b start 10  9  8  7  6  5  4  3  2  1');
-   write('Control15: start ');
-   { for against 0 }
-   for i := 0 to 9 do write(i:2);
-   writeln(' s/b start 0 1 2 3 4 5 6 7 8 9');
-   write('Control16: start ');
-   { for against 0 }
-   for i := 9 downto 0 do write(i:2);
-   writeln(' s/b start 9 8 7 6 5 4 3 2 1 0');
-   { wide spread of case statements }
-   write('Control17: start ');
-   i := 10000;
-   case i of
-      1: write('*** bad ***');
-      10000: write('good')
-   end;
-   writeln(' start s/b start good');
-   write('Control18: start ');
-   repeat
-      goto 004;
-      write('!! BAD !!');
-      4: writeln('stop s/b start stop');
-      i := 0;
-      if i <> 0 then goto 04;
-   until true;
-
 {******************************************************************************
 
                             Integers
@@ -768,7 +588,10 @@ begin
    writeln('Integer96:  ', gs+hs:1, ' s/b 0');
    writeln('Integer97:  ', gs-maxint:1, ' s/b 0');
    writeln('Integer98:  ', gs+vnum:1, ' s/b 0');
+end;
 
+procedure part2;
+begin
    { signed integer constants }
    writeln('Integer99:  ', 45 + (-30):1, ' s/b 15');
    writeln('Integer100:  ', -25 + 70:1, ' s/b 45');
@@ -814,7 +637,10 @@ begin
    writeln('Integer144: ', tsncst2:1, ' s/b -768');
    writeln('Integer145: ', tsncst3:1, ' s/b 52');
    writeln('Integer146: ', maxint+mmaxint:1, ' s/b 0');
+end;
 
+procedure part3;
+begin
 {******************************************************************************
 
                             Subranges
@@ -960,6 +786,10 @@ begin
    r.rc := 'n'; writeln('Character47: ', r.rc, ' s/b n');
    r.rs := 'junky01234'; writeln('Character48: ', r.rs,
                            ' s/b junky01234');
+end;
+
+procedure part4;
+begin
    for i := 1 to 10 do sar[i] := '0123456789';
    sar[1] := 'trash     ';
    sar[2] := 'finnork   ';
@@ -1052,7 +882,10 @@ begin
    writeln('hel');
    writeln('he');
    writeln('h');
+end;
 
+procedure part5;
+begin
 {******************************************************************************
 
                             Booleans
@@ -1144,7 +977,6 @@ begin
    writeln('tr');
    writeln('t');
 
-
 {******************************************************************************
 
                             Scalar variables
@@ -1203,7 +1035,10 @@ begin
    writeln('Scalar36:  ', fri >= tue:5, ' s/b true');
    writeln('Scalar37:  ', tue >= tue:5, ' s/b true');
    writeln('Scalar38:  ', tue >= sat:5, ' s/b false');
+end;
 
+procedure part6;
+begin
 {******************************************************************************
 
                             Reals
@@ -1437,7 +1272,10 @@ begin
    writeln('Real155: ', -rscst:15, ' s/b  8.422000e+01');
    writeln('Real156:  ', rscst2:15, ' s/b -4.333000e+01');
    writeln('Real157: ', rscst3:15, ' s/b  8.422000e+01');
+end;
 
+procedure part7;
+begin
 {******************************************************************************
 
                             Sets
@@ -1705,10 +1543,6 @@ begin
    write('Pointer19:  ');
    writeln(pti <> pti1:5, ' s/b  true');
 
-   { test dispose takes expression (this one does not print) }
-   new(pti2);
-   dispose(frp);
-
    { dynamic allocation stress tests }
 
    { allocate top to bottom, then free from top to bottom }
@@ -1916,7 +1750,10 @@ begin
       writeln(' 91  92  93  94  95  96  97  98  99  100');
 
    end;
+end;
 
+procedure part8;
+begin
 {******************************************************************************
 
                             Arrays
@@ -2163,17 +2000,6 @@ begin
    pack(avi, 1, pavi);
    for i := 10 downto 1 do write(pavi[i]:1, ' ');
    writeln('s/b 30 29 28 27 26 25 24 23 22 21');
-   writeln('Array42: ');
-   for i := 1 to 10 do pavi[i] := i+30;
-   unpack(pavi, cia, 'g');
-   for ci := 'p' downto 'g' do write(cia[ci]:1, ' ');
-   writeln('s/b 40 39 38 37 36 35 34 33 32 31');
-   writeln('Array43: ');
-   x := 1;
-   for ci := 'a' to 'z' do begin cia[ci] := x; x := x+1 end;
-   pack(cia, 'm', pavi);
-   for i := 10 downto 1 do write(pavi[i]:1, ' ');
-   writeln('s/b 22 21 20 19 18 17 16 15 14 13');
 
 {******************************************************************************
 
@@ -2491,7 +2317,10 @@ begin
    for i := 1 to 10 do with ara[i] do a := i+10;
    for i := 10 downto 1 do with ara[i] do write(a:1, ' ');
    writeln('s/b 20 19 18 17 16 15 14 13 12 11');
+end;
 
+procedure part9;
+begin
 {******************************************************************************
 
                             Files
@@ -2805,5 +2634,203 @@ end;
    writeln('help me123');
    writeln('abcd___h__');
    writeln('734');
+end;
+
+begin
+
+   write('****************************************************************');
+   writeln('***************');
+   writeln;
+   writeln('                 TEST SUITE FOR ISO 7185 PASCAL');
+   writeln;
+   write('                 Copyright (C) 1995 S. A. Moore - All rights ');
+   writeln('reserved');
+   writeln;
+   write('****************************************************************');
+   writeln('***************');
+   writeln;
+
+{******************************************************************************
+
+                          Reference dangling defines
+
+******************************************************************************}
+
+{ unused declarations are always a problem, because it is always concievable
+  that there is a compiler test that will reveal they are not used. We use
+  assign to references here because a simple read of a variable could fault
+  on an undefined reference. Its also possible that a never used fault could
+  occur (written, but never used), in which case the code would have to be
+  more complex. The best solution, of course, is to write a real test that
+  uses the variables. }
+
+   a[1] :=  1;
+   esia[two] := 1;
+   pesia[two] := 1;
+   rewrite(fes);
+   rewrite(pfes);
+   rewrite(fs);
+   rewrite(pfs);
+   rewrite(fr);
+   rewrite(pfr);
+   rewrite(fst);
+   rewrite(pfst);
+   rewrite(fa);
+   rewrite(pfa);
+   rewrite(frc);
+   rewrite(pfrc);
+   rewrite(fp);
+   rewrite(pfp);
+   rcastt := 1;
+   rcast.rcastt := true;
+   vintalias := 1;
+
+{******************************************************************************
+
+                                 Metering
+
+******************************************************************************}
+
+   writeln('The following are implementation defined characteristics');
+   writeln;
+   writeln('Maxint: ', maxint:1);
+   i := maxint;
+   x := 0;
+   while i > 0 do begin i := i div 2;  x := x+1 end;
+   writeln('Bit length of integer without sign bit appears to be: ', x:1);
+   writeln('Integer default output field');
+   writeln('         1111111111222222222233333333334');
+   writeln('1234567890123456789012345678901234567890');
+   writeln(1);
+   writeln('Real default output field');
+   writeln('         1111111111222222222233333333334');
+   writeln('1234567890123456789012345678901234567890');
+   writeln(1.2);
+   writeln('Note that the exponent character ''e'' or ''E'' is implementation');
+   writeln('defined as well as the number of exponent digits');
+   writeln('Boolean default output field');
+   writeln('         1111111111222222222233333333334');
+   writeln('1234567890123456789012345678901234567890');
+   writeln(false);
+   writeln(true);
+   writeln('Note that the upper or lower case state of the characters in');
+   writeln('''true'' and ''false'' are implementation defined');
+   writeln('Char default output field');
+   writeln('         1111111111222222222233333333334');
+   writeln('1234567890123456789012345678901234567890');
+   writeln('a');
+   if (ord('a') = 97) and (ord('(') = 40) and (ord('^') = 94) then
+      writeln('Appears to be ASCII')
+   else
+      writeln('Appears to not be ASCII');
+
+{******************************************************************************
+
+                           Control structures
+
+******************************************************************************}
+
+   writeln;
+   writeln('******************* Control structures tests *******************');
+   writeln;
+   write('Control1: ');
+   for i := 1 to 10 do write(i:1, ' ');
+   writeln('s/b 1 2 3 4 5 6 7 8 9 10');
+   write('Control2: ');
+   for i := 10 downto 1 do write(i:1, ' ');
+   writeln('s/b 10 9 8 7 6 5 4 3 2 1');
+   write('Control3: ');
+   i := 1;
+   while i <=10 do begin write(i:1, ' '); i := i + 1 end;
+   writeln('s/b 1 2 3 4 5 6 7 8 9 10');
+   write('Control4: ');
+   i := 1; repeat write(i:1, ' '); i := i + 1 until i > 10;
+   writeln('s/b 1 2 3 4 5 6 7 8 9 10');
+   write('Control5: ');
+   i := 1;
+   0: write(i:1, ' '); i := i + 1; if i <= 10 then goto 0;
+   writeln('s/b 1 2 3 4 5 6 7 8 9 10');
+   write('Control6: ');
+   if true then write('yes') else write('no');
+   writeln(' s/b yes');
+   write('Control7: ');
+   if false then write('no') else write('yes');
+   writeln(' s/b yes');
+   write('Control8: ');
+   if true then write('yes '); write('stop');
+   writeln(' s/b yes stop');
+   write('Control9: ');
+   if false then write('no '); write('stop');
+   writeln(' s/b stop');
+   write('Control10: ');
+   for i := 1 to 10 do
+      case i of
+         1:     write('one ');
+         2:     write('two ');
+         3:     write('three ');
+         4:     write('four ');
+         5:     write('five ');
+         6:     write('six ');
+         7:     write('seven ');
+         8:     write('eight ');
+         9, 10: write('nine-ten ')
+
+      end;
+   writeln;
+   write('Control10: s/b ');
+   write('one two three four five ');
+   writeln('six seven eight nine-ten nine-ten');
+   write('Control11: start ');
+   junk6;
+   write('!! BAD !!');
+   9999: writeln('stop s/b start stop');
+   write('Control12: start ');
+   goto 003;
+   write('!! BAD !!');
+   3: writeln('stop s/b start stop');
+   write('Control13: start ');
+   { self defined fors }
+   i := 10;
+   for i := 1 to i do write(i:3);
+   writeln(' s/b start  1  2  3  4  5  6  7  8  9 10');
+   write('Control14: start ');
+   { self defined fors }
+   i := 10;
+   for i := i downto 1 do write(i:3);
+   writeln(' s/b start 10  9  8  7  6  5  4  3  2  1');
+   write('Control15: start ');
+   { for against 0 }
+   for i := 0 to 9 do write(i:2);
+   writeln(' s/b start 0 1 2 3 4 5 6 7 8 9');
+   write('Control16: start ');
+   { for against 0 }
+   for i := 9 downto 0 do write(i:2);
+   writeln(' s/b start 9 8 7 6 5 4 3 2 1 0');
+   { wide spread of case statements }
+   write('Control17: start ');
+   i := 10000;
+   case i of
+      1: write('*** bad ***');
+      10000: write('good')
+   end;
+   writeln(' start s/b start good');
+   write('Control18: start ');
+   repeat
+      goto 004;
+      write('!! BAD !!');
+      4: writeln('stop s/b start stop');
+      i := 0;
+      if i <> 0 then goto 04;
+   until true;
+
+   part1;
+   part2;
+   part3;
+   part4;
+   part5;
+   part6;
+   part7;
+   part8;
+   part9;
 
 end.

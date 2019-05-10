@@ -5231,8 +5231,9 @@ L12247:
                 span = l3typ26z->ptr2->high - l3typ26z->ptr2->low + 1;
                 tempType = (Types*)ptr(l3typ26z->size);
                 l3int22z = l3typ26z->base->bits;
-                if (24 < l3int22z)
-                    isPacked = false;
+                // Don't clear t->pck flag for word-sized arrays.
+                //if (24 < l3int22z)
+                //    isPacked = false;
                 l3typ26z->bits = 48;
                 if (isPacked) {
                     l3int22z = 48 / l3int22z;
@@ -7196,7 +7197,7 @@ struct standProc {
             error(45); /* errNoOpenParenForStandProc */
         if ((mkbsr(0,9)-mkbs(6,7)).has(procNo)) {
             inSymbol();
-            if (procNo != 5 and hashTravPtr->cl < VARID)
+            if (hashTravPtr->cl < VARID)
                 error(46); /* errNoVarForStandProc */
             parseLval();
             arg1Type = curExpr->typ;
