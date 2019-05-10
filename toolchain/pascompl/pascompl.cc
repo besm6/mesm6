@@ -24,6 +24,10 @@ unsigned char PASINPUT;
 
 const char * boilerplate = " Pascal-Monitor in C++ (17.05.2019)";
 
+const int MAXLIT = 500;
+const int SYMTAB_LIMIT = 077777; // initially 075500
+const int OBJBUF_SIZE = 8192;    // initially 1024
+
 const int64_t
 fnSQRT  = 0,  fnSIN  = 1,  fnCOS  = 2,  fnATAN  = 3,  fnASIN = 4,
     fnLN    = 5,  fnEXP  = 6,  fnABS = 7,  fnTRUNC = 8,  fnODD  = 9,
@@ -752,7 +756,7 @@ char commentModeCH;
 unsigned char CH;
 int64_t debugLine,
     lineNesting,
-    FcstCountTo500,
+    FcstTotal,
     objBufIdx,
     int92z, int93z, int94z,
     prevOpcode,
@@ -835,15 +839,15 @@ IdentRecPtr typeHashTabBase[128]; //array [0..127] of IdentRecPtr;
 int64_t helperMap[100]; // array [1..99] of Integer;
 extern Bitset helperNames[100]; // array [1..99] of Bitset;
 
-Bitset symTab[075501]; // array [74000B..75500B] of Bitset;
+Bitset symTab[SYMTAB_LIMIT + 1]; // array [74000B..75500B] of Bitset;
 extern int64_t systemProcNames[30]; // array [0..29] of Integer;
 extern int64_t resWordNameBase[30]; // array [0..29] of Integer;
 int64_t longSymCnt;
 int64_t longSymTabBase[91]; // array [1..90] of Integer;
 Bitset longSyms[91]; // array [1..90] of Bitset;
-Word constVals[501]; // array [1..500] of Alfa;
-int64_t constNums[501]; // array [1..500] of Integer;
-Bitset objBuffer[1025]; // array [1..1024] of Bitset;
+Word constVals[MAXLIT+1]; // array [1..500] of Alfa;
+int64_t constNums[MAXLIT+1]; // array [1..500] of Integer;
+Bitset objBuffer[OBJBUF_SIZE+1]; // array [1..1024] of Bitset;
 char koi2text[256];
 std::vector<Bitset> FCST; // file of Bitset; /* last */
 
@@ -1022,7 +1026,7 @@ void storeObjWord(Bitset insn)
 {
     objBuffer[objBufIdx] = insn;
     moduleOffset = moduleOffset + 1;
-    if (objBufIdx == 1024) {
+    if (objBufIdx == OBJBUF_SIZE) {
         error(49); /* errTooManyInsnsInBlock */
         objBufIdx = 1;
     } else
@@ -1121,7 +1125,7 @@ void formAndAlign(int64_t arg)
 void putToSymTab(Bitset arg)
 {
     symTab[symTabPos] = arg;
-    if (symTabPos == 075500) {
+    if (symTabPos == SYMTAB_LIMIT) {
         error(50); /* errSymbolTableOverflow */
         symTabPos = 074000;
     } else
@@ -1173,14 +1177,14 @@ int64_t addCurValToFCST()
     int64_t ret;
     int64_t low, high, mid;
     low = 1;
-    if (FcstCountTo500 == 0) {
+    if (FcstTotal == 0) {
         ret = FcstCnt;
-        FcstCountTo500 = 1;
+        FcstTotal = 1;
         constVals[1] = curVal;
         constNums[1] = FcstCnt;
         toFCST();
     } else {
-        high = FcstCountTo500;
+        high = FcstTotal;
         do {
             mid = (low + high) / 2;
             if (curVal.m == constVals[mid].m) {
@@ -1192,17 +1196,17 @@ int64_t addCurValToFCST()
                 low = mid + 1;
         } while (low <= high);
         ret = FcstCnt;
-        if (FcstCountTo500 != 500) {
+        if (FcstTotal != MAXLIT) {
             if (curVal.a < constVals[mid].a)
                 high = mid;
             else
                 high = mid + 1;
-            for (mid = FcstCountTo500; mid >= high; --mid) {
+            for (mid = FcstTotal; mid >= high; --mid) {
                 low = mid + 1;
                 constVals[low] = constVals[mid];
                 constNums[low] = constNums[mid];
             }
-            FcstCountTo500 = FcstCountTo500 + 1;
+            FcstTotal = FcstTotal + 1;
             constVals[high] = curVal;
             constNums[high] = FcstCnt;
         };
@@ -7882,18 +7886,18 @@ initScalars::initScalars() :
     AlfaType->pcksize = 8;
 
     smallStringType[6] = AlfaType;
-    regSysType(051566445474562L/*" INTEGER"*/, IntegerType);
+    regSysType(toText("INTEGER"), IntegerType);
     temptype = IntegerType;
     regSysEnum(toText("MAXINT"), 0xD0FFFFFFFFFFL);
-    regSysType(042575754454156L/*" BOOLEAN"*/, BooleanType);
-    regSysType(043504162L/*"    CHAR"*/, CharType);
-    regSysType(062454154L/*"    REAL"*/, RealType);
-    regSysType(041544641L/*"    ALFA"*/, AlfaType);
-    regSysType(064457064L/*"    TEXT"*/, textType);
+    regSysType(toText("BOOLEAN"), BooleanType);
+    regSysType(toText("CHAR"), CharType);
+    regSysType(toText("REAL"), RealType);
+    regSysType(toText("ALFA"), AlfaType);
+    regSysType(toText("TEXT"), textType);
     temptype = BooleanType;
-    regSysEnum(064626545L/*"    TRUE"*/, 1);
+    regSysEnum(toText("TRUE"), 1);
     hashTravPtr = curIdRec;
-    regSysEnum(04641546345L/*"   FALSE"*/, 0);
+    regSysEnum(toText("FALSE"), 0);
     curIdRec->list = hashTravPtr;
     BooleanType->enums = curIdRec;
     maxSmallString = 0;
@@ -7927,45 +7931,45 @@ initScalars::initScalars() :
     l3var9z = 0;
     temptype = RealType;
 
-    regSysProc(063616264L/*"    SQRT"*/);
-    regSysProc(0635156L/*"     SIN"*/);
-    regSysProc(0435763L/*"     COS"*/);
-    regSysProc(0416243644156L/*"  ARCTAN"*/);
-    regSysProc(0416243635156L/*"  ARCSIN"*/);
-    regSysProc(05456L/*"      LN"*/);
-    regSysProc(0457060L/*"     EXP"*/);
-    regSysProc(0414263L/*"     ABS"*/);
+    regSysProc(toText("SQRT"));
+    regSysProc(toText("SIN"));
+    regSysProc(toText("COS"));
+    regSysProc(toText("ARCTAN"));
+    regSysProc(toText("ARCSIN"));
+    regSysProc(toText("LN"));
+    regSysProc(toText("EXP"));
+    regSysProc(toText("ABS"));
     temptype = IntegerType;
-    regSysProc(06462655643L/*"   TRUNC"*/);
+    regSysProc(toText("TRUNC"));
     temptype = BooleanType;
-    regSysProc(0574444L/*"     ODD"*/);
+    regSysProc(toText("ODD"));
     temptype = IntegerType;
-    regSysProc(0576244L/*"     ORD"*/);
+    regSysProc(toText("ORD"));
     temptype = CharType;
-    regSysProc(0435062L/*"     CHR"*/);
-    regSysProc(063654343L/*"    SUCC"*/);
-    regSysProc(060624544L/*"    PRED"*/);
+    regSysProc(toText("CHR"));
+    regSysProc(toText("SUCC"));
+    regSysProc(toText("PRED"));
     temptype = BooleanType;
-    regSysProc(0455746L/*"     EOF"*/);
+    regSysProc(toText("EOF"));
     temptype = pointerType;
-    regSysProc(0624546L/*"     REF"*/);
+    regSysProc(toText("REF"));
     temptype = BooleanType;
-    regSysProc(045575456L/*"    EOLN"*/);
+    regSysProc(toText("EOLN"));
     temptype = IntegerType;
-    regSysProc(0636162L/*"     SQR"*/);
-    regSysProc(06257655644L/*"   ROUND"*/);
-    regSysProc(043416244L/*"    CARD"*/);
-    regSysProc(05551564554L/*"   MINEL"*/);
+    regSysProc(toText("SQR"));
+    regSysProc(toText("ROUND"));
+    regSysProc(toText("CARD"));
+    regSysProc(toText("MINEL"));
     temptype = pointerType;
-    regSysProc(0606462L/*"     PTR"*/);
+    regSysProc(toText("PTR"));
     l3var11z.i = 30;
     l3var11z.m = l3var11z.m * halfWord + mkbs(24,27,28,29);
     programObj = new IdentRec;
-    curVal.ii = 0576564606564L/*"  OUTPUT"*/;
+    curVal.ii = toText("OUTPUT");
     l3var3z = curVal;
-    curVal.ii = 05156606564L/*"   INPUT"*/;
+    curVal.ii = toText("INPUT");
     l3var4z = curVal;
-    curVal.ii = 05657606257476241L/*"NOPROGRA"*/;
+    curVal.ii = toText("NOPROGRA");
     noProgram = curVal;
     test1(PROGRAMSY, (skipToSet + mkbs(IDENT,LPAREN)));
     symTabPos = 074004;
@@ -7983,7 +7987,7 @@ initScalars::initScalars() :
     }
     if (curIdent != noProgram) {
         entryPtTable[1] = symTab[074000];
-        entryPtTable[3].val = 06062574762415500L; /*"PROGRAM "*/
+        entryPtTable[3].val = toText("PROGRAM ");
         entryPtTable[2] = mkbs(1);
         entryPtTable[4] = mkbs(1);
         entryPtCnt = 5;
@@ -8020,7 +8024,7 @@ initScalars::initScalars() :
         l3var7z->cl = VARID;
         l3var7z->list = NULL;
     }
-    curVal.ii = 01257656460656412L/*"*OUTPUT*"*/;
+    curVal.ii = toText("*OUTPUT*");
     l3var7z->value = allocExtSymbol(l3var11z.m);
     addToHashTab(l3var7z);
     l3var5z = 1;
@@ -8780,21 +8784,21 @@ struct initTables {
     void regKeyWords() {
         SY = MULOP;
         charClass = AMPERS;
-        regResWord(0415644L/*"     AND"*/);
-        regResWord(0445166L/*"     DIV"*/);
-        regResWord(0555744L/*"     MOD"*/);
-        SY = GTSY; /* reused as NULLSY */
+        regResWord(toText("AND"));
+        regResWord(toText("DIV"));
+        regResWord(toText("MOD"));
+        SY = GTSY; /* reused as NILSY */
         charClass = NOOP;
-        regResWord(0565154L/*"     NIL"*/);
+        regResWord(toText("NIL"));
         SY = ADDOP;
         charClass = OROP;
-        regResWord(05762L/*"      OR"*/);
+        regResWord(toText("OR"));
         SY = RELOP;
         charClass = INOP;
-        regResWord(05156L/*"      IN"*/);
+        regResWord(toText("IN"));
         SY = NOTSY;
         charClass = NOOP;
-        regResWord(0565764L/*"     NOT"*/);
+        regResWord(toText("NOT"));
         SY = LABELSY;
         charClass = NOOP;
         for (idx = 0; idx <= 29; ++idx)
@@ -8805,7 +8809,7 @@ struct initTables {
         // int64_t l3var1z;
         int64_t l3var2z;
         FcstCnt = 0;
-        FcstCountTo500 = 0;
+        FcstTotal = 0;
         for (idx = 3; idx <= 6; ++idx) {
             l3var2z = idx - 2;
             for (jdx=1; jdx <= l3var2z; ++jdx)
