@@ -1,7 +1,7 @@
 program procparam(output);
 
-procedure junk9(procedure junk9(junk9, b: integer; c: char);
-                function y(a: integer): integer);
+procedure junk9(procedure junk9;
+                function y: integer);
 begin
     junk9(9834, 8383, 'j');
     write(' ', y(743):1);
@@ -14,16 +14,16 @@ end;
 
 function junk11(x: integer): integer;
 begin
-    junk11 := succ(x)
+    junk11 := x+1
 end;
 
-procedure junk12(procedure xq(function yq(z: integer): integer);
-                 function q(n: integer): integer);
+procedure junk12(procedure xq;
+                 function q: integer);
 begin
     xq(q)
 end;
 
-procedure junk13(function xz(z: integer): integer);
+procedure junk13(function xz: integer);
 begin
     write(xz(941):1)
 end;

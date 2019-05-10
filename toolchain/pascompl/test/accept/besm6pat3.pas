@@ -113,25 +113,10 @@ var
     car :  array ['a'..'z'] of integer;
     sar:   array [1..10] of packed array [1..10] of char;
     ba, bb, bc : boolean;
-    sva, svb, svc : (mon, tue, wed, thur, fri, sat, sun);
     s:     string10;
-    as, bs, cs, ds, es, gs, hs : integer;
-    vnum: -maxint..maxint;
-    ra, rb, rc, rd, re: real;
-    sta,   stb, stc, std: set of 1..47;
-    ste:   set of 1..10;
-    stf:   packed set of 1..10;
-    stg:   packed set of 1..20;
+    ra, rb: real;
     ci:    char;
-    sena,  senb, senc, send: set of enum;
-    sene:  set of one..five;
-    senf:  packed set of enum;
-    seng:  packed set of one..seven;
     ei, ea: enum;
-    sba,   sbb, sbc, sbd: set of boolean;
-    sbe:   set of false..true;
-    sbf:   packed set of boolean;
-    sbg:   packed set of false..true;
     ai:    arri;
     arec:  rec;
     parec: prec;
@@ -166,8 +151,6 @@ var
     pcsia: packed array ['a'..'z'] of integer;
     eia:   array [enum] of integer;
     peia:  packed array [enum] of integer;
-    esia:  array [two..six] of integer;
-    pesia: packed array [two..six] of integer;
     mdar:  arrim;
     mdar2: arrim;
     vra:   record
@@ -290,23 +273,8 @@ var
     pfc:   packed file of char;
     fe:    file of enum;
     pfe:   packed file of enum;
-    fes:   file of esub;
-    pfes:  packed file of esub;
-    fs:    file of subr;
-    pfs:   packed file of subr;
-    fr:    file of real;
-    pfr:   packed file of real;
-    fst:   file of string10;
-    pfst:  packed file of string10;
-    fa:    file of arri;
-    pfa:   packed file of arri;
-    frc:   file of recs;
-    pfrc:  packed file of recs;
-    fp:    file of iptr;
-    pfp:   packed file of iptr;
     ft:    text;
     pti, pti1: ^integer;
-    pti2:  iptr;
     ptb:   ^boolean;
     ptc:   ^char;
     pte:   ^enum;
@@ -322,60 +290,38 @@ var
     rndseq:    integer;
     cnt, cnt2: integer;
     rn:        integer;
-    rcastt: integer;
-    rcast: record case rcastt: boolean of true: (); false: () end;
-    pi1, pi2: ^integer;
-    vintalias: intalias;
 
 procedure junk1(z, q : integer);
-
 begin
-
    write(z:1, ' ', q:1);
-
 end;
 
 procedure junk2(var z : integer);
-
 begin
-
    z := z + 1
-
 end;
 
 procedure junk3(var p : string10);
-
 begin
-
    write(p)
-
 end;
 
 procedure junk4(p : string10);
-
 begin
-
    p[5] := '?';
    write(p)
-
 end;
 
 function junk5(x : integer) : integer;
-
 begin
-
    junk5 := x + 1
-
 end;
 
 function junk7(a, b, c: integer): integer; forward;
 
 function junk7;
-
-var x, y, z: integer;
-
+    var x, y, z: integer;
 begin
-
    x := 1;
    y := 2;
    z := 3;
@@ -385,18 +331,14 @@ begin
    c := 6;
    write(c:1, ' ', b:1, ' ', a:1, ' ', z:1, ' ', y:1, ' ', x:1);
    junk7 := 78
-
 end;
 
 procedure junk8(a: integer; b: boolean; c: char; e: enum; es: esub; s: subr;
                 r: real; st: string10; ar: arri; rc: rec; rv: recv;
                 p: iptr);
-
-var i:  integer;
-    ci: char;
-
+    var i:  integer;
+        ci: char;
 begin
-
    writeln(a:1, ' ', b:5, ' ', c:1, ' ', ord(e):1, ' ', ord(es):1, ' ', s:1, ' ',
            r:15, ' ', st);
    for i := 1 to 10 do write(ar[i]:1, ' '); writeln;
@@ -408,28 +350,19 @@ begin
    writeln(rv.a:1, ' ', rv.b:1, ' ', rv.c:5);
    if rv.c then writeln(ord(rv.e):1) else writeln(rv.d);
    writeln(p^:1)
-
-end;
-
-function frp: iptr;
-
-begin
-
-   frp := pti2
-
 end;
 
 function random (low, hi : integer) : integer;
-
-const a = 16807;
-      m = 2147483647;
-
-var gamma: integer;
-
+    const a = 16807;
+          m = 2147483647;
+    var gamma: integer;
 begin
-  gamma := a*(rndseq mod (m div a))-(m mod a)*(rndseq div (m div a));
-  if gamma > 0 then rndseq := gamma else rndseq := gamma+m;
-  random := rndseq div (maxint div (hi-low+1))+low
+    gamma := a*(rndseq mod (m div a))-(m mod a)*(rndseq div (m div a));
+    if gamma > 0 then
+        rndseq := gamma
+    else
+        rndseq := gamma+m;
+    random := rndseq div (maxint div (hi-low+1))+low
 end {of random};
 
 procedure part9;
