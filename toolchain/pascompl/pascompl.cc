@@ -887,14 +887,14 @@ const char * pasmitxt(int64_t errNo) {
     case errNoConstant: return "Missing constant";
     case errConstOfOtherTypeNeeded: return "Constant of other type required";
     case errTypeMustNotBeFile: return "Type must not be a file type";
-    case errNotDefined: return "Not defined";
+    case errNotDefined: return "Unknown identifier";
     case errBadSymbol: return "Bad symbol";
     case errNeedOtherTypesOfOperands: return "Other types of operands required";
     case errNumberTooLarge: return "Number too large";
     case errNoCommaOrParenOrTooFewArgs: return "No comma or parenthesis, or too few args";
 //    errWrongVarTypeBefore = 22,
 //    errUsingVarAfterIndexingPackedArray = 28,
-//    errNoSimpleVarForLoop = 30,
+    case errNoSimpleVarForLoop: return "Undefined variable in FOR loop";
 //    errTooManyArguments = 38,
 //    errVarTooComplex = 48,
 //    errFirstDigitInCharLiteralGreaterThan3 = 60;
@@ -913,7 +913,7 @@ const char * pasmitxt(int64_t errNo) {
     case 62: return "Integer needed";
     case 63: return "Bad base type for set";
     case 77: return "Missing OUTPUT file in program header";
-    case 79: return "Not fully defined";
+    case 79: return "Unknown identifier in type definition";
     case 81: return "Procedure nesting is too deep";
     case 82: return "Previous declaration was not FORWARD";
     case 84: return "Error in declarations";
@@ -954,13 +954,16 @@ void printErrMsg(int64_t errNo)
         else if (errNo == 22)
             printf("%6s", stmtName.c_str());
     }
-    if (errNo != 86)
+    if (errNo != 86 && errNo != 78 && errNo != 79)
         putchar('\n');
 } /* PrintErrMsg */
 
 void printTextWord(Word val)
 {
-    fputs(toAscii(val.m).c_str(), stdout);
+    const char *s = toAscii(val.m).c_str();
+    while (*s == ' ')
+        s++;
+    fputs(s, stdout);
 }
 
 int64_t toText(const char * str) {
@@ -1449,7 +1452,7 @@ void endOfLine()
     if ((listMode != 0) or (errsInLine != 0)) {
         printf(" %05lo%5ld%3ld%c", (lineStartOffset + PASINFOR.startOffset),
                lineCnt, lineNesting, commentModeCH);
-        startPos = 13;
+        startPos = 12;
         if (optSflags.m.has(S4)
             and (maxLineLen == 72)
             and (linePos >= 80)) {
@@ -1457,7 +1460,7 @@ void endOfLine()
                 putchar(lineBufBase[err]);
             putchar(' ');
             linePos = 73;
-            startPos = 22;
+            startPos += 9;
         }; /* 1106 */
         do
             linePos = linePos-1;
@@ -1467,7 +1470,7 @@ void endOfLine()
         };
         putchar('\n');
         if (errsInLine != 0)  {
-            printf("%*s%*c0", int(startPos), "*****", int(errMapBase[0]), ' ');
+            printf("%*s %*c0", int(startPos), "^^^^^", int(errMapBase[0]), ' ');
             lastErr = errsInLine - 1;
             for (err = 1; err <= lastErr; ++err) {
                 errPos = errMapBase[err];
@@ -2136,12 +2139,11 @@ void error(int64_t errNo)
     bool110z = true;
     if (((linePos != prevErrPos) and (9 >= errsInLine))
         or (errNo == 52)) {
-        putchar(' ');
         totalErrors = totalErrors + 1;
         errMapBase[errsInLine] = linePos;
         errsInLine = errsInLine + 1;
         prevErrPos = linePos;
-        printf("******%ld", errNo);
+        printf("Error %ld:", errNo);
         printErrMsg(errNo);
         if (60 < totalErrors) {
             putchar('\n');
@@ -5407,8 +5409,6 @@ void parseDecls(int64_t l3arg1z)
 
     IdentRecPtr &l2idr2z = programme::super.back()->l2idr2z;
     int64_t &l2int11z = programme::super.back()->l2int11z;
-    Word &l2var12z = programme::super.back()->l2var12z;
-    IdentRecPtr &curIdRec = programme::super.back()->curIdRec;
 
     switch (l3arg1z) {
     case 0: {
@@ -5416,12 +5416,6 @@ void parseDecls(int64_t l3arg1z)
         inSymbol();
         if (SY != IDENT)
             errAndSkip(3, skipToSet + mkbs(IDENT));
-    } break;
-    case 1: {
-        prevErrPos = 0;
-        printf("IDENT ");
-        printTextWord(l2var12z);
-        printf(" IN LINE %ld", curIdRec->offset);
     } break;
     case 2: {
         padToLeft();
@@ -8371,8 +8365,11 @@ programme::programme(int64_t & l2arg1z, IdentRecPtr const l2idr2z_) : l2idr2z(l2
                     l2typ14z = curIdRec->typ;
                     if (l2typ14z->base == BooleanType) {
                         if (l2typ13z->k != kindPtr) {
-                            parseDecls(1);
+                            prevErrPos = 0;
                             error(78); /* errPredefinedAsPointer */
+                            printf(": ");
+                            printTextWord(l2var12z);
+                            printf(" in line %ld\n", curIdRec->offset);
                         }
                         l2typ14z->base = l2typ13z->base;
                     } else {
@@ -8397,8 +8394,11 @@ programme::programme(int64_t & l2arg1z, IdentRecPtr const l2idr2z_) : l2idr2z(l2
             while (typelist != NULL) {
                 l2var12z = typelist->id;
                 curIdRec = typelist;
-                parseDecls(1);
+                prevErrPos = 0;
                 error(79); /* errNotFullyDefined */
+                printf(": ");
+                printTextWord(l2var12z);
+                printf(" in line %ld\n", curIdRec->offset);
                 typelist = typelist->next;
             }
         } /* TYPESY -> 22612 */
