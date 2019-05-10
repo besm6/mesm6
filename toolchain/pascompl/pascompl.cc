@@ -7167,7 +7167,7 @@ struct standProc {
         bool102z = false;
         expression();
         l4exp8z = curExpr;
-        if (not typeCheck(l4typ1z->range, l4exp8z->typ))
+        if (l4typ1z->k == kindArray && not typeCheck(l4typ1z->range, l4exp8z->typ))
             error(errNeedOtherTypesOfOperands);
     } /* checkArrayArg */
 
@@ -7207,7 +7207,7 @@ struct standProc {
             error(45); /* errNoOpenParenForStandProc */
         if ((mkbsr(0,9)-mkbs(6,7)).has(procNo)) {
             inSymbol();
-            if (procNo != 5 and (hashTravPtr == NULL || hashTravPtr->cl < VARID)) {
+            if (hashTravPtr == NULL || hashTravPtr->cl < VARID) {
                 error(46); /* errNoVarForStandProc */
                 if (hashTravPtr == NULL)
                     throw 8888;
