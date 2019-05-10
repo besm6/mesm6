@@ -851,13 +851,7 @@ std::vector<Bitset> CHILD; // file of Bitset;
 
 struct PasInfor {
     int64_t listMode;
-    bool * errors;
-    Entries *  entryptr;
     int64_t startOffset;
-    charmap * a0, *a1, *a4;
-    textmap * a3;
-    int64_t sizes[11]; // array [1..10] of @Integer;
-    Bitset flags;
 } PASINFOR;
 
 struct programme {
@@ -2002,30 +1996,8 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                                 error(errFirstDigitInCharLiteralGreaterThan3);
                             localBuf[tokenIdx] = (unsigned char)expLiteral;
                         } else {
-                          L2233:
-                            /* with PASINFOR do */ {
-/*
-                                if charEncoding = 3 then {
-                                    if (ch < '*') or ('_176' < CH) then
-                                        curChar := chr(0)
-                                    else {
-                                        curChar := koi2text[CH];
-                                    }
-                                } else if '_176' < CH then {
-                                    curChar := CH;
-                                } else if charEncoding = 0 then {
-                                    curChar := a0@[CH];
-                                } else if charEncoding = 1 then {
-                                    curChar := a1@[CH];
-                                } else if charEncoding = 4 then {
-                                    curChar := a4@[CH];
-                                } else
-*/
-                                {
-                                    curChar = CH;
-                                }
-                                localBuf[tokenIdx] = curChar;
-                            }
+L2233:                      curChar = CH;
+                            localBuf[tokenIdx] = curChar;
                         }
                     }
                     goto L2175;
@@ -8852,7 +8824,6 @@ struct initTables {
         initArrays();
         initInsnTemplates();
         initSets();
-        // unpack(PASINFOR.a3@, koi2text, '_052'); /* '*' */
         memcpy(&koi2text['*'],
                "\012\036\000\035\000\017" // 052-057 (* + , - . /)
                "\020\021\022\023\024\025\026\027" // 060-067 (0 - 7)
@@ -8941,8 +8912,6 @@ void finalize() {
         putchar('\n');
     }
     entryPtTable[entryPtCnt] = mkbs();
-//    PASINFOR.entryptr@ := entryPtTable;
-//    PASINFOR.sizes := sizes;
 
 } /* finalize */
 
@@ -8969,12 +8938,6 @@ void initOptions() {
     heapSize = 100;
     bool49z = true;
     atEOL = false;
-    /*
-    curVal.m := PASINFOR.flags;
-    besm(ASN64 - 39);
-    besm(ASN64 + 45);
-    optSflags := ;
-    */
     doPMD = true; // not (42 in curVal.m);
     checkTypes = true;
     fixMult = true;
@@ -8992,7 +8955,6 @@ void initOptions() {
     chain = NULL;
     litOct.ii = 0574364L;
     longSymCnt = 0;
-    // PASINFOR.errors@ := true;
     extSymAdornment = 0;
     symTabCnt = 0;
 } /* initOptions */
@@ -9087,7 +9049,8 @@ int main() {
 
     // Main program starts here
 
-    PASINFOR.listMode = 1;
+    // L0 by default: no listing, only errors
+    PASINFOR.listMode = 0;
     if (PASINFOR.listMode != 0)
         printf("%s\n", boilerplate);
     initOptions();
@@ -9103,7 +9066,6 @@ int main() {
         exit(1);
     } else {
         finalize();
-        // PASINFOR.errors@ := false;
         // Dump CHILD here
         if (FILE * f = fopen("temp.obj", "w")) {
             for (size_t i = 7; i < CHILD.size(); ++i) {
