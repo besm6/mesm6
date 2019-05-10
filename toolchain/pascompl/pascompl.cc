@@ -897,23 +897,28 @@ const char * pasmitxt(int64_t errNo) {
     case errBadSymbol: return "Bad symbol";
     case errNeedOtherTypesOfOperands: return "Other types of operands required";
     case errNumberTooLarge: return "Number too large";
+    case errNoCommaOrParenOrTooFewArgs: return "No comma or parenthesis, or too few args";
 //    errWrongVarTypeBefore = 22,
 //    errUsingVarAfterIndexingPackedArray = 28,
 //    errNoSimpleVarForLoop = 30,
 //    errTooManyArguments = 38,
-//    errNoCommaOrParenOrTooFewArgs = 41,
 //    errVarTooComplex = 48,
 //    errFirstDigitInCharLiteralGreaterThan3 = 60;
     case 1: return "No comma nor semicolon";
+    case 16: return "Label not defined in block";
     case 29: return "Index out of bounds";
+    case 33: return "Illegal types for assignment";
+    case 37: return "Missing INPUT file in program header";
     case 49: return "Too many instructions in a block";
     case 50: return "Symbol table overflow";
     case 51: return "Long symbol overflow";
     case 52: return "EOF encountered";
     case 54: return "Error in pseudo-comment";
     case 55: return "More than 16 digits in a number";
+    case 61: return "Empty string";
     case 62: return "Integer needed";
     case 63: return "Bad base type for set";
+    case 77: return "Missing OUTPUT file in program header";
     case 79: return "Not fully defined";
     case 81: return "Procedure nesting is too deep";
     case 82: return "Previous declaration was not FORWARD";
@@ -931,6 +936,8 @@ const char * pasmitxt(int64_t errNo) {
     case 104: return "PERIOD";
     case 105: return "ARROW";
     case 106: return "COLON";
+    case 107: return "ASSIGN";
+    case 136: return "PROGRAM";
     }
     return "Dunno";
 }
@@ -2026,9 +2033,8 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                 strLen = tokenIdx - 6;
                 if (strLen == 0) {
                    error(61); /* errEmptyString */
-                   strLen = 1;
-                   goto L2320;
-                } else if (strLen == 1) {
+                }
+                if (strLen <= 1) {
                     SY = CHARCONST;
                     tokenLen = 1;
                     curToken.c = '\0';
@@ -2036,7 +2042,6 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                     pck(localBuf[tokenLen], curToken.a);
                     goto exitLexer;
                 } else {
-                  L2320:
                     curVal.m.val = 0x202020202020L;
                     SY = LTSY;
                     unpck(localBuf[tokenIdx], curVal.a);
@@ -2120,7 +2125,8 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                 }
             } break;
             case RBRACE:
-                dataCheck = true;
+                error(errBadSymbol);
+                nextCH();
                 break;
             default: break;
             } /* switch */
@@ -4516,7 +4522,8 @@ void formFileInit()
     IdentRecPtr l4var3z;
     int64_t l4int4z, l4int5z;
 
-    if (optSflags.m.has(S5)) {
+    if (optSflags.m.has(S5) ||
+        (externFileList == NULL && inputFile == NULL && outputFile == NULL)) {
         formAndAlign(KUJ+I13);
         return;
     }
@@ -6721,13 +6728,13 @@ void ifWhileStatement(Symbol delim)
 
     disableNorm();
     expression();
+    jumpTarget = 0;
     if (curExpr->typ != BooleanType)
         error(errBooleanNeeded);
     else {
-        jumpTarget = 0;
         (void) formOperator(gen15);
-        l3var10z = jumpTarget;
     }
+    l3var10z = jumpTarget;
     checkSymAndRead(delim);
     Statement();
 } /* ifWhileStatement */
@@ -6905,14 +6912,17 @@ struct standProc {
                 error(27); /* errExpressionWhereVariableExpected */
         }
         if (l4exp9z == NULL) {
-            if (l4typ3z->k == kindFile) {
+            if (l4typ3z && l4typ3z->k == kindFile) {
                 l4exp9z = curExpr;
             } else {
                 l4exp9z = new Expr;
                 l4exp9z->typ = textType;
                 l4exp9z->op = GETVAR;
                 if (l5arg1z) {
-                    l4exp9z->id1 = outputFile;
+                    if (outputFile != NULL)
+                        l4exp9z->id1 = outputFile;
+                    else
+                        error(77); /* errNoOutput */
                 } else {
                     if (inputFile != NULL)
                         l4exp9z->id1 = inputFile;
@@ -7196,8 +7206,11 @@ struct standProc {
             error(45); /* errNoOpenParenForStandProc */
         if ((mkbsr(0,9)-mkbs(6,7)).has(procNo)) {
             inSymbol();
-            if (procNo != 5 and hashTravPtr->cl < VARID)
+            if (procNo != 5 and (hashTravPtr == NULL || hashTravPtr->cl < VARID)) {
                 error(46); /* errNoVarForStandProc */
+                if (hashTravPtr == NULL)
+                    throw 8888;
+            }
             parseLval();
             arg1Type = curExpr->typ;
             curVarKind = arg1Type->k;
@@ -8023,13 +8036,16 @@ initScalars::initScalars() :
     AlfaType->range = temptype;
     int93z = 0;
     inSymbol();
-    test1(LPAREN, skipToSet + mkbs(IDENT));
     outputObjFile();
     outputFile = NULL;
     inputFile = NULL;
     externFileList = NULL;
-    l3var7z = new IdentRec;
     lineStartOffset = moduleOffset;
+    if (SY == SEMICOLON) {
+        goto noFiles;
+    }
+    test1(LPAREN, skipToSet + mkbs(IDENT));
+    l3var7z = new IdentRec;
     /* with l3var7z@ do */ {
         l3var7z->id = l3var3z;
         l3var7z->offset = 0;
@@ -8115,11 +8131,8 @@ initScalars::initScalars() :
             inSymbol();
     } /* 22042 */
     checkSymAndRead(RPAREN);
+  noFiles:
     checkSymAndRead(SEMICOLON);
-    if (outputFile == NULL) {
-        error(77); /* errNoOutput */
-        outputFile = l3var7z;
-    }
     l3var6z = 40;
     do
         programme(l3var6z, programObj);
@@ -8501,9 +8514,11 @@ programme::programme(int64_t & l2arg1z, IdentRecPtr const l2idr2z_) : l2idr2z(l2
         } while (SY == IDENT);
     } /* VARSY -> 23003 */
     if (curProcNesting == 1) {
-        workidr = outputFile;
-        curExternFile = fileForOutput;
-        makeExtFile();
+        if (outputFile != NULL) {
+            workidr = outputFile;
+            curExternFile = fileForOutput;
+            makeExtFile();
+        }
         if (inputFile != NULL) {
             workidr = inputFile;
             curExternFile = fileForInput;
