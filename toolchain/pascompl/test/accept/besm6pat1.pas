@@ -43,25 +43,13 @@ label
       0, 3, 9999, 0004;
 
 const
-      { flags to control run }
-
-      { the pointer torture test takes time and isn't run for interpreted
-        systems }
-      doptrtortst = false;
-
       tcnst = 768;
       scst = 'this is a string';
       ccst = 'v';
       tsncst = -52;
-      rcnst = 43.33;
-      rscst = -84.22;
       tsncst2 = -tcnst;
       tsncst3 = -tsncst;
-      rscst2 = -rcnst;
-      rscst3 = -rscst;
-      testfile = true;
       mmaxint = -maxint;
-      cone = 1;
 
 type
      string10 = packed array [1..10] of char;
@@ -71,7 +59,6 @@ type
      (* Note use of alternatives for '[' and ']'. The availablity of these
         alternates is implementation defined. *)
      arri  = array (.1..10.) of integer;
-     arrim = array [1..2, 1..2] of array [1..2, 1..2, 1..2, 1..2] of integer;
      { Note that the availability of the alternate '@' is implementation
        defined }
      iptr  = @integer;
@@ -81,72 +68,24 @@ type
                b: char
 
             end;
-     rec = record
-
-              i:   integer;
-              b:   boolean;
-              c:   char;
-              e:   enum;
-              es:  esub;
-              s:   subr;
-              r:   real;
-              st:  string10;
-              a:   arri;
-              rc:  recs;
-              p:   iptr
-
-           end;
-     prec = packed record
-
-              i:   integer;
-              b:   boolean;
-              c:   char;
-              e:   enum;
-              es:  esub;
-              s:   subr;
-              r:   real;
-              st:  string10;
-              a:   arri;
-              rc:  recs;
-              p:   iptr
-
-           end;
-     recv = record
-
-               a: integer;
-               b: char;
-               case c: boolean of
-
-                  false: (d: string10);
-                  true:  (e: enum)
-
-               { end }
-
-            end;
-     arrr = array [1..10] of recs;
-     vart = (vti, vtb, vtc, vte, vtes, vts, vtr, vtst, vta, vtrc, vtp);
      intalias = integer;
 
 var
-    i, x, y, z, q, n, t : integer;
+    i, x, y, z: integer;
     srx, sry, srz: 0..100;
     sras, srbs, srcs, srds, sres: -100..100;
-    a : array [1..10] of integer;
-    r : record
-
+    a:  array [1..10] of integer;
+    r:  record
            rx: integer;
            rc: char;
            ry: integer;
            rb: boolean;
            rs: packed array [1..10] of char;
-
         end;
-    da:    array [1..10, 1..10] of integer;
-    sa, sb, sc : packed array [1..10] of char;
-    ca, cb, cc : char;
-    car :  array ['a'..'z'] of integer;
+    sa, sb, sc: packed array [1..10] of char;
+    ca, cb, cc: char;
+    car:   array ['a'..'z'] of integer;
     sar:   array [1..10] of packed array [1..10] of char;
-    ba, bb, bc : boolean;
     as, bs, cs, ds, es, gs, hs : integer;
     vnum: -maxint..maxint;
     esia:  array [two..six] of integer;

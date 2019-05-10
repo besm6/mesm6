@@ -15,19 +15,7 @@ const
         systems }
       doptrtortst = false;
 
-      tcnst = 768;
-      scst = 'this is a string';
-      ccst = 'v';
-      tsncst = -52;
-      rcnst = 43.33;
-      rscst = -84.22;
-      tsncst2 = -tcnst;
-      tsncst3 = -tsncst;
-      rscst2 = -rcnst;
-      rscst3 = -rscst;
       testfile = true;
-      mmaxint = -maxint;
-      cone = 1;
 
 type
      string10 = packed array [1..10] of char;
@@ -91,28 +79,13 @@ type
             end;
      arrr = array [1..10] of recs;
      vart = (vti, vtb, vtc, vte, vtes, vts, vtr, vtst, vta, vtrc, vtp);
-     intalias = integer;
 
 var
-    i, x, y, z, q, n, t : integer;
-    srx, sry, srz: 0..100;
-    sras, srbs, srcs, srds, sres: -100..100;
-    a : array [1..10] of integer;
-    r : record
-
-           rx: integer;
-           rc: char;
-           ry: integer;
-           rb: boolean;
-           rs: packed array [1..10] of char;
-
-        end;
+    i, x, y, z, q, n, t: integer;
+    srx, sry: 0..100;
     da:    array [1..10, 1..10] of integer;
-    sa, sb, sc : packed array [1..10] of char;
-    ca, cb, cc : char;
-    car :  array ['a'..'z'] of integer;
-    sar:   array [1..10] of packed array [1..10] of char;
-    ba, bb, bc : boolean;
+    ca, cc: char;
+    ba:    boolean;
     s:     string10;
     ra, rb: real;
     ci:    char;
