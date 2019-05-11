@@ -369,6 +369,21 @@ std::string get_literal(uint32 addr) {
     return ret;
 }
 
+//
+// Convert a string: quote apostrophe symbols.
+//
+std::string quoteiso(std::string str)
+{
+    std::string buf;
+
+    for(const char &c : str) {
+        if (c == '\'')
+            buf += "\'47";
+        buf += c;
+    }
+    return buf;
+}
+
 void prconst (uint32 addr, uint32 len, bool litconst) {
     for (uint cur = addr; cur < addr + len; ++cur) {
         uint64 val = memory[cur+3];
@@ -386,7 +401,7 @@ void prconst (uint32 addr, uint32 len, bool litconst) {
             else
                 printf(",INT,%d\n", d);
         } else if (is_likely_iso(val)) {
-            printf(",ISO, 6H%s . %s\n", get_iso_word(val).c_str(), get_bytes(val).c_str());
+            printf(",ISO, 6H%s . %s\n", quoteiso(get_iso_word(val)).c_str(), get_bytes(val).c_str());
         } else if (is_likely_text(val)) {
             printf(",TEXT, 8H%s\n", get_text_word(val).c_str());
         } else {
