@@ -33,7 +33,10 @@
 * 7. Procedures pack() and unpack() don't accept arrays with different        *
 *    types of indexes, for example array of[integer] and array of[char].      *
 *                                                                             *
-* 8. Test was split into three parts, to fit the limits of BESM-6 compiler.   *
+* 8. Upper index of FOR loop is evaluated on every iteration. Hence, the loop *
+*    "for i := 1 to i" never terminates on BESM-6                             *
+*                                                                             *
+* 9. Test was split into three parts, to fit the limits of BESM-6 compiler.   *
 *                                                                             *
 ******************************************************************************}
 
@@ -682,7 +685,8 @@ begin
    write('Control13: start ');
    { self defined fors }
    i := 10;
-   for i := 1 to i do write(i:3);
+   {for i := 1 to i do write(i:3); -- Runs forever on BESM-6 }
+   for i := 1 to 10 do write(i:3);
    writeln(' s/b start  1  2  3  4  5  6  7  8  9 10');
    write('Control14: start ');
    { self defined fors }

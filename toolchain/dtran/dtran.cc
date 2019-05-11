@@ -85,7 +85,7 @@ struct opcode {
   { "ITA",	0x022000, 0x0bf000, OPCODE_REG1 },
   { "ITS",	0x023000, 0x0bf000, OPCODE_REG1 },
   { "MTJ",	0x024000, 0x0bf000, OPCODE_REG1 },
-  { "M+J",	0x025000, 0x0bf000, OPCODE_REG1 },
+  { "J+M",	0x025000, 0x0bf000, OPCODE_REG1 },
   { "*50",	0x028000, 0x0bf000, OPCODE_IMMEX },
   { "*51",	0x029000, 0x0bf000, OPCODE_IMMEX },
   { "*52",	0x02a000, 0x0bf000, OPCODE_IMMEX },
@@ -376,7 +376,7 @@ std::string quoteiso(std::string str)
 {
     std::string buf;
 
-    for(const char &c : str) {
+    for (auto &c : str) {
         if (c == '\'')
             buf += "\'47";
         buf += c;
