@@ -5,6 +5,8 @@ LDFLAGS         = -g
 
 all:            pascompl
 
+install:        pascompl
+		install pascompl /usr/local/bin/besm6-pascompl
 clean:
 		rm -f pascompl *.o
 

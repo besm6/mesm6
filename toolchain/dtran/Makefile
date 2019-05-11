@@ -5,7 +5,7 @@ DESTDIR = /usr/local
 CXXFLAGS = -I.. -O -Werror -Wall
 LDFLAGS =
 
-dtran   = mesm6-dtran
+dtran   = besm6-dtran
 
 all:    dtran
 
