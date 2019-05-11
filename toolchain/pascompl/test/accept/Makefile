@@ -9,6 +9,6 @@ clean:
 		$(MAKE) -C ../..
 
 .pas.obj:
-		../../pascompl < $< && mv temp.obj $@
+		../../pascompl $< $@
 
 .SUFFIXES:      .pas .obj

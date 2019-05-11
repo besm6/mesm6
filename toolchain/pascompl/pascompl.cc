@@ -18,11 +18,13 @@
 #include <cstring>
 #include <sstream>
 #include <wctype.h>
+#include <unistd.h>
 
 FILE * pasinput = stdin;
 unsigned char PASINPUT;
+const char *outFileName = "output.obj";
 
-const char * boilerplate = " Pascal-Monitor in C++ (17.05.2019)";
+const char * boilerplate = "Pascal-Monitor in C++ (17.05.2019)";
 
 const int64_t
 fnSQRT  = 0,  fnSIN  = 1,  fnCOS  = 2,  fnATAN  = 3,  fnASIN = 4,
@@ -756,7 +758,6 @@ int64_t debugLine,
     objBufIdx,
     int92z, int93z, int94z,
     prevOpcode,
-    charEncoding,
     int97z;
 
 bool atEOL,
@@ -877,6 +878,8 @@ struct programme {
 };
 
 std::vector<programme *> programme::super;
+
+const char *progname;
 
 const char * pasmitxt(int64_t errNo) {
     switch (errNo) {
@@ -1647,7 +1650,7 @@ parseComment::parseComment()
                 if (curVal.i == 3)
                     lineCnt = 1;
                 else if (4 <= curVal.i && curVal.i <= 9)
-                  optSflags.m = optSflags.m + mkbs(curVal.i - 3);
+                    optSflags.m = optSflags.m + mkbs(curVal.i - 3);
                 else {
                     extSymAdornment = curVal.i;
                 }
@@ -1665,7 +1668,7 @@ parseComment::parseComment()
                 readOptFlag(checkBounds);
                 break;
             case 'A': case 'a':
-                charEncoding = readOptVal(3);
+                // Character encoding ignored.
                 break;
             case 'C': case 'c':
                 readOptFlag(checkTypes);
@@ -2110,7 +2113,7 @@ L2233:                      curChar = CH;
         }
       exitLexer:
         prevSY = SY;
-    if (not pseudoZ and not (optSflags.m.has(DebugCode))) {
+        if (not pseudoZ and not (optSflags.m.has(DebugCode))) {
             commentModeCH = '=';
             goto again;
         };
@@ -8915,13 +8918,55 @@ void finalize() {
 
 } /* finalize */
 
-void initOptions() {
-    PASINFOR.startOffset = PASINFOR.startOffset - 16384;
+void usage ()
+{
+    printf("%s\n", boilerplate);
+    printf("Usage:\n");
+    printf("    %s [option...] infile [outfile]\n", progname);
+    printf("Options:\n");
+    printf("    -b0 -b1 ... -b4     Size of file buffer, in 256-word chunks\n");
+    printf("    -c- -c+             Disable/enable checking of data types\n");
+    printf("    -d0 -d1 ... -d15    Bitmask of debug flags:\n");
+    printf("                        -d1: Trace function calls\n");
+    printf("                        -d2: Enable debug() as writeln()\n");
+    printf("                        -d4: Enable code enclosed in {=Z-}/{=Z+}\n");
+    printf("                        -d8: Unknown\n");
+    printf("    -e- -e+             Make procedures external (-e+) or local (-e-)\n");
+    printf("    -f- -f+             Compile procedures as Pascal (-f-) or Fortran (-f+)\n");
+    printf("    -k0 -k1 ... -k23    Heap size in 1024-word chunks (default -k4)\n");
+    printf("    -l0 -l1 -l2 -l3     Listing mode:\n");
+    printf("                        -l0: No listing, only error messages\n");
+    printf("                        -l1: Print listing with relative addresses per line\n");
+    printf("                        -l2: Also print generated object code\n");
+    printf("                        -l3: Also print offsets for variables and fields\n");
+    printf("    -m+ -m-             Optimize integer multiplication (positives only)\n");
+    printf("    -p+ -p-             Enable/disable debug information and crash dump\n");
+    printf("    -r+ -r-             Compare reals with predefined tolerance\n");
+    printf("    -s0                 Use stars for commons (like *foobar*)\n");
+    printf("    -s1                 Append one star for external names (like foobar*)\n");
+    printf("    -s2                 No stars for external names (like foobar)\n");
+    printf("    -s3                 Re-start line numbering from this line\n");
+    printf("    -s4                 Print columns 73-80 as line tags\n");
+    printf("    -s5                 Disable external files\n");
+    printf("    -s6                 Pack record fields from right to left\n");
+    printf("    -s7                 Enable pointer checking\n");
+    printf("    -s8                 Disable checking for stack overflow\n");
+    printf("    -s9                 Unknown\n");
+    printf("    -t+ -t-             Enable/disable range checks\n");
+    printf("    -u- -u+             Set length of source lines: 120 or 72 columns\n");
+    printf("    -y- -y+             Disable/enable non-standard syntax\n");
+    printf("    -v                  Output version information and exit\n");
+    printf("    -h                  Display this help and exit\n");
+    exit(0);
+}
+
+void initOptions(int argc, char **argv)
+{
+    PASINFOR.startOffset -= 040000;
     commentModeCH = ' ';
     lineNesting = 0;
     maxLineLen = 120;
     CH = ' ';
-    PASINPUT = ugetc(pasinput);
     linePos = 0;
     prevErrPos = 0;
     errsInLine = 0;
@@ -8951,16 +8996,122 @@ void initOptions() {
     litForward.ii = 046576267416244L;
     litFortran.ii = 046576264624156L;
     fileBufSize = 1;
-    charEncoding = 2;
     chain = NULL;
     litOct.ii = 0574364L;
     longSymCnt = 0;
     extSymAdornment = 0;
     symTabCnt = 0;
+
+    // Get base name of the program.
+    progname = strrchr(argv[0], '/');
+    progname = progname ? progname+1 : argv[0];
+
+    for (;;) {
+        switch (getopt(argc, argv, "vhe:p:t:c:r:m:y:u:f:d:k:b:s:l:")) {
+        case EOF:
+            break;
+        case 'b':
+            fileBufSize = strtoul(optarg, 0, 0);
+            if (fileBufSize > 4) {
+                fprintf(stderr, "%s: Bad option -b\n", progname);
+                exit(-1);
+            }
+            continue;
+        case 'c':
+            checkTypes = (optarg[0] == '+');
+            continue;
+        case 'd':
+            curVal.i = strtoul(optarg, 0, 0);
+            if (curVal.i > 15) {
+                fprintf(stderr, "%s: Bad option -d\n", progname);
+                exit(-1);
+            }
+            optSflags.m = optSflags.m * mkbsr(0, 40) + curVal.m * mkbsr(41, 47);
+            continue;
+        case 'e':
+            declExternal = (optarg[0] == '+');
+            continue;
+        case 'f':
+            checkFortran = (optarg[0] == '+');
+            continue;
+        case 'k':
+            heapSize = strtoul(optarg, 0, 0);
+            if (heapSize > 23) {
+                fprintf(stderr, "%s: Bad option -k\n", progname);
+                exit(-1);
+            }
+            continue;
+        case 'l':
+            PASINFOR.listMode = strtoul(optarg, 0, 0);
+            if (PASINFOR.listMode > 3) {
+                fprintf(stderr, "%s: Bad option -l\n", progname);
+                exit(-1);
+            }
+            continue;
+        case 'm':
+            fixMult = (optarg[0] == '+');
+            continue;
+        case 'p':
+            doPMD = (optarg[0] == '+');
+            continue;
+        case 'r':
+            fuzzReals = (optarg[0] == '+');
+            continue;
+        case 's':
+            curVal.i = strtoul(optarg, 0, 0);
+            if (curVal.i > 9) {
+                fprintf(stderr, "%s: Bad option -s\n", progname);
+                exit(-1);
+            }
+            if (curVal.i == 3) {
+                lineCnt = 1;
+            } else if (4 <= curVal.i && curVal.i <= 9) {
+                optSflags.m = optSflags.m + mkbs(curVal.i - 3);
+            } else {
+                extSymAdornment = curVal.i;
+            }
+            continue;
+        case 't':
+            checkBounds = (optarg[0] == '+');
+            continue;
+        case 'u':
+            maxLineLen = (optarg[0] == '+') ? 72 : 120;
+            continue;
+        case 'y':
+            allowCompat = (optarg[0] == '+');
+            continue;
+        case 'v':
+            printf("%s\n", boilerplate);
+            exit(0);
+        default:
+            usage();
+        }
+        break;
+    }
+    argc -= optind;
+    argv += optind;
+    if (argc < 1 || argc > 2)
+        usage();
+
+    // Open input file on stdin.
+    if (strcmp(argv[0], "-") != 0) {
+        if (freopen(argv[0], "r", stdin) == NULL) {
+            fprintf(stderr, "%s: Cannot open input file\n", progname);
+            perror(argv[0]);
+            exit(-1);
+        }
+    }
+
+    // Open output file on stdout.
+    if (argc > 1) {
+        outFileName = argv[1];
+        unlink(outFileName);
+    }
 } /* initOptions */
 
-int main() {
-// Data Initializations moved here
+int main(int argc, char **argv)
+{
+    // Data Initializations moved here
     blockBegSys = mkbs(LABELSY, CONSTSY, TYPESY, VARSY)+mkbs(FUNCSY, PROCSY, BEGINSY);
     statBegSys = mkbs(BEGINSY, IFSY, CASESY, REPEATSY)+mkbs(WHILESY, FORSY, WITHSY)+
         mkbs(GOTOSY, SELECTSY);
@@ -9051,11 +9202,12 @@ int main() {
 
     // L0 by default: no listing, only errors
     PASINFOR.listMode = 0;
+    initOptions(argc, argv);
     if (PASINFOR.listMode != 0)
         printf("%s\n", boilerplate);
-    initOptions();
     curInsnTemplate = 0;
     initTables();
+    PASINPUT = ugetc(pasinput);
     try {
         programme(curInsnTemplate, hashTravPtr);
     } catch (int foo) {
@@ -9067,18 +9219,21 @@ int main() {
     } else {
         finalize();
         // Dump CHILD here
-        if (FILE * f = fopen("temp.obj", "w")) {
-            for (size_t i = 7; i < CHILD.size(); ++i) {
-                for (int j = 40; j >= 0; j -= 8)
-                    fputc((CHILD[i].val >> j) & 0xFF, f);
-            }
-            fclose(f);
-        } else {
-            OBPROG(CHILD[7], CHILD.back());
+        FILE *f = fopen(outFileName, "w");
+        if (f == NULL) {
+            fprintf(stderr, "%s: Cannot open output file\n", progname);
+            perror(outFileName);
+            exit(-1);
         }
+        for (size_t i = 7; i < CHILD.size(); ++i) {
+            for (int j = 40; j >= 0; j -= 8)
+                fputc((CHILD[i].val >> j) & 0xFF, f);
+        }
+        fclose(f);
         exit(0);
     }
 }
+
 int64_t resWordNameBase[30] = {
         05441424554L             /*"   LABEL"*/,
         04357566364L             /*"   CONST"*/,
