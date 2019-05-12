@@ -622,8 +622,16 @@ begin
 end;
 
 begin
+   writeln;
+   writeln('******************* Start *******************');
+   writeln;
+
    part5;
    part6;
    part7;
    part8;
+
+   writeln;
+   writeln('******************* Finish *******************');
+   writeln;
 end.

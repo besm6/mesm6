@@ -723,4 +723,7 @@ begin
    part3;
    part4;
 
+   writeln;
+   writeln('******************* Finish *******************');
+   writeln;
 end.

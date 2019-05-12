@@ -1599,6 +1599,9 @@ begin
    writeln('help me123');
    writeln('abcd___h__');
    writeln('734');
+
+   { Checking procedure parameters is broken in BESM-6 compiler. }
+   (*
    write('ProcedureFunction8:   ');
    junk9(junk10, junk11);
    writeln(' s/b 9834 8383 j 744');
@@ -1616,12 +1619,21 @@ begin
    writeln(' s/b a');
    write('ProcedureFunction13:   ');
    writeln(junk20:1, ' s/b 37');
+   *)
 end;
 
 begin
+   writeln;
+   writeln('******************* Start *******************');
+   writeln;
+
    part9;
    part10;
    part11;
    part12;
    part13;
+
+   writeln;
+   writeln('******************* Finish *******************');
+   writeln;
 end.

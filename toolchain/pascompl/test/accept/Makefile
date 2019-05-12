@@ -12,7 +12,7 @@ clean:
 		$(MAKE) -C ../../../dtran
 
 .pas.obj:
-		../../pascompl $< $@
+		../../pascompl -t- $< $@
 
 .obj.madlen:
 		../../../dtran/dtran -e $< > $@
