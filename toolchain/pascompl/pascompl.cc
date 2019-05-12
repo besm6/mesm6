@@ -3476,7 +3476,7 @@ void genGetElt()
     InsnList insnCopy;
     InsnListPtr copyPtr, l5ins21z;
     Word l5var22z, l5var23z;
-    bool l5var24z, l5var25z;
+    bool l5var24z, packed;
     TypesPtr l5var26z, l5var27z;
     ilmode l5ilm28z;
     ExprPtr l5var29z;
@@ -3502,10 +3502,10 @@ void genGetElt()
     for (curDim = dimCnt; curDim >= 1; curDim--) {
         l5var26z = insnCopy.typ->base;
         l5var27z = insnCopy.typ->range;
-        l5var25z = insnCopy.typ->pck;
+        packed = insnCopy.typ->pck && insnCopy.typ->pcksize < 48;
         l5var7z = l5var27z->left;
         l5var8z = l5var26z->size;
-        if (not l5var25z)
+        if (not packed)
             insnCopy.ilf6 = insnCopy.ilf6 - l5var8z * l5var7z;
         insnList = getEltInsns[curDim];
         l5ilm28z = insnList->ilm;
@@ -3515,7 +3515,7 @@ void genGetElt()
             if (curVal.i < l5var7z or
                 l5var27z->right < curVal.i)
                 error(29); /* errIndexOutOfBounds */
-            if (l5var25z) {
+            if (packed) {
                 l5var4z = curVal.i - l5var7z;
                 l5var5z = insnCopy.typ->perWord;
                 insnCopy.regsused = insnCopy.regsused + mkbs(0L);
@@ -3562,7 +3562,7 @@ void genGetElt()
                  insnList->st != st0))
                 prepLoad();
            l5var23z.m = insnCopy.regsused + insnList->regsused;
-           if (not l5var25z) {
+           if (not packed) {
                if (insnCopy.ilf7 == 18) {
                     if (insnList->ilm == il2) {
                         insnCopy.ilf7 = 15;
@@ -8858,7 +8858,7 @@ void usage ()
     printf("                        -d1: Trace function calls\n");
     printf("                        -d2: Enable debug() as writeln()\n");
     printf("                        -d4: Enable code enclosed in {=Z-}/{=Z+}\n");
-    printf("                        -d8: Unknown\n");
+    printf("                        -d8: Invoke Pascal Debugger\n");
     printf("    -e- -e+             Make procedures external (-e+) or local (-e-)\n");
     printf("    -f- -f+             Compile procedures as Pascal (-f-) or Fortran (-f+)\n");
     printf("    -k0 -k1 ... -k23    Heap size in 1024-word chunks (default -k4)\n");
@@ -8877,7 +8877,7 @@ void usage ()
     printf("    -s4                 Print columns 73-80 as line tags\n");
     printf("    -s5                 Disable external files\n");
     printf("    -s6                 Pack record fields from right to left\n");
-    printf("    -s7                 Enable pointer checking\n");
+    printf("    -s7                 Disable pointer checking\n");
     printf("    -s8                 Disable checking for stack overflow\n");
     printf("    -s9                 Unknown\n");
     printf("    -t+ -t-             Enable/disable range checks\n");
