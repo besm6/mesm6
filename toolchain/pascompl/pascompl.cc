@@ -28,6 +28,7 @@ const char * boilerplate = "Pascal-Monitor in C++ (17.05.2019)";
 
 const int MAXLIT = 500;
 const int SYMTAB_LIMIT = 077777; // initially 075500
+const int SYMTAB_MAX = 1000; // initially 80
 const int OBJBUF_SIZE = 8192;    // initially 1024
 
 const int64_t
@@ -840,8 +841,8 @@ int64_t maxSmallString, extSymAdornment;
 TypesPtr smallStringType[7]; // [2..6]
 int64_t symTabCnt;
 
-Word symTabArray[81]; // array [1..80] of Word;
-int64_t symTabIndex[81]; // array [1..80] of Integer;
+Word symTabArray[SYMTAB_MAX+1]; // array [1..80] of Word;
+int64_t symTabIndex[SYMTAB_MAX+1]; // array [1..80] of Integer;
 Operator iMulOpMap[48]; // array [MUL..IMODOP] of Operator;
 Operator setOpMap[48]; // array [MUL..MINUSOP] of Operator;
 Operator iAddOpMap[48]; // array [PLUSOP..MINUSOP] of Operator;
@@ -1160,27 +1161,32 @@ void putToSymTab(Bitset arg)
         symTabPos = symTabPos + 1;
 }
 
-int64_t allocExtSymbol(Bitset l3arg1z)
+//
+// Allocate external symbol: name in curVal.
+//
+int64_t allocExtSymbol(Bitset newSym)
 {
-    int64_t l3var2z;
     int64_t ret = symTabPos;
+
     if (curVal.m * halfWord) {
-        for (l3var2z = 1; l3var2z <= longSymCnt; ++l3var2z)
-            if (curVal.m == longSyms[l3var2z]) {
-                ret = longSymTabBase[l3var2z];
-                return ret;
-            };
-        longSymCnt = longSymCnt + 1;
+        int64_t i;
+        for (i = 1; i <= longSymCnt; ++i) {
+            if (curVal.m == longSyms[i]) {
+                return longSymTabBase[i];
+            }
+        }
+        longSymCnt++;
         if (longSymCnt >= 90) {
             error(51); /* errLongSymbolOverflow */
             longSymCnt = 1;
         };
         longSymTabBase[longSymCnt] = symTabPos;
         longSyms[longSymCnt] = curVal.m;
-        l3arg1z = l3arg1z + mkbs(25);
-    } else
-        l3arg1z = l3arg1z + curVal.m;
-    putToSymTab(l3arg1z);
+        newSym = newSym + mkbs(25);
+    } else {
+        newSym = newSym + curVal.m;
+    }
+    putToSymTab(newSym);
     return ret;
 }
 
@@ -1242,33 +1248,34 @@ int64_t addCurValToFCST()
     return ret;
 }
 
-int64_t allocSymtab(Bitset l3arg1z)
+int64_t allocSymtab(Bitset newSym)
 {
-    int64_t ret;
-    int64_t low, high, mid;
-    Word value;
-    low = 1;
-    value.m = l3arg1z;
+    int64_t ret = symTabPos;
+
     if (symTabCnt == 0) {
-        ret = symTabPos;
         symTabCnt = 1;
-        symTabArray[1].m = l3arg1z;
+        symTabArray[1].m = newSym;
         symTabIndex[1] = symTabPos;
     } else {
-        high = symTabCnt;
+        int64_t low = 1;
+        int64_t high = symTabCnt;
+        int64_t mid;
+
         do {
             mid = (low + high) / 2;
-            if (value.m == symTabArray[mid].m) {
+            if (newSym == symTabArray[mid].m) {
                 return symTabIndex[mid];
             }
-            if (value.m.val < symTabArray[mid].m.val)
+            if (newSym.val < symTabArray[mid].m.val)
                 high = mid - 1;
             else
                 low = mid + 1;
         } while (high >= low);
-        ret = symTabPos;
-        if (symTabCnt != 80) {
-            if (value.m.val < symTabArray[mid].m.val)
+
+        if (symTabCnt >= SYMTAB_MAX) {
+            error(50); /* errSymbolTableOverflow */
+        } else {
+            if (newSym.val < symTabArray[mid].m.val)
                 high = mid;
             else
                 high = mid + 1;
@@ -1278,11 +1285,11 @@ int64_t allocSymtab(Bitset l3arg1z)
                 symTabIndex[low] = symTabIndex[mid];
             }
             symTabCnt = symTabCnt + 1;
-            symTabArray[high] = value;
+            symTabArray[high].m = newSym;
             symTabIndex[high] = symTabPos;
         }
     }
-    putToSymTab(value.m);
+    putToSymTab(newSym);
     return ret;
 }
 
@@ -9207,7 +9214,7 @@ int64_t resWordNameBase[30] = {
 #endif
 
 Bitset helperNames[100] = { {0L},
-       {06017210000000000L}      /*"P/1     "*/,
+       {06017210000000000L}     /*"P/1     "*/,
        {06017220000000000L}     /*"P/2     "*/,
        {06017230000000000L}     /*"P/3     "*/,
        {06017240000000000L}     /*"P/4     "*/,
