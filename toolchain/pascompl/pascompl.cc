@@ -1384,7 +1384,7 @@ void P0715(int64_t mode, int64_t arg)
     if (mode == 0) {
         padToLeft();
         curVal.i = moduleOffset;
-      L1:     addr = curVal.m * mkbsr(33, 47);
+L1:     addr = curVal.m * mkbsr(33, 47);
         leftHalf = curVal.m << 24;
         while (arg != 0) {
             if (4096 < arg)  {
@@ -2020,8 +2020,7 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                                 goto L2233;
                         }
                         if (atEOL) {
-                          L2175:
-                            error(59); /* errEOLNInStringLiteral */
+L2175:                      error(59); /* errEOLNInStringLiteral */
                             goto exitLoop;
                         } else if (((CH == '\035') or /* ≡ */
                                     (charSymTabBase[CH] == REALCONST))
@@ -2044,7 +2043,8 @@ L2233:                      curChar = CH;
                         }
                     }
                     goto L2175;
-                } exitLoop: ;
+                }
+exitLoop:
                 strLen = tokenIdx - 6;
                 if (strLen == 0) {
                    error(61); /* errEmptyString */
@@ -2062,18 +2062,18 @@ L2233:                      curChar = CH;
                     unpck(localBuf[tokenIdx], curVal.a);
                     pck(localBuf[6], curToken.a);
                     curVal = curToken;
-                   if (6 >= strLen)
-                       goto exitLexer;
-                   else {
-                       curToken.i = FcstCnt;
-                       tokenLen = 6;
-                     loop: {
-                           toFCST();
-                           tokenLen = tokenLen + 6;
-                           if (tokenIdx < tokenLen)
-                               goto exitLexer;
-                           pck(localBuf[tokenLen], curVal.a);
-                           goto loop;
+                    if (6 >= strLen)
+                        goto exitLexer;
+                    else {
+                        curToken.i = FcstCnt;
+                        tokenLen = 6;
+loop:                   {
+                            toFCST();
+                            tokenLen = tokenLen + 6;
+                            if (tokenIdx < tokenLen)
+                                goto exitLexer;
+                            pck(localBuf[tokenLen], curVal.a);
+                            goto loop;
                        }
                    }
                 };
@@ -2235,9 +2235,8 @@ void parseLiteral(TypesPtr & litType, Word & litValue,
                 else
                     litValue.r = -litValue.r;
             }
-        } else
-L99:    {
-            litType = NULL;
+        } else {
+L99:        litType = NULL;
             error(errNoConstant);
         }
     } else
@@ -2633,7 +2632,7 @@ struct genOneOp {
                       curInsn.i = curInsn.i / 4096;
                       addJumpInsn(InsnTemp[UJ]);
                       curInsn.i = tempInsn.i;
-                      L3556:
+L3556:
                       if (F3413())
                           addInsnToBuf(2*macro+ord(l4inl7z));
                       else
@@ -2987,8 +2986,7 @@ void prepLoad()
             goto L4545;
         } break;
         case il2: {
-              L4545:
-            if (bool49z and (l4typ4z == BooleanType) and
+L4545:      if (bool49z and (l4typ4z == BooleanType) and
                 insnList->regsused.has(16))
                 addToInsnList(KAEX+E1);
         } break;
@@ -2998,7 +2996,7 @@ void prepLoad()
                                  insnList->regsused.has(16)*010000 + insnList->ilf5.i);
         } break;
     } /* case */
-L4602:;
+L4602:
     insnList->ilm = il2;
     insnList->regsused = insnList->regsused + mkbs(0L);
 } /* prepLoad */
@@ -3034,11 +3032,10 @@ struct setAddrTo {
             l4var5z = 074001;
             goto L4654;
         } else if (l4int2z == 18) {
-          L4650:
-            P4613();
+L4650:      P4613();
             if (l4var4z == indexreg[1]) {
                 l4var5z = 074003;
-              L4654:
+L4654:
                 l4var1z.i = macro * l4var5z + l4var6z;
                 l4var6z = allocSymtab(l4var1z.m * mkbsr(12,47));
                 addToInsnList(regField + opCode + l4var6z);
@@ -3200,8 +3197,7 @@ struct genFullExpr {
             l5var1z.i = insnList->ilf7;
             l5var2z.i = insnList->ilf6;
             if (l5var1z.i == 18 or l5var1z.i == 16) {
-              L5220:
-                addInsnAndOffset((insnList->ilf5.i + InsnTemp[WTC]), l5var2z.i);
+L5220:          addInsnAndOffset((insnList->ilf5.i + InsnTemp[WTC]), l5var2z.i);
             } else {
                 if (l5var1z.i == 17) {
                     if (l5var2z.i == 0) {
@@ -3314,9 +3310,8 @@ struct genFullExpr {
             l5var1z = 3;
         }
         switch (l5var1z) {
-        case 0: L100:
-        {
-            prepLoad();
+        case 0: {
+L100:     prepLoad();
           saved = insnList;
           insnList = otherIns;
           curInsnTemplate = nextInsn;
@@ -3330,14 +3325,14 @@ struct genFullExpr {
             } else
                 goto L33;
             break;
-        case 2: L22: {
-            saved = insnList;
+        case 2: {
+L22:        saved = insnList;
             insnList = otherIns;
             otherIns = saved;
             goto L100;
         } break;
-        case 3: L33: {
-            prepLoad();
+        case 3: {
+L33:        prepLoad();
             addToInsnList(indexreg[15] + nextInsn);
             l5var2z = insnList;
             insnList = otherIns;
@@ -4040,13 +4035,13 @@ void genComparison()
         } else if (l3int3z == 0) {
             if (work == 0) {
                 nextInsn = 15;         /* P/CP */
-              L7475:
+L7475:
                 genFullExpr::super.back()->genHelper();
                 insnList->ilm = il2;
             } else { /* 7501 */
                 nextInsn = InsnTemp[AEX];
                 genFullExpr::super.back()->tryFlip(true);
-              L7504:
+L7504:
                 insnList->ilm = il3;
                 insnList->ilf5.i = 0;
             }
@@ -4058,7 +4053,7 @@ void genComparison()
             } break;
             case 1: { /*7513*/
                 mode = 3;
-                  L7514:
+L7514:
                 nextInsn = InsnTemp[SUB];
                 genFullExpr::super.back()->tryFlip(false);
                 insnList->next->mode = mode;
@@ -4068,9 +4063,9 @@ void genComparison()
                 }
                 goto L7504;
             } break;
-            case  2: { /*7527*/
+            case 2: { /*7527*/
                 nextInsn = InsnTemp[AAX];
-                  L7530:
+L7530:
                 prepLoad();
                 addToInsnList(KAEX+ALLONES);
                 genFullExpr::super.back()->tryFlip(true);
@@ -4092,7 +4087,8 @@ void genComparison()
     } /* 7562 */
 } /* genComparison */
 
-genFullExpr::genFullExpr(ExprPtr exprToGen_) : exprToGen(exprToGen_)
+genFullExpr::genFullExpr(ExprPtr exprToGen_)
+    : exprToGen(exprToGen_)
 {
     int64_t &l3int3z = formOperator::super.back()->l3int3z;
     bool &l3bool13z = formOperator::super.back()->l3bool13z;
@@ -4176,8 +4172,7 @@ L7567:
                 nextInsn = opToInsn[curOP];
                 switch (flags) {
                 case opfCOMM:
-                L7760:
-                    tryFlip(curOP==MUL||curOP==PLUSOP||curOP==SETAND||curOP==INTPLUS);
+L7760:              tryFlip(curOP==MUL||curOP==PLUSOP||curOP==SETAND||curOP==INTPLUS);
                     break;
                 case opfHELP:
                     genHelper();
@@ -4251,8 +4246,7 @@ L7567:
                         addToInsnList(KYTA+64);
                 } break;
                 case opfINV: {
-                      L10075:
-                    saved = insnList;
+L10075:             saved = insnList;
                     insnList = otherIns;
                     otherIns = saved;
                     prepLoad();
@@ -4260,7 +4254,7 @@ L7567:
                     goto L7760;
                 } break;
                 }; /* case 10122 */
-              L10122:
+L10122:
                 insnList->next->mode = l3int3z;
             }
         }
@@ -4554,7 +4548,8 @@ formOperator::formOperator(OpGen l3arg1z)
     if (l3arg1z!=gen3&&l3arg1z!=gen6&&l3arg1z!=gen9&&l3arg1z!=gen14&&l3arg1z!=gen16)
         (void) genFullExpr(curExpr);
     switch (l3arg1z) {
-    case gen7: genOneOp();
+    case gen7:
+        genOneOp();
         break;
     case SETREG: {
         l3int3z = insnCount();
@@ -4840,23 +4835,21 @@ void packFields()
             l5var1z = selType->bits;
             curField->width = l5var1z;
             if (l5var1z != 48) {
-                for (pairIdx = 1; pairIdx <= cases.count; ++pairIdx)
-                  L11523:
-                    {
-                        l5var6z = &cases.pairs[pairIdx];
-                        if (l5var6z->first >= l5var1z) {
-                            curField->shift = 48 - l5var6z->first;
-                            curField->offset = l5var6z->second;
-                            if (not optSflags.m.has(S6))
-                                curField->shift = 48 - curField->width - curField->shift;
-                            l5var6z->first = l5var6z->first - l5var1z;
-                            if (l5var6z->first == 0) {
-                                cases.pairs[pairIdx] = cases.pairs[cases.count];
-                                cases.count = cases.count - 1;
-                            } /* 11562 */
-                            goto L11622;
-                        }
-                    } /* 11564 */
+                for (pairIdx = 1; pairIdx <= cases.count; ++pairIdx) {
+L11523:             l5var6z = &cases.pairs[pairIdx];
+                    if (l5var6z->first >= l5var1z) {
+                        curField->shift = 48 - l5var6z->first;
+                        curField->offset = l5var6z->second;
+                        if (not optSflags.m.has(S6))
+                            curField->shift = 48 - curField->width - curField->shift;
+                        l5var6z->first = l5var6z->first - l5var1z;
+                        if (l5var6z->first == 0) {
+                            cases.pairs[pairIdx] = cases.pairs[cases.count];
+                            cases.count = cases.count - 1;
+                        } /* 11562 */
+                        goto L11622;
+                    }
+                } /* 11564 */
                 if (cases.count != 7) {
                     cases.count = cases.count + 1;
                     pairIdx = cases.count;
@@ -4878,7 +4871,7 @@ void packFields()
         curField->pckfield = false;
         curField->offset = cases.size;
         cases.size = cases.size + selType->size;
-      L11622:
+L11622:
         if (PASINFOR.listMode == 3) {
             printf("%16c", ' ');
             if (curField->pckfield)
@@ -4899,7 +4892,8 @@ void packFields()
     } while (!cond);
 } /* packFields */
 
-parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_) : isOuterDecl(isOuterDecl_)
+parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_)
+    : isOuterDecl(isOuterDecl_)
 {
     bool &cond = parseTypeRef::super.back()->cond;
     TypesPtr &curType = parseTypeRef::super.back()->curType;
@@ -5050,7 +5044,8 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_) : isOuterD
     /* 12242 */
 } /* parseRecordDecl*/
 
-parseTypeRef::parseTypeRef(TypesPtr & newType, Bitset skipTarget_) : skipTarget(skipTarget_)
+parseTypeRef::parseTypeRef(TypesPtr & newType, Bitset skipTarget_)
+    : skipTarget(skipTarget_)
 {
     bool &inTypeDef = programme::super.back()->inTypeDef;
     super.push_back(this);
@@ -5112,8 +5107,7 @@ L12247:
                         definExprPtrType(IntegerType);
                     }
                 } else {
-                  L12366:
-                    error(errNotAType);
+L12366:             error(errNotAType);
                     curType = pointerType;
                 }
             } else {
@@ -5171,7 +5165,7 @@ L12247:
             if (SY == LBRACK)
                 inSymbol();
             tempType = NULL;
-          L12476:
+L12476:
             parseTypeRef(nestedType, skipTarget + mkbs(OFSY));
             curVarKind = nestedType->k;
             if (curVarKind != kindRange) {
@@ -5282,8 +5276,7 @@ L12247:
             }
             curType = new Types(1, numBits, kindSet, nestedType);
         } else {
-          L12760:
-            parseLiteral(tempType, leftBound, true);
+L12760:     parseLiteral(tempType, leftBound, true);
             if (tempType != NULL) {
                 inSymbol();
                 if (SY != COLON) {
@@ -5303,7 +5296,7 @@ L12247:
             curType = BooleanType;
         }
     }
-  L13020:
+L13020:
     if (errors)
         skip(skipToSet + mkbs(RPAREN, RBRACK, SEMICOLON, OFSY));
     newType = curType;
@@ -5523,7 +5516,7 @@ void parseLval()
         curExpr->typ = hashTravPtr->typ;
         curExpr->op = GETVAR;
         curExpr->id1 = hashTravPtr;
-      L13462:
+L13462:
         inSymbol();
         l4typ3z = curExpr->typ;
         l4var4z = l4typ3z->k;
@@ -5550,8 +5543,7 @@ void parseLval()
                 if (hashTravPtr == NULL) {
                     error(20); /* errDigitGreaterThan7 ??? */
                 } else {
-                  L13530:
-                    l4exp1z = new Expr;
+L13530:             l4exp1z = new Expr;
                     l4exp1z->typ = hashTravPtr->typ;
                     l4exp1z->op = GETFIELD;
                     l4exp1z->expr1 = curExpr;
@@ -5655,7 +5647,7 @@ void parseCallArgs(IdentRecPtr l4arg1z)
                 if (l4op6z == PCALL) {
                     if (l4idc7z != ROUTINEID or
                         l4idr5z->typ != NULL) {
-                      L13736:
+L13736:
                         error(39); /*errIncompatibleArgumentKinds*/
                         goto exit_a;
                     }
@@ -5960,7 +5952,7 @@ struct Factor {
                         curExpr->op = SETOR;
                         curExpr->expr1 = l4exp6z;
                         curExpr->expr2 = l4exp5z;
-                      L14567:;
+L14567:;
                     } while (SY == COMMA);
                 } /* 14571 */
                 checkSymAndRead(RBRACK);
@@ -5994,7 +5986,7 @@ void term()
         l4var4z = typeCheck(arg1Type, arg2Type);
         if (not l4var4z and
             RDIVOP < l4var1z) {
-          L14650:
+L14650:
             error(errNeedOtherTypesOfOperands);
         } else {
             switch (l4var1z) {
@@ -6097,8 +6089,7 @@ void simpleExpression()
         l4bool5z = typeCheck(arg1Type, arg2Type);
         argKind = arg2Type->k;
         if (kindSet < argKind) {
-          L15031:
-            error(errNeedOtherTypesOfOperands);
+L15031:     error(errNeedOtherTypesOfOperands);
         } else {
             l4var1z = new Expr;
             if (l4var3z == OROP) {
@@ -6544,7 +6535,7 @@ void caseStatement()
             form1Insn(InsnTemp[UJ] + allClauses->offset);
             allClauses = allClauses->next;
         }
-      L16211:
+L16211:
         P0715(0, endOfStmt);
         if (not goodMode)
             disableNorm();
@@ -6613,7 +6604,7 @@ void assignStatement(bool doLHS)
                     assnExpr->typ2 = targType;
                     curExpr = assnExpr;
                 }
-              L16332:
+L16332:
                 assnExpr = new Expr;
                 assnExpr->typ = targType;
                 assnExpr->op = ASSIGNOP;
@@ -6728,8 +6719,7 @@ struct ParseData {
                 curExpr = uVarPtr;
             } else /* 16543 */ {
                 if (hashTravPtr == NULL) {
-                  L16545:
-                    error(errNotDefined);
+L16545:             error(errNotDefined);
                     curExpr = uVarPtr;
                     inSymbol();
                 } else {
@@ -7038,7 +7028,7 @@ struct standProc {
             if (l4exp7z != l4exp9z) {
                 if (not l4var13z.b) {
                     helperNo = 30;         /* P/GF */
-                  L17346:
+L17346:
                     P17037();
                 } else {
                     checkElementForReadWrite();
@@ -7049,7 +7039,7 @@ struct standProc {
                     if (helperNo == 39 or           /* A6,A7 */
                         helperNo == 40) {
                         helperNo = 51;             /* P/RA7 */
-                      L17362:
+L17362:
                         curExpr = l4exp7z;
                         (void) formOperator(gen5);
                         form1Insn(KVTM+I10 + l4var15z.i);
@@ -7222,10 +7212,8 @@ struct standProc {
         case 10: { /* write */
             writeProc();
         } break;
-        case 11:
-        L17753:
-        { /* writeln */
-            if (SY == LPAREN) {
+        case 11: { /* writeln */
+L17753:     if (SY == LPAREN) {
                 writeProc();
             } else {
                 formAndAlign(getHelperProc(54)); /*"P/WOLN"*/
@@ -7273,7 +7261,7 @@ struct standProc {
         case 17: { /* mapia */
             l4typ1z = IntegerType;
             l4typ2z = AlfaType;
-          L20041:
+L20041:
             expression();
             if (not typeCheck(curExpr->typ, l4typ1z))
                 error(errNeedOtherTypesOfOperands);
@@ -7443,7 +7431,7 @@ Statement::Statement()
                 }
             else {
                 error(errNotDefined);
-              L8888:
+L8888:
                 skip(skipToSet + statEndSys);
             }
         } else if (SY == LPAREN) {
@@ -8245,9 +8233,9 @@ programme::programme(int64_t & l2arg1z, IdentRecPtr const l2idr2z_)
                 l2var15z->defined = false;
                 l2var15z->next = numLabList;
                 numLabList = l2var15z;
-              L22420:
+L22420:
                 inSymbol();
-              L22421:
+L22421:
                 if (SY != COMMA && SY != SEMICOLON)
                     errAndSkip(1, skipToSet + mkbs(COMMA,SEMICOLON));
             } while(SY == COMMA);
@@ -8577,7 +8565,7 @@ programme::programme(int64_t & l2arg1z, IdentRecPtr const l2idr2z_)
         } /* 23277 */
         inSymbol();
         checkSymAndRead(SEMICOLON);
-      L23301:
+L23301:
         workidr = curIdRec->argList;
         if (workidr != NULL) {
             while (workidr != curIdRec) {
@@ -8619,7 +8607,6 @@ programme::programme(int64_t & l2arg1z, IdentRecPtr const l2idr2z_)
 
 struct initTables {
     int64_t idx, jdx;
-    // l2unu3z, l2unu4z, l2unu5z: Word;
 
     void initInsnTemplates() {
         Insn l3var1z;
@@ -9142,7 +9129,7 @@ int main(int argc, char **argv)
         if (foo == 9999) goto L9999;
     }
     if (errors) {
-      L9999:   printf(" IN %ld LINES %ld ERRORS\n", lineCnt-1, totalErrors);
+L9999:  printf(" IN %ld LINES %ld ERRORS\n", lineCnt-1, totalErrors);
         exit(1);
     } else {
         finalize();
@@ -9153,6 +9140,7 @@ int main(int argc, char **argv)
             perror(outFileName);
             exit(-1);
         }
+        fwrite("BESM6\0", 6, 1, f);
         for (size_t i = 7; i < CHILD.size(); ++i) {
             for (int j = 40; j >= 0; j -= 8)
                 fputc((CHILD[i].val >> j) & 0xFF, f);

@@ -24,31 +24,36 @@
 #include "unistd.h"
 
 /*
+ * First word of object file: magic key.
+ */
+const uint64_t BESM6_MAGIC = 0x4245534d3600;
+
+/*
  * BESM-6 opcode types.
  */
 typedef enum {
-OPCODE_ILLEGAL,
-OPCODE_STR1,		/* short addr */
-OPCODE_STR2,		/* long addr */
-OPCODE_IMM,		/* e.g. NTR */
-OPCODE_REG1,		/* e.g. ATI */
-OPCODE_JUMP,		/* UJ */
-OPCODE_BRANCH,		/* UZA, U1A, VZM, V1M, VLM */
-OPCODE_CALL,		/* VJM */
-OPCODE_IMM64,		/* e.g. ASN */
-OPCODE_ADDRMOD,		/* UTC, WTC */
-OPCODE_REG2,		/* VTM, UTM */
-OPCODE_IMMEX,		/* *50, ... */
-OPCODE_ADDREX,		/* *64, *70, ... */
-OPCODE_STOP,		/* *74 */
-OPCODE_DEFAULT
+    OPCODE_ILLEGAL,
+    OPCODE_STR1,        /* short addr */
+    OPCODE_STR2,        /* long addr */
+    OPCODE_IMM,         /* e.g. NTR */
+    OPCODE_REG1,        /* e.g. ATI */
+    OPCODE_JUMP,        /* UJ */
+    OPCODE_BRANCH,      /* UZA, U1A, VZM, V1M, VLM */
+    OPCODE_CALL,        /* VJM */
+    OPCODE_IMM64,       /* e.g. ASN */
+    OPCODE_ADDRMOD,     /* UTC, WTC */
+    OPCODE_REG2,        /* VTM, UTM */
+    OPCODE_IMMEX,       /* *50, ... */
+    OPCODE_ADDREX,      /* *64, *70, ... */
+    OPCODE_STOP,        /* *74 */
+    OPCODE_DEFAULT
 } opcode_e;
 
 struct opcode {
-	const char *name;
-	uint opcode;
-	uint mask;
-	opcode_e type;
+    const char *name;
+    uint opcode;
+    uint mask;
+    opcode_e type;
 } op[] = {
   /* name,	pattern,  mask,	    opcode type */
   { "ATX",	0x000000, 0x0bf000, OPCODE_STR1 },
@@ -129,7 +134,6 @@ struct opcode {
 
 typedef unsigned long long uint64;
 typedef unsigned int uint32;
-
 
 typedef unsigned int uint;
 
@@ -376,7 +380,7 @@ std::string quoteiso(std::string str)
 {
     std::string buf;
 
-    for (auto &c : str) {
+    for (const char &c : str) {
         if (c == '\'')
             buf += "\'47";
         buf += c;
@@ -568,6 +572,12 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
     stat (fname, &st);
     uint codelen = st.st_size / 6;
 
+    memory[addr++] = freadw (textfd);
+    if (memory[0] == BESM6_MAGIC) {
+        // Skip first word: magic key.
+        addr = 0;
+        codelen--;
+    }
     if (codelen >= 32768) {
         fprintf(stderr, "File too large\n");
         exit(1);

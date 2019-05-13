@@ -2,7 +2,7 @@
 # Dis-assembler for micro-BESM
 #
 DESTDIR = /usr/local
-CXXFLAGS = -I.. -O -Werror -Wall
+CXXFLAGS = -std=c++11 -O -Werror -Wall -I..
 LDFLAGS =
 
 dtran   = besm6-dtran
