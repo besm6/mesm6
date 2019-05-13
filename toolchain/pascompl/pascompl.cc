@@ -448,7 +448,7 @@ struct Word {
         int64_t ii;
         Integer i;
         Real r;
-        bool b;
+        int64_t b;
         Alfa a;
         int64_t  c;
         IdClass cl;
