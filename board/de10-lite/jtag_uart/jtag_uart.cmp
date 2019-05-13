@@ -1,0 +1,15 @@
+	component jtag_uart is
+		port (
+			clk_clk          : in  std_logic                     := 'X';             -- clk
+			irq_irq          : out std_logic;                                        -- irq
+			reset_reset_n    : in  std_logic                     := 'X';             -- reset_n
+			uart_chipselect  : in  std_logic                     := 'X';             -- chipselect
+			uart_address     : in  std_logic                     := 'X';             -- address
+			uart_read_n      : in  std_logic                     := 'X';             -- read_n
+			uart_readdata    : out std_logic_vector(31 downto 0);                    -- readdata
+			uart_write_n     : in  std_logic                     := 'X';             -- write_n
+			uart_writedata   : in  std_logic_vector(31 downto 0) := (others => 'X'); -- writedata
+			uart_waitrequest : out std_logic                                         -- waitrequest
+		);
+	end component jtag_uart;
+

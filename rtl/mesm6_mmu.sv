@@ -28,6 +28,7 @@
 `define MMU_ADDR_PIC  12'o7777
 `define MMU_ADDR_TIM  12'o7776
 `define MMU_ADDR_GPIO 12'o7775
+`define MMU_ADDR_UART 12'o7774
 
 // all signals are polled on clk rising edge
 // all signals positive
@@ -66,8 +67,16 @@ module mesm6_mmu(
     output wire [47:0]  gpio_wdata,     // data word read
     input  wire         gpio_done,      // operation completed
     input  wire         gpio_int,       // request CPU interrupt
+    
+    // signals for JTAG UART bridge
+    output wire [14:0]  uart_addr,
+    output wire         uart_read,
+    output wire         uart_write,
+    input  wire [47:0]  uart_rdata,
+    output wire [47:0]  uart_wdata,
+    input  wire         uart_done,
 
-    // Signals to Timer 0, 1
+    // Signals to Timer 0
     output wire [14:0]  tim_addr,      // register address
     output wire         tim_read,      // request data read
     output wire         tim_write,     // request data write
@@ -82,12 +91,14 @@ assign mem_addr  = cpu_addr;
 assign pic_addr  = cpu_addr;
 assign gpio_addr = cpu_addr;
 assign tim_addr  = cpu_addr;
+assign uart_addr   = cpu_addr;
 
 // Connect CPU write bus to all devices
 assign mem_wdata  = cpu_wdata;
 assign pic_wdata  = cpu_wdata;
 assign gpio_wdata = cpu_wdata;
 assign tim_wdata  = cpu_wdata;
+assign uart_wdata = cpu_wdata;
 
 // Connect PIC interrupt signals
 assign pic_irq[0]    = gpio_int;
@@ -108,14 +119,19 @@ assign mem_write = cpu_addr[14:9] != 6'o77 ? cpu_write : 0;
 assign gpio_read  = cpu_addr[14:3] == `MMU_ADDR_GPIO ? cpu_read  : 0;
 assign gpio_write = cpu_addr[14:3] == `MMU_ADDR_GPIO ? cpu_write : 0;
 
+assign uart_read  = cpu_addr[14:3] == `MMU_ADDR_UART ? cpu_read  : 0;
+assign uart_write = cpu_addr[14:3] == `MMU_ADDR_UART ? cpu_write : 0;
+
 assign cpu_rdata  = cpu_addr[14:3] == `MMU_ADDR_PIC  ?  pic_rdata :
                     cpu_addr[14:3] == `MMU_ADDR_GPIO ? gpio_rdata :
                     cpu_addr[14:3] == `MMU_ADDR_TIM  ?  tim_rdata :
+                    cpu_addr[14:3] == `MMU_ADDR_UART ?   uart_rdata :
                                                         mem_rdata;
 
 assign cpu_done  = cpu_addr[14:3] == `MMU_ADDR_PIC  ?  pic_done :
                    cpu_addr[14:3] == `MMU_ADDR_GPIO ? gpio_done :
                    cpu_addr[14:3] == `MMU_ADDR_TIM  ?  tim_done :
+                   cpu_addr[14:3] == `MMU_ADDR_UART ?   uart_done :
                                                        mem_done;
 
 endmodule

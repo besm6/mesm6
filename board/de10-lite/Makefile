@@ -25,12 +25,15 @@ clean:
 create:
 	rm -rf $(BUILD_DIR)
 	mkdir  $(BUILD_DIR)
+	mkdir  $(BUILD_DIR)/jtag_uart
+	cp -r jtag_uart/* $(BUILD_DIR)/jtag_uart/
 	cp *.qpf $(BUILD_DIR)
 	cp *.qsf $(BUILD_DIR)
 	cp *.sdc $(BUILD_DIR)
 	cp *.qip $(BUILD_DIR)
 	cp *.sv $(BUILD_DIR)
 	cp *.v $(BUILD_DIR)
+	cp *.mif $(BUILD_DIR)
 
 open:
 	cd $(BUILD_DIR) && quartus $(PROJECT_NAME).qpf &
@@ -39,6 +42,7 @@ build:
 	cd $(BUILD_DIR) && quartus_sh --flow compile $(PROJECT_NAME)
 
 mif:
+	cp *.mif $(BUILD_DIR)/
 	cd $(BUILD_DIR) && quartus_cdb --update_mif $(PROJECT_NAME) && quartus_asm $(PROJECT_NAME)
 
 load:

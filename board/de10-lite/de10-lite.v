@@ -186,6 +186,56 @@ mesm6_timer tim(
     tim_done
 );
 
+// UART signals
+wire [14:0] uart_addr;
+wire        uart_read;
+wire        uart_write;
+wire [47:0] uart_rdata;
+wire [47:0] uart_wdata;
+wire        uart_done;
+wire        uart_irq;
+
+wire        uart_chipselect;  //  uart.chipselect
+wire        uart_address;     //      .address
+wire        uart_read_n;      //      .read_n
+wire [31:0] uart_readdata;    //      .readdata
+wire        uart_write_n;     //      .write_n
+wire [31:0] uart_writedata;   //      .writedata
+wire        uart_waitrequest;  //      .waitrequest
+
+jtag_uart uart(
+    clk,          //   clk.clk
+    uart_irq,          //   irq.irq
+    (~reset),    // reset_n
+
+    uart_chipselect,  //  uart.chipselect
+    uart_address,     //      .address
+    uart_read_n,      //      .read_n
+    uart_readdata,    //      .readdata
+    uart_write_n,     //      .write_n
+    uart_writedata,   //      .writedata
+    uart_waitrequest  //      .waitrequest
+);
+
+mesm6_uart bridge_uart(
+    clk, reset,
+
+    // MESM-6 side
+    uart_addr,
+    uart_read, uart_write,
+    uart_rdata, uart_wdata,
+    uart_done,
+
+    // Avalon side
+    uart_chipselect,  //  uart.chipselect
+    uart_address,     //      .address
+    uart_read_n,      //      .read_n
+    uart_readdata,    //      .readdata
+    uart_write_n,     //      .write_n
+    uart_writedata,   //      .writedata
+    uart_waitrequest  //      .waitrequest
+);
+
 mesm6_mmu mmu(
     dbus_addr,
     dbus_rd, dbus_wr,
@@ -209,14 +259,17 @@ mesm6_mmu mmu(
     gpio_done,
     gpio_int,
 
+    uart_addr,
+    uart_read, uart_write,
+    uart_rdata, uart_wdata,
+    uart_done,
+
     tim_addr,
     tim_read, tim_write,
     tim_rdata, tim_wdata,
     tim_done,
     tim_irq
 );
-
-
 
 
 function [7:0] to_hex(input [3:0] ival);

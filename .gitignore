@@ -18,3 +18,4 @@ toolchain/as/as
 toolchain/as/dis
 toolchain/ld/ld
 board/de10-lite/project/*
+test/*/*.mif

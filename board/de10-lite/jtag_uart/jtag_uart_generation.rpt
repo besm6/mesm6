@@ -1,0 +1,22 @@
+Info: Starting: Create HDL design files for synthesis
+Info: qsys-generate /home/strike/projects/mesm6/board/de10-lite/jtag_uart.qsys --synthesis=VERILOG --output-directory=/home/strike/projects/mesm6/board/de10-lite/jtag_uart/synthesis --family="MAX 10" --part=10M50DAF484C7G
+Progress: Loading de10-lite/jtag_uart.qsys
+Progress: Reading input file
+Progress: Adding clk [clock_source 18.1]
+Progress: Parameterizing module clk
+Progress: Adding uart [altera_avalon_jtag_uart 18.1]
+Progress: Parameterizing module uart
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+Info: jtag_uart.uart: JTAG UART IP input clock need to be at least double (2x) the operating frequency of JTAG TCK on board
+Info: jtag_uart: Generating jtag_uart "jtag_uart" for QUARTUS_SYNTH
+Info: uart: Starting RTL generation for module 'jtag_uart_uart'
+Info: uart:   Generation command is [exec /opt/altera/quartus/linux64/perl/bin/perl -I /opt/altera/quartus/linux64/perl/lib -I /opt/altera/quartus/sopc_builder/bin/europa -I /opt/altera/quartus/sopc_builder/bin/perl_lib -I /opt/altera/quartus/sopc_builder/bin -I /opt/altera/quartus/../ip/altera/sopc_builder_ip/common -I /opt/altera/quartus/../ip/altera/sopc_builder_ip/altera_avalon_jtag_uart -- /opt/altera/quartus/../ip/altera/sopc_builder_ip/altera_avalon_jtag_uart/generate_rtl.pl --name=jtag_uart_uart --dir=/tmp/alt8029_2937946736099995834.dir/0002_uart_gen/ --quartus_dir=/opt/altera/quartus --verilog --config=/tmp/alt8029_2937946736099995834.dir/0002_uart_gen//jtag_uart_uart_component_configuration.pl  --do_build_sim=0  ]
+Info: uart: Done RTL generation for module 'jtag_uart_uart'
+Info: uart: "jtag_uart" instantiated altera_avalon_jtag_uart "uart"
+Info: rst_controller: "jtag_uart" instantiated altera_reset_controller "rst_controller"
+Info: jtag_uart: Done "jtag_uart" with 3 modules, 5 files
+Info: qsys-generate succeeded.
+Info: Finished: Create HDL design files for synthesis
