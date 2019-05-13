@@ -451,7 +451,6 @@ struct Word {
         int64_t b;
         Alfa a;
         int64_t  c;
-        IdClass cl;
         Bitset m;
     };
     bool operator==(const Word & x) const { return i == x.i; }
@@ -3839,7 +3838,7 @@ genEntry::genEntry()
         }
         insnList->regsused = insnList->regsused + l5inl20z->regsused;
         if (not l5bool9z) {
-            curVal.cl = l5idc22z;
+            curVal.ii = l5idc22z;
             addToInsnList(KXTS+I8 + getFCSToffset());
         }
         if (l5bool9z and not l5bool11z)
