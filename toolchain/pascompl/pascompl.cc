@@ -1414,16 +1414,16 @@ L1:     addr = curVal.m * mkbsr(33, 47);
         return;
     } else if ((mode == 1) or (mode < -2)) {
         arg = arg - curVal.i;
+        // A trick: the integer exponent in arg should follow curVal;
+        // forming the full word here.
+        arg = (arg & 0x1FFFFFFFFFFL) | ((int64_t)curVal.i.exp << 41);
         offset = getFCSToffset();
         if (mode == 1)
             work = getHelperProc(68) + (-064200000); /* P/DA */
         else
             work = -mode;
-        // A trick here: if curVal had no integer exponent, it should not have it after the assignment.
-        if (curVal.i.exp == 104)
-            curVal.i = arg;
-        else
-            curVal.ii = arg;
+        // Full-word assignment.
+        curVal.ii = arg;
         arg = getFCSToffset();
         form3Insn(KATX+SP+1, KSUB+I8 + offset, work);
         form3Insn(KRSUB+I8 + arg, work, KXTA+SP+1);
