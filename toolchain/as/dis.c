@@ -10,27 +10,27 @@
 //
 // Object file has the following format:
 //  +---------+
-//  | magic   |   "BESM6\0"
+//  | magic   |     "BESM6\0"
 //  +---------+
-//  | header  |   3 words
+//  | header  |     3 words
 //  +---------+
-//  | code    |
+//  | code    |     Executable code
 //  +---------+
-//  | const   |
+//  | const   |     Initialized data
 //  +---------+
-//  | data    |
+//  | data    |     (unused)
 //  +---------+
-//  | set     |
+//  | set     |     (unused)
 //  +---------+
-//  | symhdr  |
+//  | symhdr  |     Name of the subroutine
 //  +---------+
-//  | symtab  |
+//  | symtab  |     Symbol table
 //  +---------+
-//  | longsym |
+//  | longsym |     Names of 5 characters and more
 //  +---------+
-//  | debug   |
+//  | debug   |     (unused)
 //  +---------+
-//  | comment |
+//  | comment |     (unused)
 //  +---------+
 //
 typedef struct _obj_image_t {

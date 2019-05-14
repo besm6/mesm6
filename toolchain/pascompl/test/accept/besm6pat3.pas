@@ -312,17 +312,17 @@ procedure junk8(a: integer; b: boolean; c: char; e: enum; es: esub; s: subr;
     var i:  integer;
         ci: char;
 begin
-   writeln(a:1, ' ', b:5, ' ', c:1, ' ', ord(e):1, ' ', ord(es):1, ' ', s:1, ' ',
+   writeln(' ', a:1, ' ', b:5, ' ', c:1, ' ', ord(e):1, ' ', ord(es):1, ' ', s:1, ' ',
            r:15, ' ', st);
-   for i := 1 to 10 do write(ar[i]:1, ' '); writeln;
-   writeln(rc.i:1, ' ', rc.b:5, ' ', rc.c:1, ' ', ord(rc.e):1, ' ', ord(rc.es):1,
+   for i := 1 to 10 do write(' ', ar[i]:1); writeln;
+   writeln(' ', rc.i:1, ' ', rc.b:5, ' ', rc.c:1, ' ', ord(rc.e):1, ' ', ord(rc.es):1,
            ' ', rc.s:1, ' ', rc.r:15, ' ', rc.st);
-   for i := 1 to 10 do write(rc.a[i]:1, ' '); writeln;
-   writeln(rc.rc.a:1, ' ', rc.rc.b:1);
-   writeln(rc.p^:1);
-   writeln(rv.a:1, ' ', rv.b:1, ' ', rv.c:5);
-   if rv.c then writeln(ord(rv.e):1) else writeln(rv.d);
-   writeln(p^:1)
+   for i := 1 to 10 do write(' ', rc.a[i]:1); writeln;
+   writeln(' ', rc.rc.a:1, ' ', rc.rc.b:1);
+   writeln(' ', rc.p^:1);
+   writeln(' ', rv.a:1, ' ', rv.b:1, ' ', rv.c:5);
+   if rv.c then writeln(' ', ord(rv.e):1) else writeln(' ', rv.d);
+   writeln(' ', p^:1)
 end;
 
 procedure junk9(procedure junk9;
@@ -427,85 +427,85 @@ begin
 ******************************************************************************}
 
    writeln;
-   writeln('******************* Pointers ******************************');
+   writeln(' ******************* Pointers ******************************');
    writeln;
 
    { pointers to types }
-   write('Pointer1:   ');
+   write(' Pointer1:   ');
    new(pti);
    pti^ := 4594;
    writeln(pti^:1, ' s/b 4594');
-   write('Pointer2:   ');
+   write(' Pointer2:   ');
    new(ptb);
    ptb^ := true;
    writeln(ptb^:5, ' s/b  true');
-   write('Pointer3:   ');
+   write(' Pointer3:   ');
    new(ptb);
    ptb^ := false;
    writeln(ptb^:5, ' s/b false');
-   write('Pointer4:   ');
+   write(' Pointer4:   ');
    new(ptc);
    ptc^ := 'p';
    writeln(ptc^, ' s/b p');
-   write('Pointer5:   ');
+   write(' Pointer5:   ');
    new(pte);
    pte^ := six;
    writeln(ord(pte^):1, ' s/b 5');
-   write('Pointer6:   ');
+   write(' Pointer6:   ');
    new(ptes);
    ptes^ := four;
    writeln(ord(ptes^):1, ' s/b 3');
-   write('Pointer7:   ');
+   write(' Pointer7:   ');
    new(pts);
    pts^ := 17;
    writeln(pts^:1, ' s/b 17');
-   write('Pointer8:   ');
+   write(' Pointer8:   ');
    new(ptr);
    ptr^ := 1234.5678;
    writeln(ptr^:1:4, ' s/b 1234.5678');
-   write('Pointer9:   ');
+   write(' Pointer9:   ');
    new(ptst);
    ptst^ := 'my word is';
    writeln(ptst^, ' s/b my word is');
-   write('Pointer10:  ');
+   write(' Pointer10:  ');
    new(pta);
    for i := 1 to 10 do pta^[i] := i+10;
    for i := 10 downto 1 do write(pta^[i]:1, ' ');
    writeln('s/b 20 19 18 17 16 15 14 13 12 11');
-   write('Pointer11:   ');
+   write(' Pointer11:   ');
    new(ptrc);
    ptrc^.a := 7234;
    ptrc^.b := 'y';
    writeln(ptrc^.a:1, ' ', ptrc^.b, ' s/b 7234 y');
-   write('Pointer13:  ');
+   write(' Pointer13:  ');
    new(ptp);
    new(ptp^);
    ptp^^ := 3732;
    writeln(ptp^^:1, ' s/b 3732');
 
    { equality/inequality, nil }
-   write('Pointer14:  ');
+   write(' Pointer14:  ');
    pti := nil;
    writeln(pti = nil:5, ' s/b  true');
-   write('Pointer15:  ');
+   write(' Pointer15:  ');
    new(pti);
    writeln(pti = nil:5, ' s/b false');
-   write('Pointer16:  ');
+   write(' Pointer16:  ');
    pti1 := pti;
    writeln(pti = pti1:5, ' s/b true');
-   write('Pointer17:  ');
+   write(' Pointer17:  ');
    pti1 := pti;
    writeln(pti <> pti1:5, ' s/b false');
-   write('Pointer18:  ');
+   write(' Pointer18:  ');
    new(pti1);
    writeln(pti = pti1:5, ' s/b false');
-   write('Pointer19:  ');
+   write(' Pointer19:  ');
    writeln(pti <> pti1:5, ' s/b  true');
 
    { dynamic allocation stress tests }
 
    { allocate top to bottom, then free from top to bottom }
-   write('Pointer20:  ');
+   write(' Pointer20:  ');
    new(ipa);
    new(ipb);
    new(ipc);
@@ -516,7 +516,7 @@ begin
 
    { allocate top to bottom, then free from bottom to top }
 
-   write('Pointer21:  ');
+   write(' Pointer21:  ');
    new(ipa);
    new(ipb);
    new(ipc);
@@ -526,7 +526,7 @@ begin
 
    { free 2 middle blocks to test coalesce }
 
-   write('Pointer22:  ');
+   write(' Pointer22:  ');
    new(ipa);
    new(ipb);
    new(ipc);
@@ -538,7 +538,7 @@ begin
    writeln('done s/b done');
 
    { free 3 middle blocks to test coalesce }
-   write('Pointer23:  ');
+   write(' Pointer23:  ');
    new(ipa);
    new(ipb);
    new(ipc);
@@ -554,39 +554,39 @@ begin
    if doptrtortst then begin
 
       { linear torture test }
-      writeln('Pointer24:  ');
+      writeln(' Pointer24:  ');
       for cnt := 1 to 100 do begin
 
          write(cnt:3, ' '); if (cnt mod 10) = 0 then writeln;
          for i := 1 to 100 do iap[i] := nil;
          for i := 1 to 100 do begin new(iap[i]); iap[i]^ := i end;
          for i := 1 to 100 do if iap[i] = nil then
-            writeln('*** bad allocation of block');
+            writeln(' *** bad allocation of block');
          for i := 100 downto 1 do if iap[i]^ <> i then
-            writeln('*** bad block content');
+            writeln(' *** bad block content');
          for i := 1 to 100 do begin
 
             dispose(iap[i]);
             iap[i] := nil;
             for x := 1 to 100 do if iap[x] <> nil then
                if iap[x]^ <> x then
-                  writeln('*** bad block content')
+                  writeln(' *** bad block content')
 
          end;
 
          for i := 1 to 100 do iap[i] := nil;
          for i := 1 to 100 do begin new(iap[i]); iap[i]^ := i end;
          for i := 1 to 100 do if iap[i] = nil then
-            writeln('*** bad allocation of block');
+            writeln(' *** bad allocation of block');
          for i := 100 downto 1 do if iap[i]^ <> i then
-            writeln('*** bad block content');
+            writeln(' *** bad block content');
          for i := 100 downto 1 do begin
 
             dispose(iap[i]);
             iap[i] := nil;
             for x := 1 to 100 do if iap[x] <> nil then
                if iap[x]^ <> x then
-                  writeln('*** bad block content')
+                  writeln(' *** bad block content')
 
          end
 
@@ -608,7 +608,7 @@ begin
    end else begin
 
       { keep listing equal for compare }
-      writeln('Pointer24:  ');
+      writeln(' Pointer24:  ');
       writeln('  1   2   3   4   5   6   7   8   9  10 ');
       writeln(' 11  12  13  14  15  16  17  18  19  20 ');
       writeln(' 21  22  23  24  25  26  27  28  29  30 ');
@@ -620,7 +620,7 @@ begin
       writeln(' 81  82  83  84  85  86  87  88  89  90 ');
       writeln(' 91  92  93  94  95  96  97  98  99 100 ');
       writeln;
-      writeln('s/b');
+      writeln(' s/b');
       writeln;
       writeln('  1   2   3   4   5   6   7   8   9  10');
       writeln(' 11  12  13  14  15  16  17  18  19  20');
@@ -640,7 +640,7 @@ begin
       rndseq := 1;
 
       { random block torture test }
-      writeln('Pointer25:  ');
+      writeln(' Pointer25:  ');
       for i := 1 to 100 do iap[i] := nil;
       for cnt2 := 1 to 100 do begin
 
@@ -653,7 +653,7 @@ begin
             iap[rn]^ := rn; { set number }
             for i := 1 to 100 do if iap[i] <> nil then
                if iap[i]^ <> i then
-                  writeln('*** bad block content');
+                  writeln(' *** bad block content');
 
             { deallocate random }
             rn := random(1, 100); { choose random pointer }
@@ -661,13 +661,13 @@ begin
             iap[rn] := nil;
             for i := 1 to 100 do if iap[i] <> nil then
                if iap[i]^ <> i then
-                  writeln('*** bad block content');
+                  writeln(' *** bad block content');
 
          end
 
       end;
       writeln;
-      writeln('s/b');
+      writeln(' s/b');
       writeln;
       writeln('  1   2   3   4   5   6   7   8   9  10');
       writeln(' 11  12  13  14  15  16  17  18  19  20');
@@ -683,7 +683,7 @@ begin
    end else begin
 
       { keep listing equal for comparision }
-      writeln('Pointer25:  ');
+      writeln(' Pointer25:  ');
       writeln('  1   2   3   4   5   6   7   8   9  10 ');
       writeln(' 11  12  13  14  15  16  17  18  19  20 ');
       writeln(' 21  22  23  24  25  26  27  28  29  30 ');
@@ -695,7 +695,7 @@ begin
       writeln(' 81  82  83  84  85  86  87  88  89  90 ');
       writeln(' 91  92  93  94  95  96  97  98  99 100 ');
       writeln;
-      writeln('s/b');
+      writeln(' s/b');
       writeln;
       writeln('  1   2   3   4   5   6   7   8   9  10');
       writeln(' 11  12  13  14  15  16  17  18  19  20');
@@ -720,141 +720,141 @@ begin
 ******************************************************************************}
 
    writeln;
-   writeln('******************* arrays ******************************');
+   writeln(' ******************* arrays ******************************');
    writeln;
 
    { single demension, integer index }
-   write('Array1:   ');
+   write(' Array1:   ');
    for i := 1 to 10 do avi[i] := i+10;
    for i := 10 downto 1 do write(avi[i]:1, ' ');
    writeln(' s/b 20 19 18 17 16 15 14 13 12 11');
-   write('Array2:   ');
+   write(' Array2:   ');
    for i := 1 to 10 do pavi[i] := i+10;
    for i := 10 downto 1 do write(pavi[i]:1, ' ');
    writeln(' s/b 20 19 18 17 16 15 14 13 12 11');
-   write('Array3:   ');
+   write(' Array3:   ');
    for i := 1 to 10 do avis[i] := i+10;
    for i := 10 downto 1 do write(avis[i]:1, ' ');
    writeln(' s/b 20 19 18 17 16 15 14 13 12 11');
-   write('Array4:   ');
+   write(' Array4:   ');
    for i := 1 to 10 do pavis[i] := i+10;
    for i := 10 downto 1 do write(pavis[i]:1, ' ');
    writeln(' s/b 20 19 18 17 16 15 14 13 12 11');
-   write('Array5:   ');
+   write(' Array5:   ');
    for i := 1 to 10 do avb[i] := odd(i);
    for i := 10 downto 1 do write(avb[i]:5, ' ');
    writeln;
    writeln('    s/b:   false  true false  true false  true false  true false',
            '  true');
-   write('Array6:   ');
+   write(' Array6:   ');
    for i := 1 to 10 do pavb[i] := odd(i);
    for i := 10 downto 1 do write(pavb[i]:5, ' ');
    writeln;
    writeln('    s/b:   false  true false  true false  true false  true false',
            '  true');
-   write('Array7:   ');
+   write(' Array7:   ');
    for i := 1 to 10 do avr[i] := i+10+0.12;
    for i := 10 downto 1 do write(avr[i]:1:2, ' ');
    writeln;
-   writeln('    s/b:   20.12 19.12 18.12 17.12 16.12 15.12 14.12 ',
+   writeln('     s/b:   20.12 19.12 18.12 17.12 16.12 15.12 14.12 ',
            '13.12 12.12 11.12');
-   write('Array8:   ');
+   write(' Array8:   ');
    for i := 1 to 10 do pavr[i] := i+10+0.12;
    for i := 10 downto 1 do write(pavr[i]:1:2, ' ');
    writeln;
-   writeln('    s/b:   20.12 19.12 18.12 17.12 16.12 15.12 14.12 ',
+   writeln('     s/b:   20.12 19.12 18.12 17.12 16.12 15.12 14.12 ',
            '13.12 12.12 11.12');
-   write('Array9:   ');
+   write(' Array9:   ');
    for i := 1 to 10 do avc[i] := chr(i+ord('a'));
    for i := 10 downto 1 do write(avc[i]:1, ' ');
    writeln('s/b k j i h g f e d c b');
-   write('Array10:  ');
+   write(' Array10:  ');
    for i := 1 to 10 do pavc[i] := chr(i+ord('a'));
    for i := 10 downto 1 do write(pavc[i]:1, ' ');
    writeln('s/b k j i h g f e d c b');
-   write('Array11:  ');
+   write(' Array11:  ');
    for i := 1 to 10 do avcs[i] := chr(i+ord('f'));
    for i := 10 downto 1 do write(avcs[i]:1, ' ');
    writeln('s/b p o n m l k j i h g');
-   write('Array12:  ');
+   write(' Array12:  ');
    for i := 1 to 10 do pavcs[i] := chr(i+ord('f'));
    for i := 10 downto 1 do write(pavcs[i]:1, ' ');
    writeln('s/b p o n m l k j i h g');
-   write('Array13:  ');
+   write(' Array13:  ');
    for ei := one to ten do ave[ord(ei)+1] := ei;
    for ei := ten downto one do write(ord(ave[ord(ei)+1]):1, ' ');
    writeln('s/b 9 8 7 6 5 4 3 2 1 0');
-   write('Array14:  ');
+   write(' Array14:  ');
    for ei := one to ten do pave[ord(ei)+1] := ei;
    for ei := ten downto one do write(ord(ave[ord(ei)+1]):1, ' ');
    writeln('s/b 9 8 7 6 5 4 3 2 1 0');
-   write('Array15:  ');
+   write(' Array15:  ');
    for ei := three to six do aves[ord(ei)+1] := ei;
    for ei := six downto three do write(ord(aves[ord(ei)+1]):1, ' ');
    writeln('s/b 5 4 3 2');
-   write('Array16:  ');
+   write(' Array16:  ');
    for ei := three to six do paves[ord(ei)+1] := ei;
    for ei := six downto three do write(ord(paves[ord(ei)+1]):1, ' ');
    writeln('s/b 5 4 3 2');
-   write('Array19:  ');
+   write(' Array19:  ');
    for i := 1 to 10 do
       begin avrc[i].a := i+10; avrc[i].b := chr(i+ord('a')) end;
    for i := 10 downto 1 do write(avrc[i].a:1, ' ', avrc[i].b, ' ');
    writeln;
    writeln('     s/b:  20 k 19 j 18 i 17 h 16 g 15 f 14 e 13 d 12 c 11 b');
-   write('Array20:  ');
+   write(' Array20:  ');
    for i := 1 to 10 do
       begin pavrc[i].a := i+10; pavrc[i].b := chr(i+ord('a')) end;
    for i := 10 downto 1 do write(pavrc[i].a:1, ' ', pavrc[i].b, ' ');
    writeln;
    writeln('     s/b:  20 k 19 j 18 i 17 h 16 g 15 f 14 e 13 d 12 c 11 b');
-   write('Array23:  ');
+   write(' Array23:  ');
    for i := 1 to 10 do begin new(avp[i]); avp[i]^ := i+10 end;
    for i := 10 downto 1 do write(avp[i]^:1, ' ');
    writeln('s/b 20 19 18 17 16 15 14 13 12 11');
-   write('Array24:  ');
+   write(' Array24:  ');
    for i := 1 to 10 do begin new(pavp[i]); pavp[i]^ := i+10 end;
    for i := 10 downto 1 do write(pavp[i]^:1, ' ');
    writeln('s/b 20 19 18 17 16 15 14 13 12 11');
 
    { indexing tests }
-   write('Array25:  ');
+   write(' Array25:  ');
    for ba := false to true do bia[ba] := ord(ba)+10;
    for ba := true downto false do write(bia[ba]:1, ' ');
    writeln(' s/b 11 10');
-   write('Array26:  ');
+   write(' Array26:  ');
    for ba := false to true do pbia[ba] := ord(ba)+10;
    for ba := true downto false do write(pbia[ba]:1, ' ');
    writeln(' s/b 11 10');
-   write('Array27:  ');
+   write(' Array27:  ');
    for ci := 'a' to 'j' do cia[ci] := ord(ci);
    for ci := 'j' downto 'a' do write(chr(cia[ci]), ' ');
    writeln(' s/b  j i h g f e d c b a');
-   write('Array28:  ');
+   write(' Array28:  ');
    for ci := 'a' to 'j' do pcia[ci] := ord(ci);
    for ci := 'j' downto 'a' do write(chr(pcia[ci]), ' ');
    writeln(' s/b  j i h g f e d c b a');
-   write('Array29:  ');
+   write(' Array29:  ');
    for ci := 'a' to 'j' do csia[ci] := ord(ci);
    for ci := 'j' downto 'a' do write(chr(csia[ci]), ' ');
    writeln(' s/b  j i h g f e d c b a');
-   write('Array30:  ');
+   write(' Array30:  ');
    for ci := 'a' to 'j' do pcsia[ci] := ord(ci);
    for ci := 'j' downto 'a' do write(chr(pcsia[ci]), ' ');
    writeln(' s/b  j i h g f e d c b a');
-   write('Array31:  ');
+   write(' Array31:  ');
    for ei := one to ten do eia[ei] := ord(ei);
    for ei := ten downto one do write(eia[ei]:1, ' ');
    writeln(' s/b  9 8 7 6 5 4 3 2 1 0');
-   write('Array32:  ');
+   write(' Array32:  ');
    for ei := one to ten do peia[ei] := ord(ei);
    for ei := ten downto one do write(peia[ei]:1, ' ');
    writeln(' s/b  9 8 7 6 5 4 3 2 1 0');
-   write('Array33:  ');
+   write(' Array33:  ');
    for ei := two to six do eia[ei] := ord(ei);
    for ei := six downto two do write(eia[ei]:1, ' ');
    writeln(' s/b  5 4 3 2 1');
-   write('Array34:  ');
+   write(' Array34:  ');
    for ei := two to six do peia[ei] := ord(ei);
    for ei := six downto two do write(peia[ei]:1, ' ');
    writeln(' s/b  5 4 3 2 1');
@@ -863,7 +863,7 @@ end;
 procedure part11;
 begin
    { multidementional arrays }
-   writeln('Array35:');
+   writeln(' Array35:');
    z := 0;
    for x := 1 to 10 do
       for y := 1 to 10 do begin da[y, x] := z; z := z + 1 end;
@@ -872,18 +872,18 @@ begin
       for y := 1 to 10 do write(da[x][y]:2, ' ');
       writeln;
    end;
-   writeln('s/b');
-   writeln('0 10 20 30 40 50 60 70 80 90');
-   writeln('1 11 21 31 41 51 61 71 81 91');
-   writeln('2 12 22 32 42 52 62 72 82 92');
-   writeln('3 13 23 33 43 53 63 73 83 93');
-   writeln('4 14 24 34 44 54 64 74 84 94');
-   writeln('5 15 25 35 45 55 65 75 85 95');
-   writeln('6 16 26 36 46 56 66 76 86 96');
-   writeln('7 17 27 37 47 57 67 77 87 97');
-   writeln('8 18 28 38 48 58 68 78 88 98');
-   writeln('9 19 29 39 49 59 69 79 89 99');
-   writeln('Array36: ');
+   writeln(' s/b');
+   writeln(' 0 10 20 30 40 50 60 70 80 90');
+   writeln(' 1 11 21 31 41 51 61 71 81 91');
+   writeln(' 2 12 22 32 42 52 62 72 82 92');
+   writeln(' 3 13 23 33 43 53 63 73 83 93');
+   writeln(' 4 14 24 34 44 54 64 74 84 94');
+   writeln(' 5 15 25 35 45 55 65 75 85 95');
+   writeln(' 6 16 26 36 46 56 66 76 86 96');
+   writeln(' 7 17 27 37 47 57 67 77 87 97');
+   writeln(' 8 18 28 38 48 58 68 78 88 98');
+   writeln(' 9 19 29 39 49 59 69 79 89 99');
+   writeln(' Array36: ');
    t := 0;
    for i := 1 to 2 do
       for x := 1 to 2 do
@@ -898,30 +898,30 @@ begin
 
             for z := 2 downto 1 do
                for q := 2 downto 1 do
-                  for n := 2 downto 1 do write(mdar[i, x][y, z][q][n]:2, ' ');
+                  for n := 2 downto 1 do write(' ', mdar[i, x][y, z][q][n]:2);
             writeln;
 
          end;
-   writeln('s/b:');
-   writeln('63 62 61 60 59 58 57 56');
-   writeln('55 54 53 52 51 50 49 48');
-   writeln('47 46 45 44 43 42 41 40');
-   writeln('39 38 37 36 35 34 33 32');
-   writeln('31 30 29 28 27 26 25 24');
-   writeln('23 22 21 20 19 18 17 16');
-   writeln('15 14 13 12 11 10  9  8');
-   writeln(' 7  6  5  4  3  2  1  0');
+   writeln(' s/b:');
+   writeln(' 63 62 61 60 59 58 57 56');
+   writeln(' 55 54 53 52 51 50 49 48');
+   writeln(' 47 46 45 44 43 42 41 40');
+   writeln(' 39 38 37 36 35 34 33 32');
+   writeln(' 31 30 29 28 27 26 25 24');
+   writeln(' 23 22 21 20 19 18 17 16');
+   writeln(' 15 14 13 12 11 10  9  8');
+   writeln('  7  6  5  4  3  2  1  0');
 
    { assignments }
-   writeln('Array37: ');
+   writeln(' Array37: ');
    pavc := 'hello, guy';
-   writeln(pavc, ' s/b hello, guy');
-   writeln('Array38: ');
+   writeln(' ', pavc, ' s/b hello, guy');
+   writeln(' Array38: ');
    for i := 1 to 10 do avi[i] := i+10;
    avi2 := avi;
-   for i := 10 downto 1 do write(avi2[i]:1, ' ');
+   for i := 10 downto 1 do write(' ', avi2[i]:1);
    writeln('s/b 20 19 18 17 16 15 14 13 12 11');
-   writeln('Array39: ');
+   writeln(' Array39: ');
    t := 0;
    for i := 1 to 2 do
       for x := 1 to 2 do
@@ -937,30 +937,30 @@ begin
 
             for z := 2 downto 1 do
                for q := 2 downto 1 do
-                  for n := 2 downto 1 do write(mdar2[i, x][y, z][q][n]:2, ' ');
+                  for n := 2 downto 1 do write(' ', mdar2[i, x][y, z][q][n]:2);
             writeln;
 
          end;
-   writeln('s/b:');
-   writeln('63 62 61 60 59 58 57 56');
-   writeln('55 54 53 52 51 50 49 48');
-   writeln('47 46 45 44 43 42 41 40');
-   writeln('39 38 37 36 35 34 33 32');
-   writeln('31 30 29 28 27 26 25 24');
-   writeln('23 22 21 20 19 18 17 16');
-   writeln('15 14 13 12 11 10  9  8');
-   writeln(' 7  6  5  4  3  2  1  0');
+   writeln(' s/b:');
+   writeln(' 63 62 61 60 59 58 57 56');
+   writeln(' 55 54 53 52 51 50 49 48');
+   writeln(' 47 46 45 44 43 42 41 40');
+   writeln(' 39 38 37 36 35 34 33 32');
+   writeln(' 31 30 29 28 27 26 25 24');
+   writeln(' 23 22 21 20 19 18 17 16');
+   writeln(' 15 14 13 12 11 10  9  8');
+   writeln('  7  6  5  4  3  2  1  0');
 
    { transfer procedures }
-   writeln('Array40: ');
+   writeln(' Array40: ');
    for i := 1 to 10 do pavi[i] := i+10;
    unpack(pavi, avi, 1);
-   for i := 10 downto 1 do write(avi[i]:1, ' ');
+   for i := 10 downto 1 do write(' ', avi[i]:1);
    writeln('s/b 20 19 18 17 16 15 14 13 12 11');
-   writeln('Array41: ');
+   writeln(' Array41: ');
    for i := 1 to 10 do avi[i] := i+20;
    pack(avi, 1, pavi);
-   for i := 10 downto 1 do write(pavi[i]:1, ' ');
+   for i := 10 downto 1 do write(' ', pavi[i]:1);
    writeln('s/b 30 29 28 27 26 25 24 23 22 21');
 
 {******************************************************************************
@@ -970,11 +970,11 @@ begin
 ******************************************************************************}
 
    writeln;
-   writeln('******************* records ******************************');
+   writeln(' ******************* records ******************************');
    writeln;
 
    { types in records }
-   writeln('Record1:   ');
+   writeln(' Record1:   ');
    arec.i := 64;
    arec.b := false;
    arec.c := 'j';
@@ -988,19 +988,18 @@ begin
    arec.rc.b := 'y';
    new(arec.p);
    arec.p^ := 8454;
-   writeln(arec.i:1, ' ', arec.b:5, ' ', arec.c:1, ' ', ord(arec.e):1, ' ',
+   writeln(' ', arec.i:1, ' ', arec.b:5, ' ', arec.c:1, ' ', ord(arec.e):1, ' ',
            ord(arec.es):1,
            ' ', arec.s:1, ' ', arec.r:15, ' ', arec.st);
-   for i := 1 to 10 do write(arec.a[i]:1, ' '); writeln;
-   writeln(arec.rc.a:1, ' ', arec.rc.b:1);
-   writeln(arec.p^:1);
-   writeln('s/b:');
-   writeln('64 false j 1 3 12  4.54512000e-15 what ? who');
-   writeln('21 22 23 24 25 26 27 28 29 30');
-   writeln('2324 y');
-   writeln('_bcde___i_');
-   writeln('8454');
-   writeln('Record2:   ');
+   for i := 1 to 10 do write(' ', arec.a[i]:1); writeln;
+   writeln(' ', arec.rc.a:1, ' ', arec.rc.b:1);
+   writeln(' ', arec.p^:1);
+   writeln(' s/b:');
+   writeln(' 64 false j 1 3 12  4.54512000e-15 what ? who');
+   writeln(' 21 22 23 24 25 26 27 28 29 30');
+   writeln(' 2324 y');
+   writeln(' 8454');
+   writeln(' Record2:   ');
    parec.i := 64;
    parec.b := false;
    parec.c := 'j';
@@ -1014,77 +1013,76 @@ begin
    parec.rc.b := 'y';
    new(parec.p);
    parec.p^ := 8454;
-   writeln(parec.i:1, ' ', parec.b:5, ' ', parec.c:1, ' ', ord(parec.e):1, ' ',
+   writeln(' ', parec.i:1, ' ', parec.b:5, ' ', parec.c:1, ' ', ord(parec.e):1, ' ',
            ord(parec.es):1,
            ' ', parec.s:1, ' ', parec.r:15, ' ', parec.st);
-   for i := 1 to 10 do write(parec.a[i]:1, ' '); writeln;
-   writeln(parec.rc.a:1, ' ', parec.rc.b:1);
-   writeln(parec.p^:1);
-   writeln('s/b:');
-   writeln('64 false j 1 3 12  4.54512000e-15 what ? who');
-   writeln('21 22 23 24 25 26 27 28 29 30');
-   writeln('2324 y');
-   writeln('_bcde___i_');
-   writeln('8454');
+   for i := 1 to 10 do write(' ', parec.a[i]:1); writeln;
+   writeln(' ', parec.rc.a:1, ' ', parec.rc.b:1);
+   writeln(' ', parec.p^:1);
+   writeln(' s/b:');
+   writeln(' 64 false j 1 3 12  4.54512000e-15 what ? who');
+   writeln(' 21 22 23 24 25 26 27 28 29 30');
+   writeln(' 2324 y');
+   writeln(' 8454');
 
    { types in variants, and border clipping }
-   write('Record3:   ');
+   write(' Record3:   ');
    vra.i := 873;
    vra.vt := vti;
    vra.a := 427;
    vra.vdi := 235;
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', vra.vdi:1, ' ', vra.a:1);
    writeln(' s/b 873 0 235 427');
-   write('Record4:   ');
+   write(' Record4:   ');
    vra.i := 873;
    vra.vt := vtb;
    vra.b := 427;
    vra.vdb := true;
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', vra.vdb:5, ' ', vra.b:1);
    writeln(' s/b 873 1  true 427');
-   write('Record5:   ');
+   write(' Record5:   ');
    vra.i := 873;
    vra.vt := vtc;
    vra.c := 427;
    vra.vdc := 'f';
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', vra.vdc, ' ', vra.c:1);
    writeln(' s/b 873 2 f 427');
-   write('Record6:   ');
+   write(' Record6:   ');
    vra.i := 873;
    vra.vt := vte;
    vra.d := 427;
    vra.vde := nine;
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', ord(vra.vde):1, ' ', vra.d:1);
    writeln(' s/b 873 3 8 427');
-   write('Record7:   ');
+   write(' Record7:   ');
    vra.i := 873;
    vra.vt := vtes;
    vra.e := 427;
    vra.vdes := four;
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', ord(vra.vdes):1, ' ', vra.e:1);
    writeln(' s/b 873 4 3 427');
-   write('Record8:   ');
+   write(' Record8:   ');
    vra.i := 873;
    vra.vt := vts;
    vra.f := 427;
    vra.vds := 12;
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', vra.vds:1, ' ', vra.f:1);
    writeln(' s/b 873 5 12 427');
-   write('Record9:   ');
+   write(' Record9:   ');
    vra.i := 873;
    vra.vt := vtr;
    vra.g := 427;
    vra.vdr := 8734.8389;
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', vra.vdr:1:4, ' ', vra.g:1);
    writeln(' s/b 873 6 8734.8389 427');
-   write('Record10:  ');
+   write(' Record10:  ');
    vra.i := 873;
    vra.vt := vtst;
    vra.h := 427;
    vra.vdst := 'this one ?';
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', vra.vdst, ' ', vra.h:1);
    writeln(' s/b 873 7 this one ? 427');
-   write('Record11:  ');
+   write(' Record11:  ');
    vra.i := 873;
    vra.vt := vta;
    vra.j := 427;
@@ -1093,7 +1091,7 @@ begin
    for i := 10 downto 1 do write(vra.vda[i]:1, ' ');
    writeln(vra.j:1);
    writeln('      s/b:  873 8 20 19 18 17 16 15 14 13 12 11 427');
-   write('Record12:  ');
+   write(' Record12:  ');
    vra.i := 873;
    vra.vt := vtrc;
    vra.k := 427;
@@ -1102,7 +1100,7 @@ begin
    write(vra.i:1, ' ', ord(vra.vt):1, ' ', vra.vdrc.a:1, ' ', vra.vdrc.b, ' ',
          vra.k:1);
    writeln(' s/b:  873 9 2387 t 427');
-   write('Record14:  ');
+   write(' Record14:  ');
    vra.i := 873;
    vra.vt := vtp;
    vra.m := 427;
@@ -1115,48 +1113,48 @@ end;
 procedure part12;
 begin
    { types of variant tags }
-   write('Record15:  ');
+   write(' Record15:  ');
    vvrs.vt := 10;
    vvrs.vi := 2343;
    write(vvrs.vt:1, ' ', vvrs.vi:1);
    writeln(' s/b 10 2343');
-   write('Record16:  ');
+   write(' Record16:  ');
    vvrs.vt := 19;
    vvrs.vb := true;
    write(vvrs.vt:1, ' ', vvrs.vb:5);
    writeln(' s/b 19  true');
-   write('Record17:  ');
+   write(' Record17:  ');
    vvrb.vt := true;
    vvrb.vi := 2343;
    write(vvrb.vt:5, ' ', vvrb.vi:1);
    writeln(' s/b  true 2343');
-   write('Record18:  ');
+   write(' Record18:  ');
    vvrb.vt := false;
    vvrb.vb := true;
    write(vvrb.vt:5, ' ', vvrb.vb:5);
    writeln(' s/b false  true');
-   write('Record19:  ');
+   write(' Record19:  ');
    vvre.vt := three;
    vvre.vi := 2343;
    write(ord(vvre.vt):1, ' ', vvre.vi:1);
    writeln(' s/b 2 2343');
-   write('Record20:  ');
+   write(' Record20:  ');
    vvre.vt := eight;
    vvre.vb := true;
    write(ord(vvre.vt):1, ' ', vvre.vb:5);
    writeln(' s/b 7  true');
-   write('Record21:  ');
+   write(' Record21:  ');
    vvres.vt := four;
    vvres.vi := 2343;
    write(ord(vvres.vt):1, ' ', vvres.vi:1);
    writeln(' s/b 3 2343');
-   write('Record22:  ');
+   write(' Record22:  ');
    vvres.vt := five;
    vvres.vb := true;
    write(ord(vvres.vt):1, ' ', vvres.vb:5);
    writeln(' s/b 4  true');
    { change to another tag constant in same variant }
-   write('Record23:  ');
+   write(' Record23:  ');
    vvrs.vt := 10;
    vvrs.vi := 42;
    i := vvrs.vi;
@@ -1165,7 +1163,7 @@ begin
    writeln(i:1, ' s/b 42');
 
    { nested records }
-   write('Record24:  ');
+   write(' Record24:  ');
    nvr.i := 1;
    nvr.r.i := 2;
    nvr.r.r.i := 3;
@@ -1189,61 +1187,39 @@ begin
            's/b 1 2 3 4 5 6 7 8 9 10');
 
    { 'with' statements }
-   write('Record25:  ');
+   write(' Record25:  ');
    with nvr do begin
-
       i := 10;
       with r do begin
-
          i := 9;
          with r do begin
-
             i := 8;
             with r do begin
-
                i := 7;
                with r do begin
-
                   i := 6;
                   with r do begin
-
                      i := 5;
                      with r do begin
-
                         i := 4;
                         with r do begin
-
                            i := 3;
                            with r do begin
-
                               i := 2;
                               with r do begin
-
                                  i := 2;
                                  with r do begin
-
                                     i := 1
-
                                  end
-
                               end
-
                            end
-
                         end
-
                      end
-
                   end
-
                end
-
             end
-
          end
-
       end
-
    end;
    writeln(nvr.i:1, ' ',
            nvr.r.i:1, ' ',
@@ -1256,7 +1232,7 @@ begin
            nvr.r.r.r.r.r.r.r.r.i:1, ' ',
            nvr.r.r.r.r.r.r.r.r.r.i:1, ' ',
            's/b 10 9 8 7 6 5 4 3 2 1');
-   write('Record26:  ');
+   write(' Record26:  ');
    with nvr, r, r, r, r, r, r, r, r, r do i := 76;
    writeln(nvr.i:1, ' ',
            nvr.r.i:1, ' ',
@@ -1269,16 +1245,14 @@ begin
            nvr.r.r.r.r.r.r.r.r.i:1, ' ',
            nvr.r.r.r.r.r.r.r.r.r.i:1, ' ',
            's/b 10 9 8 7 6 5 4 3 2 76');
-   write('Record27:  ');
+   write(' Record27:  ');
    new(rpa);
    with rpa^ do begin
-
       i := 1;
       with rc do b := 'g'
-
    end;
    writeln(rpa^.i:1, ' ', rpa^.rc.b, ' s/b 1 g');
-   write('Record28:  ');
+   write(' Record28:  ');
    for i := 1 to 10 do with ara[i] do a := i+10;
    for i := 10 downto 1 do with ara[i] do write(a:1, ' ');
    writeln('s/b 20 19 18 17 16 15 14 13 12 11');
@@ -1292,23 +1266,23 @@ begin
 if testfile then begin
 
    writeln;
-   writeln('******************* files ******************************');
+   writeln(' ******************* files ******************************');
    writeln;
 
    { file base types }
-   write('File1:   ');
+   write(' File1:   ');
    rewrite(fi);
    for i := 1 to 10 do write(fi, i+10);
    reset(fi);
    for i := 1 to 10 do begin read(fi, x); write(x:1, ' ') end;
    writeln('s/b 11 12 13 14 15 16 17 18 19 20');
-   write('File2:   ');
+   write(' File2:   ');
    rewrite(pfi);
    for i := 1 to 10 do write(pfi, i+10);
    reset(pfi);
    for i := 1 to 10 do begin read(pfi, x); write(x:1, ' ') end;
    writeln('s/b 11 12 13 14 15 16 17 18 19 20');
-   write('File3:   ');
+   write(' File3:   ');
    rewrite(fb);
    for i := 1 to 10 do write(fb, odd(i));
    reset(fb);
@@ -1316,7 +1290,7 @@ if testfile then begin
    writeln;
    writeln('   s/b:    true false  true false  true false  true false  true ',
            'false');
-   write('File4:   ');
+   write(' File4:   ');
    rewrite(pfb);
    for i := 1 to 10 do write(pfb, odd(i));
    reset(pfb);
@@ -1324,25 +1298,25 @@ if testfile then begin
    writeln;
    writeln('   s/b:    true false  true false  true false  true false  true ',
            'false');
-   write('File5:   ');
+   write(' File5:   ');
    rewrite(fc);
    for ci := 'a' to 'j' do write(fc, ci);
    reset(fc);
    for ci := 'a' to 'j' do begin read(fc, ca); write(ca, ' ') end;
    writeln('s/b a b c d e f g h i j');
-   write('File6:   ');
+   write(' File6:   ');
    rewrite(pfc);
    for ci := 'a' to 'j' do write(pfc, ci);
    reset(pfc);
    for ci := 'a' to 'j' do begin read(pfc, ca); write(ca, ' ') end;
    writeln('s/b a b c d e f g h i j');
-   write('File7:   ');
+   write(' File7:   ');
    rewrite(fe);
    for ei := one to ten do write(fe, ei);
    reset(fe);
    for ei := one to ten do begin read(fe, ea); write(ord(ea):1, ' ') end;
    writeln('s/b 0 1 2 3 4 5 6 7 8 9');
-   write('File8:   ');
+   write(' File8:   ');
    rewrite(pfe);
    for ei := one to ten do write(pfe, ei);
    reset(pfe);
@@ -1350,181 +1324,171 @@ if testfile then begin
    writeln('s/b 0 1 2 3 4 5 6 7 8 9');
 
    { types written to text }
-   writeln('File9:');
+   writeln(' File9:');
    rewrite(ft);
    x := 7384;
-   writeln(ft, x:1);
-   writeln(ft, 8342:1);
+   writeln(ft, ' ', x:1);
+   writeln(ft, ' ', 8342:1);
    ba := true;
-   writeln(ft, ba:5);
-   writeln(ft, false:5);
+   writeln(ft, ' ', ba:5);
+   writeln(ft, ' ', false:5);
    ca := 'm';
-   writeln(ft, ca);
-   writeln(ft, 'q');
+   writeln(ft, ' ', ca);
+   writeln(ft, ' ', 'q');
    ra := 1234.5678e-3;
-   writeln(ft, ra:15);
-   writeln(ft, ra:1:7);
-   writeln(ft, 5689.4321e-2:15);
-   writeln(ft, 9383.7632e-4:1:8);
+   writeln(ft, ' ', ra:15);
+   writeln(ft, ' ', ra:1:7);
+   writeln(ft, ' ', 5689.4321e-2:15);
+   writeln(ft, ' ', 9383.7632e-4:1:8);
    s := 'hi there !';
-   writeln(ft, s);
-   writeln(ft, s:5);
-   writeln(ft, s:15);
+   writeln(ft, ' ', s);
+   writeln(ft, ' ', s:5);
+   writeln(ft, ' ', s:15);
    reset(ft); get(ft); cc := ft^; reset(ft);
    while not eof(ft) do begin
-
       if eoln(ft) then begin
-
          readln(ft);
          writeln
-
       end else begin
-
          read(ft, ci);
          write(ci)
-
       end
-
    end;
-   writeln('s/b:');
-   writeln('7384');
-   writeln('8342');
-   writeln(' true');
-   writeln('false');
-   writeln('m');
-   writeln('q');
+   writeln(' s/b:');
+   writeln(' 7384');
+   writeln(' 8342');
+   writeln('  true');
+   writeln(' false');
+   writeln(' m');
+   writeln(' q');
    writeln(' 1.2345678000e+00');
-   writeln('1.2345678');
+   writeln(' 1.2345678');
    writeln(' 5.6894321000e+01');
-   writeln('0.93837632');
-   writeln('hi there !');
-   writeln('hi th');
+   writeln(' 0.93837632');
+   writeln(' hi there !');
+   writeln(' hi th');
    writeln('     hi there !');
 
    { types read from text }
-   writeln('file10:');
+   writeln(' File10:');
    reset(ft);
    readln(ft, y);
-   writeln(y:1);
+   writeln(' ', y:1);
    readln(ft, y);
-   writeln(y:1);
+   writeln(' ', y:1);
    readln(ft);
    readln(ft);
    readln(ft, ci);
-   writeln(ci);
+   writeln(' ', ci);
    readln(ft, ci);
-   writeln(ci);
+   writeln(' ', ci);
    readln(ft, rb);
-   writeln(rb:15);
+   writeln(' ', rb:15);
    readln(ft, rb);
-   writeln(rb:15);
+   writeln(' ', rb:15);
    readln(ft, rb);
-   writeln(rb:15);
+   writeln(' ', rb:15);
    readln(ft, rb);
-   writeln(rb:15);
-   writeln('s/b:');
-   writeln('7384');
-   writeln('8342');
-   writeln('m');
-   writeln('q');
+   writeln(' ', rb:15);
+   writeln(' s/b:');
+   writeln(' 7384');
+   writeln(' 8342');
+   writeln(' m');
+   writeln(' q');
    writeln(' 1.2345678000e+00');
    writeln(' 1.2345678000e+00');
    writeln(' 5.6894321000e+01');
    writeln(' 9.3837632000e-01');
 
    { line and file endings in text }
-   writeln('file11:');
+   writeln(' File11:');
    rewrite(ft);
-   writeln(ft, 'how now');
-   writeln(ft, 'brown cow');
+   writeln(ft, ' how now');
+   writeln(ft, ' brown cow');
    reset(ft);
-   write('''');
+   write(' ''');
    while not eof(ft) do begin
-
       if eoln(ft) then write('<eoln>');
       read(ft, ca);
       write(ca)
-
    end;
    write('''');
    writeln(' s/b ''how now<eoln> brown cow<eoln> ''');
-   writeln('file12:');
+   writeln(' File12:');
    rewrite(ft);
-   writeln(ft, 'too much');
+   writeln(ft, ' too much');
    write(ft, 'too soon');
    reset(ft);
-   write('''');
+   write(' ''');
    while not eof(ft) do begin
-
       if eoln(ft) then write('<eoln>');
       read(ft, ca);
       write(ca)
-
    end;
    write('''');
    writeln(' s/b ''too much<eoln> too soon<eoln> ''');
 
    { get/put and buffer variables }
-   write('File13:   ');
+   write(' File13:   ');
    rewrite(fi);
    for i := 1 to 10 do begin fi^ := i+10; put(fi) end;
    reset(fi);
    for i := 1 to 10 do begin x := fi^; get(fi); write(x:1, ' ') end;
    writeln('s/b 11 12 13 14 15 16 17 18 19 20');
-   write('File14:   ');
+   write(' File14:   ');
    rewrite(pfi);
    for i := 1 to 10 do begin pfi^ := i+10; put(pfi) end;
    reset(pfi);
    for i := 1 to 10 do begin x := pfi^; get(pfi); write(x:1, ' ') end;
    writeln('s/b 11 12 13 14 15 16 17 18 19 20');
-   write('File15:   ');
+   write(' File15:   ');
    rewrite(fb);
    for i := 1 to 10 do begin fb^ := odd(i); put(fb) end;
    reset(fb);
    for i := 1 to 10 do begin ba := fb^; get(fb); write(ba:5, ' ') end;
    writeln;
-   writeln('   s/b:    true false  true false  true false  true false  true ',
+   writeln('    s/b:    true false  true false  true false  true false  true ',
            'false');
-   write('File16:   ');
+   write(' File16:   ');
    rewrite(pfb);
    for i := 1 to 10 do begin pfb^ := odd(i); put(pfb) end;
    reset(pfb);
    for i := 1 to 10 do begin ba := pfb^; get(pfb); write(ba:5, ' ') end;
    writeln;
-   writeln('   s/b:    true false  true false  true false  true false  true ',
+   writeln('    s/b:    true false  true false  true false  true false  true ',
            'false');
-   write('File17:   ');
+   write(' File17:   ');
    rewrite(fc);
    for ci := 'a' to 'j' do begin fc^ := ci; put(fc) end;
    reset(fc);
    for ci := 'a' to 'j' do begin ca := fc^; get(fc); write(ca, ' ') end;
    writeln('s/b a b c d e f g h i j');
-   write('File18:   ');
+   write(' File18:   ');
    rewrite(pfc);
    for ci := 'a' to 'j' do begin pfc^ := ci; put(pfc) end;
    reset(pfc);
    for ci := 'a' to 'j' do begin ca := pfc^; get(pfc); write(ca, ' ') end;
    writeln('s/b a b c d e f g h i j');
-   write('File19:   ');
+   write(' File19:   ');
    rewrite(fe);
    for ei := one to ten do begin fe^ := ei; put(fe) end;
    reset(fe);
    for ei := one to ten do begin ea := fe^; get(fe); write(ord(ea):1, ' ') end;
    writeln('s/b 0 1 2 3 4 5 6 7 8 9');
-   write('File20:   ');
+   write(' File20:   ');
    rewrite(pfe);
    for ei := one to ten do begin pfe^ := ei; put(pfe) end;
    reset(pfe);
    for ei := one to ten do begin ea := pfe^; get(pfe); write(ord(ea):1, ' ') end;
    writeln('s/b 0 1 2 3 4 5 6 7 8 9');
-   write('File21:   ');
+   write(' File21:   ');
    rewrite(ft);
    writeln(ft, '50');
    reset(ft);
    read(ft, srx);
    write(srx:1);
    writeln(' s/b ', 50:1);
-   write('File22:   ');
+   write(' File22:   ');
    rewrite(ft);
    writeln(eof(ft), ' s/b true');
 
@@ -1540,31 +1504,31 @@ begin
 ******************************************************************************}
 
    writeln;
-   writeln('************ Procedures and functions ******************');
+   writeln(' ************ Procedures and functions ******************');
    writeln;
-   write('ProcedureFunction1:   ');
+   write(' ProcedureFunction1:   ');
    x := 45; y := 89;
    junk1(x, y);
    writeln(' s/b 45 89');
-   write('ProcedureFunction2:   ');
+   write(' ProcedureFunction2:   ');
    x := 45; junk2(x);
    writeln(x:1, ' s/b 46');
-   write('ProcedureFunction3:   ');
+   write(' ProcedureFunction3:   ');
    s := 'total junk';
    junk3(s);
    writeln(' s/b total junk');
-   write('ProcedureFunction4:   ');
+   write(' ProcedureFunction4:   ');
    s := 'total junk';
    junk4(s);
    writeln(' s/b tota? junk');
-   writeln('                      ', s, ' s/b total junk');
-   write('ProcedureFunction5:   ');
+   writeln('                       ', s, ' s/b total junk');
+   write(' ProcedureFunction5:   ');
    writeln(junk5(34):1, ' s/b 35');
-   write('ProcedureFunction6:   ');
+   write(' ProcedureFunction6:   ');
    i := junk7(10, 9, 8);
    writeln(' ', i:1);
-   writeln('s/b:   10 9 8 6 5 4 3 2 1 78');
-   writeln('ProcedureFunction7:');
+   writeln(' s/b:   10 9 8 6 5 4 3 2 1 78');
+   writeln(' ProcedureFunction7:');
    for i := 1 to 10 do ai[i] := i+10;
    arec.i := 64;
    arec.b := false;
@@ -1587,42 +1551,40 @@ begin
    ip^ := 734;
    junk8(93, true, 'k', eight, five, 10, 3.1414, 'hello, guy', ai, arec, vrec,
          ip);
-   writeln('s/b:');
-   writeln('93  true k 7 4 10  3.14140000e+00 hello, guy');
-   writeln('11 12 13 14 15 16 17 18 19 20');
-   writeln('64 false j 1 3 12  4.54512000e-15 what ? who');
-   writeln('21 22 23 24 25 26 27 28 29 30');
-   writeln('2324 y');
-   writeln('_bcde___i_');
-   writeln('8454');
-   writeln('23487 n false');
-   writeln('help me123');
-   writeln('abcd___h__');
-   writeln('734');
+   writeln(' s/b:');
+   writeln(' 93  true k 7 4 10  3.14140000e+00 hello, guy');
+   writeln(' 11 12 13 14 15 16 17 18 19 20');
+   writeln(' 64 false j 1 3 12  4.54512000e-15 what ? who');
+   writeln(' 21 22 23 24 25 26 27 28 29 30');
+   writeln(' 2324 y');
+   writeln(' 8454');
+   writeln(' 23487 n false');
+   writeln(' help me123');
+   writeln(' 734');
 
    { Checking procedure parameters is broken in BESM-6 compiler. }
-   write('ProcedureFunction8:   ');
+   write(' ProcedureFunction8:   ');
    junk9(junk10, junk11);
    writeln(' s/b 9834 8383 j 744');
-   write('ProcedureFunction9:   ');
+   write(' ProcedureFunction9:   ');
    junk12(junk13, junk11);
    writeln(' s/b 942');
-   write('ProcedureFunction10:   ');
+   write(' ProcedureFunction10:   ');
    junk14;
    writeln(' s/b 62 76');
-   write('ProcedureFunction11:   ');
+   write(' ProcedureFunction11:   ');
    junk17(junk16, 52);
    writeln(' s/b 52');
-   write('ProcedureFunction12:   ');
+   write(' ProcedureFunction12:   ');
    junk19;
    writeln(' s/b a');
-   write('ProcedureFunction13:   ');
+   write(' ProcedureFunction13:   ');
    writeln(junk20:1, ' s/b 37');
 end;
 
 begin
    writeln;
-   writeln('******************* Start *******************');
+   writeln(' ******************* Start *******************');
    writeln;
 
    part9;
@@ -1632,6 +1594,6 @@ begin
    part13;
 
    writeln;
-   writeln('******************* Finish *******************');
+   writeln(' ******************* Finish *******************');
    writeln;
 end.
