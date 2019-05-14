@@ -1,0 +1,23 @@
+ objfmt:    ,name,
+ extvar:    ,lc  , 1
+ extfunc:   ,subp,
+            ,wtc , mydata
+            ,utc , myconst
+            ,wtc , mydata+1
+            ,utc , myconst+1
+            ,utc , 77754b
+          13,vjm , extfunc
+          13,vjm , extfunc+1
+          1 ,vzm , mycode
+            ,uj  , mycode+1
+ mycode:    ,xta , mydata
+            ,atx , extvar
+            ,atx , extvar+5
+            ,arx , myconst
+            ,a+x , mycode
+            ,aox , extfunc
+            ,aax , extfunc+1
+            ,a*x , 4567b
+ myconst:   ,log , 1234 5670 2222 5555
+ mydata:    ,bss , 1
+            ,end ,

@@ -18,7 +18,7 @@
 //  +---------+
 //  | const   |     Initialized data
 //  +---------+
-//  | data    |     (unused)
+//  | data    |     BSS section
 //  +---------+
 //  | set     |     (unused)
 //  +---------+
@@ -292,9 +292,6 @@ void disassemble(const char *fname)
     if (obj.set_len != 0) {
         fprintf(stderr, "Warning: Set section not supported yet\n");
     }
-    if (obj.bss_len != 0) {
-        fprintf(stderr, "Warning: BSS section not supported yet\n");
-    }
 
     //
     // Print code.
@@ -315,23 +312,44 @@ void disassemble(const char *fname)
     }
 
     //
-    // Print constants.
+    // Print initialized data.
     //
-    printf("\n");
-    printf("Disassembly of constants:\n");
-    printf("\n");
-    for (i = 0; i < obj.const_len; i++) {
-        uint64_t word = obj.word[i + 4 + obj.cmd_len];
+    if (obj.const_len > 0) {
+        printf("\n");
+        printf("Initialized data:\n");
+        printf("\n");
+        for (i = 0; i < obj.const_len; i++) {
+            uint64_t word = obj.word[i + 4 + obj.cmd_len];
 
-        printf("%5o:  %04o %04o %04o %04o", i,
-            (unsigned)(word >> 36) & 07777,
-            (unsigned)(word >> 24) & 07777,
-            (unsigned)(word >> 12) & 07777,
-            (unsigned)word & 07777);
-        printf("  %c%c%c%c%c%c\n",
-            getiso(word, 0), getiso(word, 1),
-            getiso(word, 2), getiso(word, 3),
-            getiso(word, 4), getiso(word, 5));
+            printf("%5o:  %04o %04o %04o %04o", i + obj.cmd_len,
+                (unsigned)(word >> 36) & 07777,
+                (unsigned)(word >> 24) & 07777,
+                (unsigned)(word >> 12) & 07777,
+                (unsigned)word & 07777);
+            printf("  %c%c%c%c%c%c",
+                getiso(word, 0), getiso(word, 1),
+                getiso(word, 2), getiso(word, 3),
+                getiso(word, 4), getiso(word, 5));
+            printf("  %s%s%s%s%s%s%s%s\n",
+                getsymtext(word, 0), getsymtext(word, 1),
+                getsymtext(word, 2), getsymtext(word, 3),
+                getsymtext(word, 4), getsymtext(word, 5),
+                getsymtext(word, 6), getsymtext(word, 7));
+        }
+    }
+
+    //
+    // Print uninitialized data.
+    //
+    if (obj.bss_len > 0) {
+        printf("\n");
+        printf("Uninitialized data:\n");
+        printf("\n");
+        printf("%5o", obj.cmd_len + obj.const_len);
+        if (obj.bss_len <= 1)
+            printf(":\n");
+        else
+            printf("%5o", obj.cmd_len + obj.const_len + obj.bss_len - 1);
     }
 
     //
@@ -343,7 +361,7 @@ void disassemble(const char *fname)
     for (i = 0; i < obj.sym_len; i++) {
         uint64_t word = obj.word[i + 1 + obj.table_off];
 
-        printf("%5o:  %04o %04o %04o %04o", i,
+        printf("%5o:  %04o %04o %04o %04o", i + 1,
             (unsigned)(word >> 36) & 07777,
             (unsigned)(word >> 24) & 07777,
             (unsigned)(word >> 12) & 07777,
@@ -361,7 +379,7 @@ void disassemble(const char *fname)
     for (i = 0; i < obj.long_len; i++) {
         uint64_t word = obj.word[i + obj.long_off];
 
-        printf("%5o:  ", i);
+        printf("%5o:  ", i + 1 + obj.sym_len);
         print_word_as_text(word);
         printf("\n");
     }
