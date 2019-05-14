@@ -19,6 +19,7 @@
 #include <sstream>
 #include <wctype.h>
 #include <unistd.h>
+#include <cassert>
 
 FILE * pasinput = stdin;
 unsigned char PASINPUT;
@@ -344,6 +345,18 @@ void * besm6_alloc(size_t s)
     return heap + avail - s;
 }
 
+// Dynamic allocation in the compiler expects that the pointer can be represented as
+// a 15-bit word offset into the memory pool. Deallocation is never used explicitly;
+// instead, the heap high watermark is saved at the start of a scope and rolled down
+// at its end.
+struct BESM6Obj {
+    void * operator new(size_t s) {
+        return besm6_alloc(s);
+    }
+
+    void operator delete(void *); // deliberately undefined
+};
+
 template<class T> void setup(T * &p)
 {
     p = reinterpret_cast<T*>(heap + avail);
@@ -458,10 +471,7 @@ struct Word {
 };
 typedef struct OneInsn * OneInsnPtr;
 
-struct OneInsn {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
+struct OneInsn : public BESM6Obj {
     OneInsnPtr next;
     int64_t mode, code, offset;
 };
@@ -469,11 +479,7 @@ struct OneInsn {
 enum ilmode { ilCONST, il1, il2, il3 };
 enum state {st0, st1, st2};
 
-struct InsnList {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
-
+struct InsnList : public BESM6Obj {
     OneInsnPtr next, next2;
     TypesPtr typ;
     Bitset regsused;
@@ -487,63 +493,89 @@ struct InsnList {
 
 typedef InsnList * InsnListPtr;
 
-struct Types {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
-
+// Not using virtualization to avoid using space for the vtab pointer.
+struct Types : public BESM6Obj {
     int64_t size,
     bits;
     Kind k;
-    union {
-//    kindReal:   ();
-
-//    kindRange:
-        struct {
-            TypesPtr base;
-            int64_t checker, left, right;
-        };
-//    kindArray:
-        struct {
-            TypesPtr abase, range;
-            bool pck;
-            int64_t perWord, pcksize;
-        };
-//    kindScalar:
-        struct {
-            IdentRecPtr enums;
-            int64_t numen, start;
-        };
-//    kindSet, kindPtr:
-        struct {
-            TypesPtr sbase;
-        };
-//    kindFile:
-        struct {
-            TypesPtr fbase;
-            int64_t elsize;
-        };
-//    kindRecord:
-        struct {
-            IdentRecPtr ptr1, ptr2;
-            bool flag, pckrec;
-        };
-// kindCases:
-        struct {
-            Word sel;
-            TypesPtr first, next, r6;
-        };
-    };
+    template<class T> T & cast() {
+        assert(k == T::kind);
+        return *reinterpret_cast<T*>(this);
+    }
+    template<class T> T const & cast() const {
+        assert(k == T::kind);
+        return *reinterpret_cast<T const*>(this);
+    }
     Types(int64_t s_, int64_t b_, Kind k_) :
         size(s_), bits(b_), k(k_) { }
-    Types(int64_t s_, int64_t b_, Kind k_, TypesPtr _sbase) :
-        size(s_), bits(b_), k(k_), sbase(_sbase) { }
-    Types(int64_t s_, int64_t b_, Kind k_, Word sel_, TypesPtr f_, TypesPtr n_, TypesPtr r_) :
-        size(s_), bits(b_), k(k_), sel(sel_), first(f_), next(n_), r6(r_) { }
-    Types() { }
+
     std::string p() const;
 };
 
+struct RealT : public Types {
+    static const Kind kind = kindReal;
+    RealT() : Types(1, 48, kind) { }
+};
+
+struct RangeT : public Types {
+    static const Kind kind = kindRange;
+    RangeT() : Types(1, 48, kind) { }
+
+    TypesPtr base;
+    int64_t checker, left, right;    
+};
+
+struct ArrayT : public Types {
+    static const Kind kind = kindArray;
+    ArrayT(int64_t size, int64_t bits, TypesPtr b) : Types(size, bits, kind), base(b) { }
+    TypesPtr base;
+    RangeT * range;
+    bool pck;
+    int64_t perWord, pcksize;
+};
+
+struct ScalarT : public Types {
+    static const Kind kind = kindScalar;
+    ScalarT(int64_t n) : Types(1, n, kind) { }
+    IdentRecPtr enums;
+    int64_t numen, start;
+};
+
+struct SetT : public Types {
+    static const Kind kind = kindSet;
+    SetT(int64_t n, TypesPtr nested) : Types(1, n, kind), sbase(nested) { }
+    TypesPtr sbase;
+};
+
+struct PtrT : public Types {
+    static const Kind kind = kindPtr;
+    PtrT(int64_t n, Types * to) : Types(1, n, kind), pbase(to) { }
+    TypesPtr pbase;
+};
+
+struct FileT : public Types {
+    static const Kind kind = kindFile;
+    FileT(TypesPtr fb, int64_t els) : Types(30, 48, kind), fbase(fb), elsize(els) { }
+    TypesPtr fbase;
+    int64_t elsize;
+};
+
+struct RecordT : public Types {
+    static const Kind kind = kindRecord;
+    RecordT() : Types(0, 0, kind) { }
+    TypesPtr base;
+    IdentRecPtr ptr2;
+    bool flag, pckrec;
+};
+
+struct CasesT : public Types {
+    static const Kind kind = kindCases;
+    CasesT(int64_t s_, Word sel_, TypesPtr f_, TypesPtr n_, TypesPtr r_) :
+        Types(s_, 48, kind), sel(sel_), first(f_), next(n_), r6(r_) { }
+    Word sel;
+    TypesPtr first, next, r6;
+};
+    
 std::string Types::p() const
 {
     std::ostringstream ostr;
@@ -551,20 +583,27 @@ std::string Types::p() const
     case kindReal:
         return "REAL";
     case kindRange:
-        ostr << "base: " << base->p() << " range: " << left << ".." << right;
+        ostr << "base: "
+            << cast<RangeT>().base->p()
+            << " range: "
+            << cast<RangeT>().left
+            << ".."
+            << cast<RangeT>().right;
         return ostr.str();
     case kindArray:
-        if (pck) ostr << "packed ";
-        ostr << "array [" << range->p() << "] of " << base->p();
+        if (cast<ArrayT>().pck) ostr << "packed ";
+        ostr << "array ["
+             << cast<ArrayT>().range->p()
+             << "] of " << cast<ArrayT>().base->p();
         return ostr.str();
     case kindSet:
-        ostr << "set of " << sbase->p();
+        ostr << "set of " << cast<SetT>().sbase->p();
         return ostr.str();
     case kindPtr:
-        ostr << "ptr to " << sbase->p();
+        ostr << "ptr to " << cast<PtrT>().pbase->p();
         return ostr.str();
     case kindFile:
-        ostr << "file of " << fbase->p();
+        ostr << "file of " << cast<FileT>().fbase->p();
         return ostr.str();
     case kindScalar:
         return "scalar ";
@@ -573,10 +612,7 @@ std::string Types::p() const
     }
 }
 
-struct TypeChain {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
+struct TypeChain : public BESM6Obj {
     TypeChain * next;
     TypesPtr type1, type2;
     TypeChain(TypeChain * n, TypesPtr t1, TypesPtr t2) : next(n), type1(t1), type2(t2) { }
@@ -588,10 +624,7 @@ typedef char textmap[128];
 typedef int64_t four[5]; // [1..4]
 typedef Bitset Entries[43]; // [1..42]
 
-struct Expr {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
+struct Expr : public BESM6Obj {
     union {
 //    NOOP:
         struct {
@@ -623,32 +656,21 @@ struct Expr {
     };
 };
 
-struct KeyWord {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
+struct KeyWord : public BESM6Obj {
     Word w;
     Symbol sym;
     Operator op;
     KeyWord * next;
 };
 
-struct StrLabel {
-    /*
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
-    */
+struct StrLabel : public BESM6Obj {
     StrLabel * next;
     Word ident;
     int64_t offset;
     int64_t exitTarget;
 };
 
-struct NumLabel {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
+struct NumLabel : public BESM6Obj {
     Word id;
     int64_t line, frame, offset;
     NumLabel * next;
@@ -670,10 +692,7 @@ std::string toAscii(Bitset val)
     return ret;
 }
 
-struct IdentRec {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
+struct IdentRec : public BESM6Obj {
     Word id;
     int64_t offset;
     IdentRecPtr next;
@@ -723,10 +742,7 @@ struct IdentRec {
     IdentRec() { }
 };
 
-struct ExtFileRec {
-    void * operator new(size_t s) {
-        return besm6_alloc(s);
-    }
+struct ExtFileRec : public BESM6Obj {
     Word id;
     Word offset;
     ExtFileRec * next;
@@ -813,18 +829,18 @@ IdentRecPtr outputFile,
 
 ExtFileRec * externFileList;
 
-TypesPtr
-    typ120z, typ121z,
-    pointerType,
-    setType,
-    BooleanType,
-    textType,
-    IntegerType,
-    RealType,
-    CharType,
-    AlfaType,
-    arg1Type,
-    arg2Type;
+TypesPtr typ120z, typ121z;
+
+PtrT * pointerType;
+SetT * setType;
+ScalarT * BooleanType;
+FileT * textType;
+ScalarT * IntegerType;
+RealT * RealType;
+ScalarT * CharType;
+ArrayT * AlfaType;
+
+TypesPtr arg1Type, arg2Type;
 
 NumLabel *  numLabList;
 TypeChain * chain;
@@ -1017,19 +1033,17 @@ int64_t toText(const char * str) {
     return ret;
 }
 
-void makeStringType(TypesPtr & res)
+TypesPtr makeStringType()
 {
-    TypesPtr span;
     if (maxSmallString >= strLen)
-        res = smallStringType[strLen];
+        return smallStringType[strLen];
     else {
-        span = new Types;
-        res = new Types;
+        RangeT * span = new RangeT;
+        ArrayT * res = new ArrayT(0, 0, CharType);
 
         span->size = 1;
         span->checker = 0;
         span->bits = 12;
-        span->k = kindRange;
         span->base = IntegerType;
         span->left = 1;
         span->right = strLen;
@@ -1039,12 +1053,12 @@ void makeStringType(TypesPtr & res)
             res->bits = strLen * 8;
         else
             res->bits = 0;
-        res->k = kindArray;
         res->base = CharType;
         res->range = span;
         res->pck = true;
         res->perWord = 6;
         res->pcksize = 8;
+        return res;
     }
 }
 
@@ -1354,13 +1368,9 @@ int64_t nrOfBits(int64_t value)
 
 void defineRange(TypesPtr & res, int64_t l, int64_t r)
 {
-    TypesPtr temp;
-    temp = new Types;
-    temp->size = 1;
-    temp->bits = 48;
+    RangeT * temp = new RangeT;
     temp->base = res;
     temp->checker = 0;
-    temp->k = kindRange;
     curVal.i = l;
     // curVal.m = curVal.m + intZero;
     temp->left = curVal.i;
@@ -2291,7 +2301,7 @@ L99:        litType = NULL;
             litType = CharType;
             break;
         case LTSY:
-            makeStringType(litType);
+            litType = makeStringType();
             break;
         case GTSY: {
             litType = pointerType;
@@ -2339,7 +2349,7 @@ void P2672(IdentRecPtr & l3arg1z, IdentRecPtr l3arg2z)
 bool isFileType(TypesPtr typtr)
 {
     return (typtr->k == kindFile) or
-        ((typtr->k == kindRecord) and typtr->flag);
+        ((typtr->k == kindRecord) and typtr->cast<RecordT>().flag);
 }
 
 bool knownInType(IdentRecPtr & rec)
@@ -2392,8 +2402,8 @@ bool checkRecord(TypesPtr l4arg1z, TypesPtr l4arg2z)
     if (l4var1z) {
         return l4arg1z == l4arg2z;
     } else {
-        return typeCheck(l4arg1z->base, l4arg2z->base) and
-                 checkRecord(l4arg1z->next, l4arg2z->next);
+        return typeCheck(l4arg1z->cast<RecordT>().base, l4arg2z->cast<RecordT>().base) and
+            checkRecord(l4arg1z->cast<CasesT>().next, l4arg2z->cast<CasesT>().next);
     }
 } /* checkRecord */
 
@@ -2402,7 +2412,7 @@ typeCheck::typeCheck(TypesPtr type1, TypesPtr type2)
     super.push_back(this);
     rangeMismatch = false;
     if (type1->k == kindRange) {
-        typ120z = type1->base;
+        typ120z = type1->cast<RangeT>().base;
     } else {
         typ120z = type1;
     }
@@ -2417,9 +2427,9 @@ L1:     ret = true;
                 /* empty */ break;
             case kindScalar: {
                 /*(chain)*/
-                if (type1->numen == type2->numen) {
-                    enums1 = type1->enums;
-                    enums2 = type2->enums;
+                if (type1->cast<ScalarT>().numen == type2->cast<ScalarT>().numen) {
+                    enums1 = type1->cast<ScalarT>().enums;
+                    enums2 = type2->cast<ScalarT>().enums;
                     while ((enums1 != NULL) and (enums2 != NULL)) {
                         if (enums1->id != enums2->id)
                             break; // exit chain;
@@ -2431,18 +2441,19 @@ L1:     ret = true;
                 }
             } break;
             case kindRange: {
-                baseMatch = (type1->base == type2->base);
-                typ120z = type1->base;
-                rangeMismatch = (type1->left != type2->left) or
-                    (type1->right != type2->right);
+                RangeT & r1 = type1->cast<RangeT>();
+                RangeT & r2 = type2->cast<RangeT>();
+                baseMatch = (r1.base == r2.base);
+                typ120z = r1.base;
+                rangeMismatch = (r1.left != r2.left) or (r1.right != r2.right);
                 ret = baseMatch;
                 return;
             } break;
             case kindPtr: {
                 if ((type1 == pointerType) or (type2 == pointerType))
                     goto L1;
-                basetyp1 = type1->base;
-                basetyp2 = type2->base;
+                basetyp1 = type1->cast<PtrT>().pbase;
+                basetyp2 = type2->cast<PtrT>().pbase;
                 if (chain != NULL) {
                     link = chain;
                     while (link != NULL) {
@@ -2465,25 +2476,27 @@ L1:     ret = true;
             case kindSet:
                 goto L1;
             case kindArray: {
-                span1 = type1->range->right - type1->range->left;
-                span2 = type2->range->right - type2->range->left;
-                if (typeCheck(type1->base, type2->base) and
+                ArrayT & a1 = type1->cast<ArrayT>();
+                ArrayT & a2 = type2->cast<ArrayT>();
+                span1 = a1.range->right - a1.range->left;
+                span2 = a2.range->right - a2.range->left;
+                if (typeCheck(a1.base, a2.base) and
                     (span1 == span2) and
-                    (type1->pck == type2->pck) and
+                    (a1.pck == a2.pck) and
                     not rangeMismatch) {
-                    if (type1->pck) {
-                        if (type1->pcksize == type2->pcksize)
+                    if (a1.pck) {
+                        if (a1.pcksize == a2.pcksize)
                             goto L1;
                     } else
                         goto L1;
                 }
             } break;
             case kindFile: {
-                if (typeCheck(type1->base, type2->base))
+                if (typeCheck(type1->cast<FileT>().fbase, type2->cast<FileT>().fbase))
                     goto L1;
             } break;
             case kindRecord: {
-                if (checkRecord(type1->first, type2->first))
+                if (checkRecord(type1->cast<CasesT>().first, type2->cast<CasesT>().first))
                     goto L1;
             } break;
             case kindCases:
@@ -2493,10 +2506,10 @@ L1:     ret = true;
             if (kind1 == kindRange) {
                     rangeMismatch = true;
                     typ120z = type2;
-                    if (type1->base == type2)
+                    if (type1->cast<RangeT>().base == type2)
                         goto L1;
                 } else if ((kind2 == kindRange) and
-                           (type1 == type2->base))
+                           (type1 == type2->cast<RangeT>().base))
                 goto L1;
         }
         ret = false;
@@ -3295,7 +3308,7 @@ L5220:          addInsnAndOffset((insnList->ilf5.i + InsnTemp[WTC]), l5var2z.i);
         insnList = l5var2z;
     }; /* prepMultiWord */
 
-    void genCheckBounds(TypesPtr l5arg1z) {
+    void genCheckBounds(RangeT * l5arg1z) {
         int64_t l5var1z;
         Word /* l5var2z, l5var3z, */ l5var4z;
 
@@ -3505,7 +3518,8 @@ void genGetElt()
     InsnListPtr copyPtr, l5ins21z;
     Word l5var22z, l5var23z;
     bool l5var24z, packed;
-    TypesPtr l5var26z, l5var27z;
+    TypesPtr l5var26z;
+    RangeT * l5var27z;
     ilmode l5ilm28z;
     ExprPtr l5var29z;
     InsnListPtr getEltInsns[11]; // array [1..10] of InsnListPtr;
@@ -3528,9 +3542,10 @@ void genGetElt()
     for (curDim = 1; curDim <= dimCnt; ++curDim)
         l5var22z.m = l5var22z.m - getEltInsns[curDim]->regsused;
     for (curDim = dimCnt; curDim >= 1; curDim--) {
-        l5var26z = insnCopy.typ->base;
-        l5var27z = insnCopy.typ->range;
-        packed = insnCopy.typ->pck && insnCopy.typ->pcksize < 48;
+        ArrayT & array = insnCopy.typ->cast<ArrayT>();
+        l5var26z = array.base;
+        l5var27z = array.range;
+        packed = array.pck && array.pcksize < 48;
         l5var7z = l5var27z->left;
         l5var8z = l5var26z->size;
         if (not packed)
@@ -3545,21 +3560,21 @@ void genGetElt()
                 error(29); /* errIndexOutOfBounds */
             if (packed) {
                 l5var4z = curVal.i - l5var7z;
-                l5var5z = insnCopy.typ->perWord;
+                l5var5z = array.perWord;
                 insnCopy.regsused = insnCopy.regsused + mkbs(0L);
                 insnCopy.ilf6 = l5var4z / l5var5z + insnCopy.ilf6;
                 l5var6z = (l5var5z-1-l5var4z % l5var5z) *
-                    insnCopy.typ->pcksize;
+                    array.pcksize;
                 switch (insnCopy.st) {
                 case st0: insnCopy.shift = l5var6z;
                     break;
                 case st1: insnCopy.shift = insnCopy.shift + l5var6z +
-                        insnCopy.typ->bits - 48;
+                        array.bits - 48;
                     break;
                 case st2: error(errUsingVarAfterIndexingPackedArray);
                     break;
                 } /* case */
-                insnCopy.width = insnCopy.typ->pcksize;
+                insnCopy.width = array.pcksize;
                 insnCopy.st = st1;
             } /* 6116 */ else {
                 insnCopy.ilf6 = curVal.i  * l5var26z->size +
@@ -3578,7 +3593,7 @@ void genGetElt()
                 } else {
                     l5var4z = KYTA+64-40;
                 }
-                addToInsnList(insnCopy.typ->perWord);
+                addToInsnList(array.perWord);
                 insnList->next->mode = 1;
                 if (l5var7z >= 0)
                     addToInsnList(l5var4z);
@@ -3665,7 +3680,7 @@ void genGetElt()
                     insnCopy.st = st2;
                     insnCopy.ilf6 = 0;
                     insnCopy.ilf5.i = 0;
-                    insnCopy.width = insnCopy.typ->pcksize;
+                    insnCopy.width = array.pcksize;
                     curVal.i = insnCopy.width;
                     if (curVal.i == 24)
                         curVal.i = 7;
@@ -4365,8 +4380,8 @@ L10122:
                 switch (curOP) {
                 case BOUNDS:
                     arg2Val.m = mkbs(0,1,3) + arg1Val.m;
-                    if ((arg2Val.i < exprToGen->typ2->left) or
-                        (exprToGen->typ2->right < arg2Val.i))
+                    if ((arg2Val.i < exprToGen->typ2->cast<RangeT>().left) or
+                        (exprToGen->typ2->cast<RangeT>().right < arg2Val.i))
                         error(errNeedOtherTypesOfOperands);
                     break;
                 case TOREAL: arg1Val.r = arg1Val.i;
@@ -4387,7 +4402,7 @@ L10122:
                 prepLoad();
                 if (curOP == BOUNDS) {
                     if (checkBounds)
-                        genCheckBounds(exprToGen->typ2);
+                        genCheckBounds(static_cast<RangeT*>(exprToGen->typ2));
                 } else if (curOP == TOREAL) {
                     addToInsnList(InsnTemp[AVX]);
                     l3int3z = 3;
@@ -4542,8 +4557,8 @@ void formFileInit()
         l4exf1z = reinterpret_cast<ExtFileRec*>(curExpr->typ);
         l4var3z = curExpr->id2;
         l4int4z = l4var3z->value;
-        l4var2z = l4var3z->typ->base;
-        l4int5z = l4var3z->typ->elsize;
+        l4var2z = l4var3z->typ->cast<FileT>().fbase;
+        l4int5z = l4var3z->typ->cast<FileT>().elsize;
         if (l4int4z < 074000) {
             form1Insn(getValueOrAllocSymtab(l4int4z) +
                       InsnTemp[UTC] + I7);
@@ -4752,11 +4767,12 @@ formOperator::formOperator(OpGen l3arg1z)
         setAddrTo(12);
         genOneOp();
         arg1Type = l3var5z->expr2->typ;
-        l3int3z = arg1Type->range->right - arg1Type->range->left + 1;
+        ArrayT & array = arg1Type->cast<ArrayT>();
+        l3int3z = array.range->right - array.range->left + 1;
         form2Insn((KVTM+I14) + l3int3z,
-                  (KVTM+I10+64) - arg1Type->pcksize);
+                  (KVTM+I10+64) - array.pcksize);
         l3int3z = ord(l3var5z->typ);
-        l3int1z = arg1Type->perWord;
+        l3int1z = array.perWord;
         if (l3int3z == 72)          /* P/KC */
             l3int1z = 1 - l3int1z;
         form1Insn(getValueOrAllocSymtab(l3int1z) + (KVTM+I9));
@@ -4796,13 +4812,14 @@ struct parseTypeRef {
     Word leftBound, rightBound;
     int64_t numBits, l3int22z, span;
     IdentRecPtr curEnum, curField;
-    TypesPtr l3typ26z, nestedType, tempType, curType;
+    ArrayT * l3typ26z;
+    TypesPtr nestedType, tempType, curType;
     Word l3unu30z;
     IdentRecPtr l3idr31z;
 
     void definExprPtrType(TypesPtr toType) {
         IdentRecPtr & typelist = programme::super.back()->typelist;
-        curType = new Types(1, 15, kindPtr, toType);
+        curType = new PtrT(15, toType);
         curEnum = new IdentRec(curIdent, lineCnt, typelist, curType, TYPEID);
         typelist = curEnum;
     } /* definExprPtrType */
@@ -4852,15 +4869,15 @@ void packFields()
     bool &isPacked = parseTypeRef::super.back()->isPacked;
 
     parseTypeRef(selType, skipTarget + mkbs(CASESY));
-    if (curType->ptr2 == NULL) {
-        curType->ptr2 = curField;
+    if (curType->cast<RecordT>().ptr2 == NULL) {
+        curType->cast<RecordT>().ptr2 = curField;
     } else {
         l3idr31z->list = curField;
     }
     cond = isFileType(selType);
     if (not isOuterDecl and cond)
         error(errTypeMustNotBeFile);
-    curType->flag = cond or curType->flag;
+    curType->cast<RecordT>().flag = cond or curType->cast<RecordT>().flag;
     l3idr31z = curEnum;
     do {
         curField->typ = selType;
@@ -5015,7 +5032,7 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_)
             }
         } exit_identif:; /* 12035 */
         if (selType->k == kindRange)
-            selType = selType->base;
+            selType = selType->cast<RangeT>().base;
         checkSymAndRead(OFSY);
         cases1 = cases;
         cases2 = cases;
@@ -5028,11 +5045,11 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_)
                     error(errNoConstant);
                 else if (not typeCheck(l4var4z, selType))
                     error(errConstOfOtherTypeNeeded);
-                l4var5z = new Types(cases.size, 48, kindCases, l4var7z, NULL, NULL, NULL);
+                l4var5z = new CasesT(cases.size, l4var7z, NULL, NULL, NULL);
                 if (l4var3z == NULL) {
                     tempType = l4var5z;
                 } else {
-                    l4var3z->r6 = l4var5z;
+                    l4var3z->cast<CasesT>().r6 = l4var5z;
                 }
                 l4var3z = l4var5z;
                 inSymbol();
@@ -5041,13 +5058,13 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_)
                     inSymbol();
             } while (!cond);
             if (l4typ1z == NULL) {
-                if (curType->base == NULL) {
-                    curType->base = tempType;
+                if (curType->cast<RecordT>().base == NULL) {
+                    curType->cast<RecordT>().base = tempType;
                 } else {
-                    rectype->first = tempType;
+                    rectype->cast<CasesT>().first = tempType;
                 }
             } else {
-                l4typ1z->next = tempType;
+                l4typ1z->cast<CasesT>().next = tempType;
             }
             l4typ1z = tempType;
             checkSymAndRead(COLON);
@@ -5089,7 +5106,8 @@ L12247:
         int93z = 0;
         inSymbol();
         curField = NULL;
-        curType = new Types;
+        curType = new ScalarT(48);
+        ScalarT & scalar = curType->cast<ScalarT>();
         while (SY == IDENT) {
             if (isDefined)
                 error(errIdentAlreadyDefined);
@@ -5099,7 +5117,7 @@ L12247:
             symHashTabBase[bucket] = curEnum;
             span = span + 1;
             if (curField == NULL) {
-                curType->enums = curEnum;
+                scalar.enums = curEnum;
             } else {
                 curField->list = curEnum;
             };
@@ -5119,11 +5137,10 @@ L12247:
             error(errNoIdent);
         } else {
             // curType@ := [1, nrOfBits(span - 1), kindScalar, , span, 0];
-            curType->size = 1;
-            curType->bits = nrOfBits(span - 1);
-            curType->k = kindScalar;
-            curType->numen = span;
-            curType->start = 0;
+            scalar.size = 1;
+            scalar.bits = nrOfBits(span - 1);
+            scalar.numen = span;
+            scalar.start = 0;
         }
     } else /* 12344 */
     if (SY == ARROW) {
@@ -5147,7 +5164,7 @@ L12366:             error(errNotAType);
                 if (hashTravPtr->cl != TYPEID) {
                     goto L12366;
                 }
-                curType = new Types(1, 15, kindPtr, hashTravPtr->typ);
+                curType = new PtrT(15, hashTravPtr->typ);
             } /* 12405 */
             inSymbol();
         }
@@ -5163,7 +5180,7 @@ L12366:             error(errNotAType);
             if (inTypeDef) {
                 if (knownInType(curEnum)) {
                     curType = curEnum->typ;
-                    curType->base = BooleanType;
+                    curType->cast<PtrT>().pbase = BooleanType;
                 } else {
                     definExprPtrType(BooleanType);
                 }
@@ -5180,15 +5197,15 @@ L12366:             error(errNotAType);
             goto L12247;
         }
         if (SY == RECORDSY) { /* 12446 */
-            curType = new Types();
+            curType = new RecordT;
+            RecordT & record = curType->cast<RecordT>();
             typ121z = curType;
-            curType->size = 0;
-            curType->bits = 48;
-            curType->k = kindRecord;
-            curType->ptr1 = NULL;
-            curType->first = NULL;
-            curType->flag = false;
-            curType->pckrec = isPacked;
+            record.size = 0;
+            record.bits = 48;
+            record.base = NULL;
+            record.ptr2 = NULL;
+            record.flag = false;
+            record.pckrec = isPacked;
             cases.size = 0;
             cases.count = 0;
             parseRecordDecl(curType, true);
@@ -5204,7 +5221,7 @@ L12476:
             if (curVarKind != kindRange) {
                 if (curVarKind == kindScalar and
                     nestedType != IntegerType) {
-                    span = nestedType->numen;
+                    span = nestedType->cast<ScalarT>().numen;
                 } else {
                     error(8); /* errNotAnIndexType */
                     nestedType = IntegerType;
@@ -5212,15 +5229,12 @@ L12476:
                 }
                 defineRange(nestedType, 0, span - 1);
             } /* 12524 */
-            l3typ26z = new Types();
-            l3typ26z->size = ord(tempType);
-            l3typ26z->bits = 48;
-            l3typ26z->k = kindArray;
-            l3typ26z->range = nestedType;
+            l3typ26z = new ArrayT(ord(tempType), 48, NULL);
+            l3typ26z->range = static_cast<RangeT*>(nestedType);
             if (tempType == NULL)
                 curType = l3typ26z;
             else
-                tempType->base = l3typ26z;
+                tempType->cast<ArrayT>().base = l3typ26z;
             tempType = l3typ26z;
             if (SY == COMMA) {
                 inSymbol();
@@ -5234,7 +5248,7 @@ L12476:
             if (isFileType(nestedType))
                 error(errTypeMustNotBeFile);
             do {
-                span = l3typ26z->ptr2->high - l3typ26z->ptr2->low + 1;
+                span = l3typ26z->range->right - l3typ26z->range->left + 1;
                 tempType = (Types*)ptr(l3typ26z->size);
                 l3int22z = l3typ26z->base->bits;
                 // Don't clear t->pck flag for word-sized arrays.
@@ -5269,7 +5283,7 @@ L12476:
                 l3typ26z->pck = isPacked;
                 isPacked = false;
                 cond = (curType == l3typ26z);
-                l3typ26z = tempType;
+                l3typ26z = static_cast<ArrayT*>(tempType);
             } while (!cond);
         } else /* 12663 */
         if (SY == FILESY) {
@@ -5283,31 +5297,26 @@ L12476:
                 if (24 < l3int22z)
                     isPacked = false;
             }
-            curType = new Types;
             if (not isPacked)
                 l3int22z = 0;
-            curType->size = 30;
-            curType->bits = 48;
-            curType->k = kindFile;
-            curType->base = nestedType;
-            curType->elsize = l3int22z;
+            curType = new FileT(nestedType, l3int22z);
         } else /* 12721 */
         if (SY == SETSY) {
             inSymbol();
             checkSymAndRead(OFSY);
             parseTypeRef(nestedType, skipTarget);
             if (nestedType->k == kindRange and
-               nestedType->left >= 0 and
-               47 >= nestedType->right)
-                numBits = nestedType->right + 1;
+                nestedType->cast<RangeT>().left >= 0 and
+               47 >= nestedType->cast<RangeT>().right)
+                numBits = nestedType->cast<RangeT>().right + 1;
             else if (nestedType->k == kindScalar and
-                     48 >= nestedType->numen)
-                numBits = nestedType->numen;
+                     48 >= nestedType->cast<ScalarT>().numen)
+                numBits = nestedType->cast<ScalarT>().numen;
             else {
                 numBits = 48;
                 error(63); /* errBadBaseTypeForSet */
             }
-            curType = new Types(1, numBits, kindSet, nestedType);
+            curType = new SetT(numBits, nestedType);
         } else {
 L12760:     parseLiteral(tempType, leftBound, true);
             if (tempType != NULL) {
@@ -5335,7 +5344,7 @@ L13020:
     newType = curType;
 } /* parseTypeRef */
 
-void dumpEnumNames(TypesPtr l3arg1z)
+void dumpEnumNames(ScalarT * l3arg1z)
 {
     IdentRecPtr l3var1z;
     if (l3arg1z->start == 0) {
@@ -5385,7 +5394,7 @@ void formPMD()
                     l3var5z = l3typ1z->k;
                     l3var3z = mkbs();
                     if (l3var5z == kindPtr) {
-                        l3typ1z = l3typ1z->base;
+                        l3typ1z = l3typ1z->cast<PtrT>().pbase;
                         l3var5z = l3typ1z->k;
                         l3var3z = mkbs(0);
                     }
@@ -5398,8 +5407,8 @@ void formPMD()
                     else if (l3var5z == kindArray)
                         curVal.i = 0400000;
                     else if (l3var5z == kindScalar) {
-                        dumpEnumNames(l3typ1z);
-                        curVal.i = 01000000 * l3typ1z->start + 0300000;
+                        dumpEnumNames(static_cast<ScalarT*>(l3typ1z));
+                        curVal.i = 01000000 * l3typ1z->cast<ScalarT>().start + 0300000;
                     } else if (l3var5z == kindFile)
                         curVal.i = 0600000;
                     else {
@@ -5530,7 +5539,7 @@ std::vector<Statement*> Statement::super;
 
 bool isCharArray(TypesPtr arg)
 {
-    return (arg->k == kindArray) and (arg->base == CharType);
+    return (arg->k == kindArray) and (arg->cast<ArrayT>().base == CharType);
 } /* isCharArray */
 
 void expression();
@@ -5557,10 +5566,10 @@ L13462:
             l4exp1z = new Expr;
             l4exp1z->expr1 = curExpr;
             if (l4var4z == kindPtr) {
-                l4exp1z->typ = l4typ3z->base;
+                l4exp1z->typ = l4typ3z->cast<PtrT>().pbase;
                 l4exp1z->op = DEREF;
             } else if (l4var4z == kindFile) {
-                l4exp1z->typ = l4typ3z->base;
+                l4exp1z->typ = l4typ3z->cast<FileT>().fbase;
                 l4exp1z->op = FILEPTR;
             } else {
                 stmtName = "  ^   ";
@@ -5596,10 +5605,10 @@ L13530:             l4exp1z = new Expr;
                 if (l4typ3z->k != kindArray) {
                     error(errWrongVarTypeBefore);
                 } else {
-                    if (not typeCheck(l4typ3z->range, curExpr->typ))
+                    if (not typeCheck(l4typ3z->cast<ArrayT>().range, curExpr->typ))
                         error(66 /*errOtherIndexTypeNeeded */);
                     l4exp2z = new Expr;
-                    l4exp2z->typ = l4typ3z->base;
+                    l4exp2z->typ = l4typ3z->cast<ArrayT>().base;
                     l4exp2z->expr1 = l4exp1z;
                     l4exp2z->expr2 = curExpr;
                     l4exp2z->op = GETELT;
@@ -5767,7 +5776,7 @@ struct Factor {
         }
         arg1Type = curExpr->typ;
         if (arg1Type->k == kindRange)
-            arg1Type = arg1Type->base;
+            arg1Type = arg1Type->cast<RangeT>().base;
         argKind = arg1Type->k;
         if (arg1Type == RealType)
             checkMode = chkREAL;
@@ -6389,7 +6398,7 @@ bool structBranch(bool isGoto)
 
 void caseStatement()
 {
-    typedef struct CaseClause {
+    typedef struct CaseClause : public BESM6Obj {
         CaseClause * next;
         Word value;
         int64_t offset;
@@ -6512,11 +6521,11 @@ void caseStatement()
                 itemSpan = 34000;
                 P0715(0, l4var17z);
                 if (firstType->k == kindRange) {
-                    itemSpan = std::max(std::abs(firstType->left),
-                                        std::abs(firstType->right));
+                    itemSpan = std::max(std::abs(firstType->cast<RangeT>().left),
+                                        std::abs(firstType->cast<RangeT>().right));
                 } else {
                     if (firstType->k == kindScalar)
-                        itemSpan = firstType->numen;
+                        itemSpan = firstType->cast<ScalarT>().numen;
                 }
                 itemsEnded = (itemSpan < 32000);
                 if (itemsEnded) {
@@ -6876,10 +6885,10 @@ struct standProc {
                 }
             }
             arg2Type = l4exp9z->typ;
-            l4var13z.b = typeCheck(arg2Type->base, CharType);
+            l4var13z.b = typeCheck(arg2Type->cast<FileT>().fbase, CharType);
             l4bool12z = true;
             l4exp8z = new Expr;
-            l4exp8z->typ = arg2Type->base;
+            l4exp8z->typ = arg2Type->cast<FileT>().fbase;
             l4exp8z->op = FILEPTR;
             l4exp8z->expr1 = l4exp9z;
             l4exp6z = new Expr;
@@ -6931,11 +6940,11 @@ struct standProc {
     } /* P17037 */
 
     void checkElementForReadWrite() {
-        TypesPtr l5typ1z;
+        RangeT * l5typ1z;
 
         set145z = set145z - mkbs(12);
         if (l4typ3z->k == kindRange)
-            l4typ3z = l4typ3z->base;
+            l4typ3z = l4typ3z->cast<RangeT>().base;
         curVarKind = l4typ3z->k;
         helperNo = 36;                   /* P/WI */
         if (l4typ3z == IntegerType)
@@ -6948,12 +6957,12 @@ struct standProc {
             l4var15z.i = 1;
         } else if (curVarKind == kindScalar) {
             helperNo = 41;               /* P/WX */
-            dumpEnumNames(l4typ3z);
+            dumpEnumNames(static_cast<ScalarT*>(l4typ3z));
             l4var15z.i = 8;
         } else if (isCharArray(l4typ3z)) {
-            l5typ1z = l4typ3z->range;
+            l5typ1z = l4typ3z->cast<ArrayT>().range;
             l4var15z.i = l5typ1z->right - l5typ1z->left + 1;
-            if (not l4typ3z->pck)
+            if (not l4typ3z->cast<ArrayT>().pck)
                 helperNo = 81;            /* P/WA */
             else if (6 >= l4var15z.i)
                 helperNo = 39;            /* P/A6 */
@@ -7037,7 +7046,7 @@ struct standProc {
                         form1Insn(KVTM+I10 + l4var15z.i);
                     else {
                         if (helperNo == 41) /* P/WX */
-                            form1Insn(KVTM+I11 + l4typ3z->start);
+                            form1Insn(KVTM+I11 + l4typ3z->cast<ScalarT>().start);
                     }
                     callHelperWithArg();
                 }
@@ -7103,30 +7112,30 @@ L17362:
         verifyType(NULL);
         l4exp9z = curExpr;
         l4typ1z = curExpr->typ;
-        if (l4typ1z->pck or
-            l4typ1z->k != kindArray)
+        if (l4typ1z->k != kindArray
+            or l4typ1z->cast<ArrayT>().pck)
             error(errNeedOtherTypesOfOperands);
         checkSymAndRead(COMMA);
         bool102z = false;
         expression();
         l4exp8z = curExpr;
-        if (l4typ1z->k == kindArray && not typeCheck(l4typ1z->range, l4exp8z->typ))
+        if (l4typ1z->k == kindArray && not typeCheck(l4typ1z->cast<ArrayT>().range, l4exp8z->typ))
             error(errNeedOtherTypesOfOperands);
     } /* checkArrayArg */
 
     void doPackUnpack() {
-        TypesPtr t;
+        ArrayT * t;
 
         l4exp7z = new Expr;
-        l4exp7z->typ = l4typ1z->base;
+        l4exp7z->typ = l4typ1z->cast<ArrayT>().base;
         l4exp7z->op = GETELT;
         l4exp7z->expr1 = l4exp9z;
         l4exp7z->expr2 = l4exp8z;
-        t = l4exp6z->typ;
+        t = static_cast<ArrayT*>(l4exp6z->typ);
         if ((t->k != kindArray) or
             not t->pck or
-            not typeCheck(t->base, l4typ1z->base) or
-            not typeCheck(l4typ1z->range, t->range))
+            not typeCheck(t->base, l4typ1z->cast<ArrayT>().base) or
+            not typeCheck(l4typ1z->cast<ArrayT>().range, t->range))
             error(errNeedOtherTypesOfOperands);
         curExpr = new Expr;
         curExpr->val.c = char(procNo + 50);
@@ -7183,7 +7192,7 @@ L17362:
               l4exp9z = curExpr;
               if (procNo == 5)
                   (void) formOperator(gen5);
-              l2typ13z = arg1Type->base;
+              l2typ13z = arg1Type->cast<PtrT>().pbase;
               ii = l2typ13z->size;
               if (charClass == EQOP) {
                   expression();
@@ -7192,8 +7201,8 @@ L17362:
                   (void) formOperator(LOAD);
                   form1Insn(KATI+14);
               } else {
-                  if (arg1Type->base->k == kindRecord) {
-                      l4typ1z = l2typ13z->base;
+                  if (l2typ13z->k == kindRecord) {
+                      l4typ1z = l2typ13z->cast<RecordT>().base;
                       /*loop*/ while (SY == COMMA and l4typ1z != NULL) {
                           inSymbol();
                           parseLiteral(l4typ2z, curVal, true);
@@ -7204,13 +7213,13 @@ L17362:
                               /*loop2*/ while (l4typ1z != NULL) {
                                   l4typ2z = l4typ1z;
                                   while (l4typ2z != NULL) {
-                                      if (l4typ2z->sel == curVal) {
+                                      if (l4typ2z->cast<CasesT>().sel == curVal) {
                                           ii = l4typ1z->size;
                                           goto exit_loop2;
                                       }
-                                      l4typ2z = l4typ2z->r6;
+                                      l4typ2z = l4typ2z->cast<CasesT>().r6;
                                   };
-                                  l4typ1z = l4typ1z->next;
+                                  l4typ1z = l4typ1z->cast<CasesT>().next;
                               } exit_loop2:;
                           }
                       }
@@ -7825,32 +7834,30 @@ struct initScalars {
 initScalars::initScalars() :
     curIdRec(programme::super.back()->curIdRec)
 {
-    BooleanType = new Types(1, 1, kindScalar);
+    BooleanType = new ScalarT(1);
     BooleanType->numen = 2;
     BooleanType->start = 0;
 
-    IntegerType = new Types(1, 48, kindScalar);
+    IntegerType = new ScalarT(48);
     IntegerType->numen = 100000;
     IntegerType->start = -1;
     IntegerType->enums = NULL;
 
-    CharType = new Types(1, 8, kindScalar);
+    CharType = new ScalarT(8);
     CharType->numen = 256;
     CharType->start = -1;
     CharType->enums = NULL;
 
-    RealType = new Types(1, 48, kindReal);
+    RealType = new RealT;
 
-    setType = new Types(1, 48, kindSet, IntegerType);
+    setType = new SetT(48, IntegerType);
 
-    pointerType = new Types(1, 48, kindPtr);
-    pointerType->sbase = pointerType;
+    pointerType = new PtrT(48, NULL);
+    pointerType->pbase = pointerType;
 
-    textType = new Types(30, 48, kindFile, CharType);
-    textType->elsize = 8;
+    textType = new FileT(CharType, 8);
 
-    AlfaType = new Types(1,48,kindArray,CharType);
-    AlfaType->range = temptype;
+    AlfaType = new ArrayT(1,48,CharType);
     AlfaType->pck = true;
     AlfaType->perWord = 6;
     AlfaType->pcksize = 8;
@@ -7872,7 +7879,7 @@ initScalars::initScalars() :
     BooleanType->enums = curIdRec;
     maxSmallString = 0;
     for (strLen = 2; strLen <= 5; ++strLen)
-        makeStringType(smallStringType[strLen]);
+        smallStringType[strLen] = makeStringType();
     maxSmallString = 6;
 
     curIdRec = new IdentRec;
@@ -7972,7 +7979,7 @@ initScalars::initScalars() :
     objBufIdx = 1;
     temptype = IntegerType;
     defineRange(temptype, 1, 6);
-    AlfaType->range = temptype;
+    AlfaType->range = static_cast<RangeT*>(temptype);
     int93z = 0;
     inSymbol();
     outputObjFile();
@@ -8326,7 +8333,7 @@ L22421:
                 curIdent = l2var12z;
                 if (knownInType(curIdRec)) {
                     l2typ14z = curIdRec->typ;
-                    if (l2typ14z->base == BooleanType) {
+                    if (l2typ14z->cast<PtrT>().pbase == BooleanType) {
                         if (l2typ13z->k != kindPtr) {
                             prevErrPos = 0;
                             error(78); /* errPredefinedAsPointer */
@@ -8334,9 +8341,9 @@ L22421:
                             printTextWord(l2var12z);
                             printf(" in line %ld\n", curIdRec->offset);
                         }
-                        l2typ14z->base = l2typ13z->base;
+                        l2typ14z->cast<PtrT>().pbase = l2typ13z->cast<PtrT>().pbase;
                     } else {
-                        l2typ14z->base = l2typ13z;
+                        l2typ14z->cast<PtrT>().pbase = l2typ13z;
                         curIdRec->typ = l2typ13z;
                     }
                     P2672(typelist, curIdRec);
