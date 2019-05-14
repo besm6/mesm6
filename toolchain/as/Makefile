@@ -6,8 +6,8 @@ CFLAGS  = -I.. -O0 -Werror #-Wall
 LDFLAGS =
 VPATH   = ../ld
 
-as      = mesm6-as
-dis     = mesm6-dis
+as      = besm6-as
+dis     = besm6-dis
 
 all:    as dis
 

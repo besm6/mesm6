@@ -1,16 +1,16 @@
  objfmt:    ,name,
  extvar:    ,lc  , 1
  extfunc:   ,subp,
-            ,wtc , mydata
+            ,wtc , myvar
             ,utc , myconst
-            ,wtc , mydata+1
+            ,wtc , myvar+1
             ,utc , myconst+1
             ,utc , 77754b
           13,vjm , extfunc
           13,vjm , extfunc+1
           1 ,vzm , mycode
             ,uj  , mycode+1
- mycode:    ,xta , mydata
+ mycode:    ,xta , myvar
             ,atx , extvar
             ,atx , extvar+5
             ,arx , myconst
@@ -19,5 +19,21 @@
             ,aax , extfunc+1
             ,a*x , 4567b
  myconst:   ,log , 1234 5670 2222 5555
- mydata:    ,bss , 1
+ myvar:     ,bss , 1
+            ,data,
+ mydata:    ,log , 1771 2662 3553 4444
+C;
+C; Указания о рассылке представляются последовательностью пар
+C; операторов вида:
+C;
+C;      SZ ,SET, FROM
+C;     CNT ,   , TO
+C;
+C; где SZ и CNT - целые десятичные числа, FROM и TO - полные адреса.
+C; Такая пара операторов осуществляет пересылку группы из SZ слов,
+C; начинающейся с адреса FROM, в массив ячеек, начинающийся
+C; с адреса TO, CNT раз.
+C;
+          1 ,set , mydata
+          1 ,    , myvar
             ,end ,

@@ -18,9 +18,9 @@
 //  +---------+
 //  | const   |     Initialized data
 //  +---------+
-//  | data    |     BSS section
+//  | data    |     Transient data for SET section
 //  +---------+
-//  | set     |     (unused)
+//  | set     |     SET directives
 //  +---------+
 //  | symhdr  |     Name of the subroutine
 //  +---------+
@@ -124,6 +124,45 @@ uint64_t freadw(FILE *fd)
     return val;
 }
 
+const char *getlabel(char ch, int n)
+{
+    static char buf[16];
+
+    snprintf(buf, sizeof(buf), "%c%o", ch, n);
+    return buf;
+}
+
+const char *getaddr(obj_image_t *obj, unsigned addr, int long_flag)
+{
+    static char buf[16];
+
+//if (1) snprintf(buf, sizeof(buf), "<%o>", addr); else
+    if (addr < 8) {
+        snprintf(buf, sizeof(buf), "%u", addr);
+    } else if ((long_flag == 2) && (addr & 04000)) {
+        // Transient data.
+        snprintf(buf, sizeof(buf), "t%s", getlabel('#', addr & 03777));
+    } else if ((long_flag == 0) && (addr & 04000)) {
+        // Short address.
+        snprintf(buf, sizeof(buf), "%s", getlabel('#', addr & 03777));
+    } else if ((long_flag == 1) && (addr & 040000)) {
+        // Long address.
+        if ((addr & 074000) == 074000) {
+            snprintf(buf, sizeof(buf), "%s", getlabel('#', addr & 03777));
+        } else {
+            int reladdr = addr & 037777;
+            int intext = (reladdr < obj->cmd_len);
+            snprintf(buf, sizeof(buf), "%s",
+                getlabel(intext ? 'c' : 'd', reladdr));
+        }
+    } else if (addr <= 07777) {
+        snprintf(buf, sizeof(buf), "%#o", addr);
+    } else {
+        snprintf(buf, sizeof(buf), "%o", addr);
+    }
+    return buf;
+}
+
 int getiso(uint64_t word, int n)
 {
     int c = word >> (40 - n * 8);
@@ -152,7 +191,7 @@ void print_word_as_text(uint64_t word)
     }
 }
 
-void print_insn(int opcode)
+void print_insn(obj_image_t *obj, int opcode)
 {
     unsigned op_lflag = (opcode >> 19) & 1;
     unsigned op_ir    = (opcode >> 20) & 017;
@@ -175,13 +214,7 @@ void print_insn(int opcode)
 
     // Address
     if (op_addr != 0) {
-        if (op_addr < 8) {
-            printf("%u", op_addr);
-        } else if (op_addr <= 07777) {
-            printf("%#o", op_addr);
-        } else {
-            printf("%o", op_addr);
-        }
+        printf("%s", getaddr(obj, op_addr, op_lflag));
     }
 
     // Register
@@ -271,27 +304,21 @@ void disassemble(const char *fname)
 
     printf("%s: file format besm6\n", fname);
     printf("\n");
-    printf("     Code size: %#o words\n", obj.cmd_len);
-    printf("    Const size: %#o words\n", obj.const_len);
-    printf("     Data size: %#o words\n", obj.data_len);
-    printf("      Set size: %#o words\n", obj.set_len);
-    printf("   Symhdr size: %#o words\n", obj.head_len);
-    printf("   Symtab size: %#o words\n", obj.sym_len);
-    printf("  Longsym size: %#o words\n", obj.long_len);
-    printf("    Debug size: %#o words\n", obj.debug_len);
-    printf("      BSS size: %#o words\n", obj.bss_len);
+    printf("     Code size: %u words\n", obj.cmd_len);
+    printf("    Const size: %u words\n", obj.const_len);
+    printf("     Data size: %u words\n", obj.data_len);
+    printf("      Set size: %u words\n", obj.set_len);
+    printf("   Symhdr size: %u words\n", obj.head_len);
+    printf("   Symtab size: %u words\n", obj.sym_len);
+    printf("  Longsym size: %u words\n", obj.long_len);
+    printf("    Debug size: %u words\n", obj.debug_len);
+    printf("      BSS size: %u words\n", obj.bss_len);
 #if 0
     printf(" Symhdr offset: %#o words\n", obj.table_off);
     printf("Longsym offset: %#o words\n", obj.long_off);
     printf("  Debug offset: %#o words\n", obj.debug_off);
     printf("Comment offset: %#o words\n", obj.comment_off);
 #endif
-    if (obj.data_len != 0) {
-        fprintf(stderr, "Warning: Data section not supported yet\n");
-    }
-    if (obj.set_len != 0) {
-        fprintf(stderr, "Warning: Set section not supported yet\n");
-    }
 
     //
     // Print code.
@@ -304,10 +331,10 @@ void disassemble(const char *fname)
     for (i = 0; i < obj.cmd_len; i++) {
         uint64_t word = obj.word[i + 4];
 
-        printf("%5o:  ", i);
-        print_insn(word >> 24);
-        printf("\n        ");
-        print_insn(word & 077777777);
+        printf("%6s:  ", getlabel('c', i));
+        print_insn(&obj, word >> 24);
+        printf("\n         ");
+        print_insn(&obj, word & 077777777);
         printf("\n");
     }
 
@@ -321,7 +348,8 @@ void disassemble(const char *fname)
         for (i = 0; i < obj.const_len; i++) {
             uint64_t word = obj.word[i + 4 + obj.cmd_len];
 
-            printf("%5o:  %04o %04o %04o %04o", i + obj.cmd_len,
+            printf("%6s:  %04o %04o %04o %04o",
+                getlabel('d', i + obj.cmd_len),
                 (unsigned)(word >> 36) & 07777,
                 (unsigned)(word >> 24) & 07777,
                 (unsigned)(word >> 12) & 07777,
@@ -345,11 +373,61 @@ void disassemble(const char *fname)
         printf("\n");
         printf("Uninitialized data:\n");
         printf("\n");
-        printf("%5o", obj.cmd_len + obj.const_len);
+        printf("%6s", getlabel('d', obj.cmd_len + obj.const_len));
         if (obj.bss_len <= 1)
             printf(":\n");
         else
-            printf("%5o", obj.cmd_len + obj.const_len + obj.bss_len - 1);
+            printf("%s",
+                getlabel('d', obj.cmd_len + obj.const_len + obj.bss_len - 1));
+    }
+
+    //
+    // Print transient data section.
+    //
+    if (obj.data_len > 0) {
+        printf("\n");
+        printf("Transient data:\n");
+        printf("\n");
+        for (i = 0; i < obj.data_len; i++) {
+            uint64_t word  = obj.word[i + 4 + obj.cmd_len + obj.const_len];
+
+            printf("%6s:  %04o %04o %04o %04o",
+                getlabel('t', i + obj.cmd_len + obj.const_len),
+                (unsigned)(word >> 36) & 07777,
+                (unsigned)(word >> 24) & 07777,
+                (unsigned)(word >> 12) & 07777,
+                (unsigned)word & 07777);
+            printf("  %c%c%c%c%c%c",
+                getiso(word, 0), getiso(word, 1),
+                getiso(word, 2), getiso(word, 3),
+                getiso(word, 4), getiso(word, 5));
+            printf("  %s%s%s%s%s%s%s%s\n",
+                getsymtext(word, 0), getsymtext(word, 1),
+                getsymtext(word, 2), getsymtext(word, 3),
+                getsymtext(word, 4), getsymtext(word, 5),
+                getsymtext(word, 6), getsymtext(word, 7));
+        }
+    }
+
+    //
+    // Print SET section.
+    //
+    if (obj.set_len > 0) {
+        printf("\n");
+        printf("SET directives:\n");
+        printf("\n");
+        for (i = 0; i < obj.set_len; i++) {
+            uint64_t word  = obj.word[i + 4 + obj.cmd_len + obj.const_len + obj.data_len];
+            unsigned size  = (word >> 36) & 07777;
+            unsigned from  = (word >> 24) & 07777;
+            unsigned count = (word >> 12) & 07777;
+            unsigned to    = word & 07777;
+
+            printf("%6o:  %u words from %s ",
+                i + 1, size, getaddr(&obj, from, 2));
+            printf("to %s, replicate %u times\n",
+                getaddr(&obj, to, 0), count);
+        }
     }
 
     //
@@ -361,7 +439,8 @@ void disassemble(const char *fname)
     for (i = 0; i < obj.sym_len; i++) {
         uint64_t word = obj.word[i + 1 + obj.table_off];
 
-        printf("%5o:  %04o %04o %04o %04o", i + 1,
+        printf("%6s:  %04o %04o %04o %04o",
+            getlabel('#', i + 1),
             (unsigned)(word >> 36) & 07777,
             (unsigned)(word >> 24) & 07777,
             (unsigned)(word >> 12) & 07777,
@@ -379,7 +458,7 @@ void disassemble(const char *fname)
     for (i = 0; i < obj.long_len; i++) {
         uint64_t word = obj.word[i + obj.long_off];
 
-        printf("%5o:  ", i + 1 + obj.sym_len);
+        printf("%6s:  ", getlabel('#', i + 1 + obj.sym_len));
         print_word_as_text(word);
         printf("\n");
     }
