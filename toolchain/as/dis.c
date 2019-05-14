@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <getopt.h>
 
 //
@@ -56,6 +57,21 @@ typedef struct _obj_image_t {
     uint64_t word[MAXSZ];
 
 } obj_image_t;
+
+//
+// Symbol types
+//
+enum {
+    SYM_OFFSET      = 000,          // Offset from another symbol
+    SYM_ABS         = 040,          // Absolute address
+    SYM_RELOC       = 041,          // Relocatable address
+    SYM_EXT_S       = 043,          // External reference (short name)
+    SYM_PRIVATE_S   = 046,          // Private block (short name)
+    SYM_COMMON_S    = 047,          // Common block (short name)
+    SYM_EXT_L       = 063,          // External reference (long name)
+    SYM_PRIVATE_L   = 066,          // Private block (long name)
+    SYM_COMMON_L    = 067,          // Common block (long name)
+};
 
 //
 // First word of object file: magic key.
@@ -132,37 +148,6 @@ const char *getlabel(char ch, int n)
     return buf;
 }
 
-const char *getaddr(obj_image_t *obj, unsigned addr, int long_flag)
-{
-    static char buf[16];
-
-//if (1) snprintf(buf, sizeof(buf), "<%o>", addr); else
-    if (addr < 8) {
-        snprintf(buf, sizeof(buf), "%u", addr);
-    } else if ((long_flag == 2) && (addr & 04000)) {
-        // Transient data.
-        snprintf(buf, sizeof(buf), "t%s", getlabel('#', addr & 03777));
-    } else if ((long_flag == 0) && (addr & 04000)) {
-        // Short address.
-        snprintf(buf, sizeof(buf), "%s", getlabel('#', addr & 03777));
-    } else if ((long_flag == 1) && (addr & 040000)) {
-        // Long address.
-        if ((addr & 074000) == 074000) {
-            snprintf(buf, sizeof(buf), "%s", getlabel('#', addr & 03777));
-        } else {
-            int reladdr = addr & 037777;
-            int intext = (reladdr < obj->cmd_len);
-            snprintf(buf, sizeof(buf), "%s",
-                getlabel(intext ? 'c' : 'd', reladdr));
-        }
-    } else if (addr <= 07777) {
-        snprintf(buf, sizeof(buf), "%#o", addr);
-    } else {
-        snprintf(buf, sizeof(buf), "%o", addr);
-    }
-    return buf;
-}
-
 int getiso(uint64_t word, int n)
 {
     int c = word >> (40 - n * 8);
@@ -189,6 +174,110 @@ void print_word_as_text(uint64_t word)
             break;
         fputs(text_to_utf[c], stdout);
     }
+}
+
+void text_to_buf(char *p, uint64_t word)
+{
+    int i, c;
+
+    for (i = 42; i >= 0; i -= 6) {
+        c = (word >> i) & 077;
+        if (c == 0)
+            break;
+        strcpy(p, text_to_utf[c]);
+        p += strlen(p);
+    }
+    *p = 0;
+}
+
+const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int transient_flag)
+{
+    static char buf[64];
+    unsigned type = (word >> 18) & 077;
+    unsigned addr = word & 077777;
+    unsigned ref  = (word >> 24) & 03777;
+
+    switch (type) {
+    case SYM_OFFSET:      // Offset from another symbol
+        getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
+        strcat(buf, verbose_flag ? " + " : "+");
+        sprintf(buf + strlen(buf), "%o", addr);
+        break;
+
+    case SYM_ABS:         // Absolute address
+        snprintf(buf, sizeof(buf), "%o", addr);
+        break;
+
+    case SYM_RELOC:       // Relocatable address
+        snprintf(buf, sizeof(buf), "%c%o",
+            (addr < obj->cmd_len) ? 'c' :
+            transient_flag ? 't' : 'd', addr);
+        break;
+
+    case SYM_EXT_S:       // External reference (short name)
+        text_to_buf(buf, word & 07777777700000000);
+        break;
+
+    case SYM_PRIVATE_S:   // Private block (short name)
+        text_to_buf(buf, word & 07777777700000000);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Private %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_COMMON_S:    // Common block (short name)
+        text_to_buf(buf, word & 07777777700000000);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Common %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_EXT_L:       // External reference (long name)
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
+        break;
+
+    case SYM_PRIVATE_L:   // Private block (long name)
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Private %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_COMMON_L:    // Common block (long name)
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Common %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+    }
+    return buf;
+}
+
+const char *getaddr(obj_image_t *obj, unsigned addr, int long_flag)
+{
+    static char buf[16];
+
+//if (1) snprintf(buf, sizeof(buf), "<%o>", addr); else
+    if (addr < 8) {
+        snprintf(buf, sizeof(buf), "%u", addr);
+    } else if ((long_flag == 2) && (addr & 04000)) {
+        // Transient data.
+        return getsyminfo(obj, obj->word[(addr & 03777) + obj->table_off], 0, 1);
+    } else if ((long_flag == 0) && (addr & 04000)) {
+        // Short address.
+        return getsyminfo(obj, obj->word[(addr & 03777) + obj->table_off], 0, 0);
+    } else if ((long_flag == 1) && (addr & 040000)) {
+        // Long address.
+        if ((addr & 074000) == 074000) {
+            return getsyminfo(obj, obj->word[(addr & 03777) + obj->table_off], 0, 0);
+        } else {
+            int reladdr = addr & 037777;
+            int intext = (reladdr < obj->cmd_len);
+            snprintf(buf, sizeof(buf), "%s",
+                getlabel(intext ? 'c' : 'd', reladdr));
+        }
+    } else if (addr <= 07777) {
+        snprintf(buf, sizeof(buf), "%#o", addr);
+    } else {
+        snprintf(buf, sizeof(buf), "%o", addr);
+    }
+    return buf;
 }
 
 void print_insn(obj_image_t *obj, int opcode)
@@ -374,11 +463,10 @@ void disassemble(const char *fname)
         printf("Uninitialized data:\n");
         printf("\n");
         printf("%6s", getlabel('d', obj.cmd_len + obj.const_len));
-        if (obj.bss_len <= 1)
-            printf(":\n");
-        else
-            printf("%s",
+        if (obj.bss_len > 1)
+            printf("-%s",
                 getlabel('d', obj.cmd_len + obj.const_len + obj.bss_len - 1));
+        printf(":  %d word%s\n", obj.bss_len, obj.bss_len<2 ? "" : "s");
     }
 
     //
@@ -423,10 +511,18 @@ void disassemble(const char *fname)
             unsigned count = (word >> 12) & 07777;
             unsigned to    = word & 07777;
 
-            printf("%6o:  %u words from %s ",
-                i + 1, size, getaddr(&obj, from, 2));
-            printf("to %s, replicate %u times\n",
-                getaddr(&obj, to, 0), count);
+            printf("%6s:  %04o %04o %04o %04o",
+                getlabel('t', i + obj.cmd_len + obj.const_len + obj.data_len),
+                (unsigned)(word >> 36) & 07777,
+                (unsigned)(word >> 24) & 07777,
+                (unsigned)(word >> 12) & 07777,
+                (unsigned)word & 07777);
+            printf("  %u word%s from %s ",
+                size, size<2 ? "" : "s", getaddr(&obj, from, 2));
+            printf("to %s", getaddr(&obj, to, 0));
+            if (count != 1)
+                printf("replicate %u times", count);
+            printf("\n");
         }
     }
 
@@ -439,18 +535,13 @@ void disassemble(const char *fname)
     for (i = 0; i < obj.sym_len; i++) {
         uint64_t word = obj.word[i + 1 + obj.table_off];
 
-        printf("%6s:  %04o %04o %04o %04o",
-            getlabel('#', i + 1),
+        printf("%6o:  %04o %04o %04o %04o  %s\n",
+            i + 04001,
             (unsigned)(word >> 36) & 07777,
             (unsigned)(word >> 24) & 07777,
             (unsigned)(word >> 12) & 07777,
-            (unsigned)word & 07777);
-        if ((word >> 42) != 0) {
-            printf("  %s%s%s%s",
-                getsymtext(word, 0), getsymtext(word, 1),
-                getsymtext(word, 2), getsymtext(word, 3));
-        }
-        printf("\n");
+            (unsigned)word & 07777,
+            getsyminfo(&obj, word, 1, 0));
     }
     printf("\n");
     printf("Long names:\n");
@@ -458,7 +549,12 @@ void disassemble(const char *fname)
     for (i = 0; i < obj.long_len; i++) {
         uint64_t word = obj.word[i + obj.long_off];
 
-        printf("%6s:  ", getlabel('#', i + 1 + obj.sym_len));
+        printf("%6o:  %04o %04o %04o %04o  ",
+            i + 04001 + obj.sym_len,
+            (unsigned)(word >> 36) & 07777,
+            (unsigned)(word >> 24) & 07777,
+            (unsigned)(word >> 12) & 07777,
+            (unsigned)word & 07777);
         print_word_as_text(word);
         printf("\n");
     }

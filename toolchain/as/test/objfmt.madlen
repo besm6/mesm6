@@ -1,5 +1,7 @@
  objfmt:    ,name,
  extvar:    ,lc  , 1
+ loc:       ,lp  , 2
+ loclong:   ,lp  , 3
  extfunc:   ,subp,
             ,wtc , myvar
             ,utc , myconst
@@ -18,6 +20,8 @@
             ,aox , extfunc
             ,aax , extfunc+1
             ,a*x , 4567b
+            ,amx , loc
+            ,avx , loclong
  myconst:   ,log , 1234 5670 2222 5555
  myvar:     ,bss , 1
             ,data,
