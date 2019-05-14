@@ -787,6 +787,7 @@ int64_t debugLine,
         objBufIdx,
         int92z, int93z, int94z,
         prevOpcode,
+        charEncoding,
         int97z;
 
 bool atEOL,
@@ -886,6 +887,13 @@ struct PasInfor {
     int64_t listMode;
     int64_t startOffset;
 } PASINFOR;
+
+static const char *koi2utf[64] = {
+    "ю","а","б","ц","д","е","ф","г","х","и","й","к","л","м","н","о",
+    "п","я","р","с","т","у","ж","в","ь","ы","з","ш","э","щ","ч","ъ",
+    "Ю","А","Б","Ц","Д","Е","Ф","Г","Х","И","Й","К","Л","М","Н","О",
+    "П","Я","Р","С","Т","У","Ж","В","Ь","Ы","З","Ш","Э","Щ","Ч","Ъ",
+};
 
 struct programme {
     programme(int64_t & l2arg1z, IdentRecPtr l2idr2z_);
@@ -1459,12 +1467,6 @@ void OBPROG(Bitset & start, Bitset & fin)
 static void kputc(uint8_t c)
 {
     if (c >= 0300) {
-        static const char *koi2utf[64] = {
-            "ю","а","б","ц","д","е","ф","г","х","и","й","к","л","м","н","о",
-            "п","я","р","с","т","у","ж","в","ь","ы","з","ш","э","щ","ч","ъ",
-            "Ю","А","Б","Ц","Д","Е","Ф","Г","Х","И","Й","К","Л","М","Н","О",
-            "П","Я","Р","С","Т","У","Ж","В","Ь","Ы","З","Ш","Э","Щ","Ч","Ъ",
-        };
         fputs(koi2utf[c - 0300], stdout);
         return;
     }
@@ -1705,7 +1707,7 @@ parseComment::parseComment()
                 readOptFlag(checkBounds);
                 break;
             case 'A': case 'a':
-                // Character encoding ignored.
+                charEncoding = readOptVal(2);
                 break;
             case 'C': case 'c':
                 readOptFlag(checkTypes);
@@ -1746,6 +1748,17 @@ parseComment::parseComment()
     if (!brace)
         nextCH();
 } /* parseComment */
+
+unsigned char koi8_to_koi7(unsigned char ch)
+{
+    if (ch >= 0300)
+        return (ch & 0177) | 040;
+    if (ch >= 0200)
+        return ' ';
+    if (ch >= 0140)
+        ch ^= 040;
+    return ch;
+}
 
 inSymbol::inSymbol()
 {
@@ -2037,8 +2050,29 @@ L2175:                      error(59); /* errEOLNInStringLiteral */
                                 error(errFirstDigitInCharLiteralGreaterThan3);
                             localBuf[tokenIdx] = (unsigned char)expLiteral;
                         } else {
-L2233:                      curChar = CH;
-                            localBuf[tokenIdx] = curChar;
+                            // Modify output encoding:
+                            // a0 - UTF-8, a1 - KOI-8, a2 - KOI7 (default).
+L2233:                      switch (charEncoding) {
+                            case 0:
+                                // KOI-8 to UTF-8.
+                                if (CH < 0300) {
+                                    localBuf[tokenIdx] = (CH < 0200) ? CH : ' ';
+                                } else {
+                                    const char *utf = koi2utf[CH - 0300];
+                                    localBuf[tokenIdx++] = *utf++;
+                                    localBuf[tokenIdx] = *utf;
+                                }
+                                break;
+                            case 1:
+                                // KOI-8.
+                                localBuf[tokenIdx] = CH;
+                                break;
+                            case 2:
+                            default:
+                                // KOI-8 to KOI-7.
+                                localBuf[tokenIdx] = koi8_to_koi7(CH);
+                                break;
+                            }
                         }
                     }
                     goto L2175;
@@ -8838,6 +8872,10 @@ void usage ()
     printf("Usage:\n");
     printf("    %s [option...] infile [outfile]\n", progname);
     printf("Options:\n");
+    printf("    -a0 -a1 -a2         Output encoding for strings:\n");
+    printf("                        -a0: UTF-8\n");
+    printf("                        -a1: KOI-8\n");
+    printf("                        -a2: KOI-7 (aka ISO, default)\n");
     printf("    -b0 -b1 ... -b4     Size of file buffer, in 256-word chunks\n");
     printf("    -c- -c+             Disable/enable checking of data types\n");
     printf("    -d0 -d1 ... -d15    Bitmask of debug flags:\n");
@@ -8910,6 +8948,7 @@ void initOptions(int argc, char **argv)
     litForward.ii = 046576267416244L;
     litFortran.ii = 046576264624156L;
     fileBufSize = 1;
+    charEncoding = 2;
     chain = NULL;
     litOct.ii = 0574364L;
     longSymCnt = 0;
@@ -8921,9 +8960,16 @@ void initOptions(int argc, char **argv)
     progname = progname ? progname+1 : argv[0];
 
     for (;;) {
-        switch (getopt(argc, argv, "vhe:p:t:c:r:m:y:u:f:d:k:b:s:l:")) {
+        switch (getopt(argc, argv, "vhe:p:t:c:r:m:y:u:f:a:d:k:b:s:l:")) {
         case EOF:
             break;
+        case 'a':
+            charEncoding = strtoul(optarg, 0, 0);
+            if (charEncoding > 2) {
+                fprintf(stderr, "%s: Bad option -a\n", progname);
+                exit(-1);
+            }
+            continue;
         case 'b':
             fileBufSize = strtoul(optarg, 0, 0);
             if (fileBufSize > 4) {
