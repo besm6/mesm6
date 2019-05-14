@@ -1906,11 +1906,11 @@ L2:                 hashTravPtr = symHashTabBase[bucket];
                     nextCH();
                 } while (charSymTabBase[CH] == INTCONST);
                 {
-                    if (CH == 'B')
+                    if (CH == 'B' || CH == 'b')
                         suffix = suffixB;
-                    else if (CH == 'C')
+                    else if (CH == 'C' || CH == 'c')
                         suffix = suffixC;
-                    else if (CH == 'T')
+                    else if (CH == 'T' || CH == 't')
                         suffix = suffixT;
                     else {
                         suffix = noSuffix;
