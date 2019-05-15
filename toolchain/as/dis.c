@@ -48,6 +48,8 @@ typedef struct _obj_image_t {
     unsigned bss_len;           // length of bss section
     unsigned const_len;         // length of const section
 
+    unsigned head_off;          // offset of header
+    unsigned cmd_off;           // offset of code section
     unsigned table_off;         // offset of symhdr section
     unsigned long_off;          // offset of longsym section
     unsigned debug_off;         // offset of debug section
@@ -362,19 +364,47 @@ int obj_read(const char *fname, obj_image_t *obj)
         fprintf(stderr, "Bad magic: %#jx\n", (intmax_t)obj->word[0]);
         return -1;
     }
-    obj->head_len  = obj->word[1] & 07777;
-    obj->sym_len   = (obj->word[1] >> 12) & 07777;
-    obj->debug_len = (obj->word[1] >> 36);
 
-    obj->set_len  = obj->word[2] & 077777;
-    obj->data_len = (obj->word[2] >> 15) & 077777;
-    obj->long_len = (obj->word[2] >> 30) & 077777;
+    // Detect packed or unpacked header.
+    obj->head_off = 1;
+    if ((obj->word[2] >> 45) != 0) {
 
-    obj->cmd_len   = obj->word[3] & 077777;
-    obj->bss_len   = (obj->word[3] >> 15) & 077777;
-    obj->const_len = (obj->word[3] >> 30) & 077777;
+        // Skip entry table.
+        while ((obj->word[obj->head_off + 1] >> 45) != 0) {
+            obj->head_off += 2;
+        }
 
-    obj->table_off = 4 + obj->cmd_len + obj->const_len + obj->data_len + obj->set_len;
+        // Unpacked header.
+        obj->head_len  = obj->word[obj->head_off];
+        obj->sym_len   = obj->word[obj->head_off + 1];
+        // Unknown: obj->word[obj->head_off + 2]
+        obj->debug_len = obj->word[obj->head_off + 3];
+        obj->long_len  = obj->word[obj->head_off + 4];
+        obj->cmd_len   = obj->word[obj->head_off + 5];
+        obj->bss_len   = obj->word[obj->head_off + 6];
+        obj->const_len = obj->word[obj->head_off + 7];
+        obj->data_len  = obj->word[obj->head_off + 8];
+        obj->set_len   = obj->word[obj->head_off + 9];
+
+        obj->cmd_off = obj->head_off + 10;
+    } else {
+        // Packed header.
+        obj->head_len  = obj->word[obj->head_off] & 07777;
+        obj->sym_len   = (obj->word[obj->head_off] >> 12) & 07777;
+        obj->debug_len = (obj->word[obj->head_off] >> 36);
+
+        obj->set_len  = obj->word[obj->head_off + 1] & 077777;
+        obj->data_len = (obj->word[obj->head_off + 1] >> 15) & 077777;
+        obj->long_len = (obj->word[obj->head_off + 1] >> 30) & 077777;
+
+        obj->cmd_len   = obj->word[obj->head_off + 2] & 077777;
+        obj->bss_len   = (obj->word[obj->head_off + 2] >> 15) & 077777;
+        obj->const_len = (obj->word[obj->head_off + 2] >> 30) & 077777;
+
+        obj->cmd_off = obj->head_off + 3;
+    }
+
+    obj->table_off = obj->cmd_off + obj->cmd_len + obj->const_len + obj->data_len + obj->set_len;
     obj->long_off = obj->table_off + obj->head_len + obj->sym_len;
     obj->debug_off = obj->long_off + obj->long_len;
     obj->comment_off = obj->debug_off + obj->debug_len;
@@ -418,7 +448,7 @@ void disassemble(const char *fname)
     print_word_as_text(obj.word[obj.table_off]);
     printf(":\n");
     for (i = 0; i < obj.cmd_len; i++) {
-        uint64_t word = obj.word[i + 4];
+        uint64_t word = obj.word[i + obj.cmd_off];
 
         printf("%6s:  ", getlabel('c', i));
         print_insn(&obj, word >> 24);
@@ -435,7 +465,7 @@ void disassemble(const char *fname)
         printf("Initialized data:\n");
         printf("\n");
         for (i = 0; i < obj.const_len; i++) {
-            uint64_t word = obj.word[i + 4 + obj.cmd_len];
+            uint64_t word = obj.word[i + obj.cmd_off + obj.cmd_len];
 
             printf("%6s:  %04o %04o %04o %04o",
                 getlabel('d', i + obj.cmd_len),
@@ -477,7 +507,7 @@ void disassemble(const char *fname)
         printf("Transient data:\n");
         printf("\n");
         for (i = 0; i < obj.data_len; i++) {
-            uint64_t word  = obj.word[i + 4 + obj.cmd_len + obj.const_len];
+            uint64_t word  = obj.word[i + obj.cmd_off + obj.cmd_len + obj.const_len];
 
             printf("%6s:  %04o %04o %04o %04o",
                 getlabel('t', i + obj.cmd_len + obj.const_len),
@@ -505,7 +535,7 @@ void disassemble(const char *fname)
         printf("SET directives:\n");
         printf("\n");
         for (i = 0; i < obj.set_len; i++) {
-            uint64_t word  = obj.word[i + 4 + obj.cmd_len + obj.const_len + obj.data_len];
+            uint64_t word  = obj.word[i + obj.cmd_off + obj.cmd_len + obj.const_len + obj.data_len];
             unsigned size  = (word >> 36) & 07777;
             unsigned from  = (word >> 24) & 07777;
             unsigned count = (word >> 12) & 07777;
@@ -543,20 +573,22 @@ void disassemble(const char *fname)
             (unsigned)word & 07777,
             getsyminfo(&obj, word, 1, 0));
     }
-    printf("\n");
-    printf("Long names:\n");
-    printf("\n");
-    for (i = 0; i < obj.long_len; i++) {
-        uint64_t word = obj.word[i + obj.long_off];
-
-        printf("%6o:  %04o %04o %04o %04o  ",
-            i + 04001 + obj.sym_len,
-            (unsigned)(word >> 36) & 07777,
-            (unsigned)(word >> 24) & 07777,
-            (unsigned)(word >> 12) & 07777,
-            (unsigned)word & 07777);
-        print_word_as_text(word);
+    if (obj.long_len > 0) {
         printf("\n");
+        printf("Long names:\n");
+        printf("\n");
+        for (i = 0; i < obj.long_len; i++) {
+            uint64_t word = obj.word[i + obj.long_off];
+
+            printf("%6o:  %04o %04o %04o %04o  ",
+                i + 04001 + obj.sym_len,
+                (unsigned)(word >> 36) & 07777,
+                (unsigned)(word >> 24) & 07777,
+                (unsigned)(word >> 12) & 07777,
+                (unsigned)word & 07777);
+            print_word_as_text(word);
+            printf("\n");
+        }
     }
 }
 

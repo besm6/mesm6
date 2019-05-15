@@ -9,7 +9,7 @@ import sys, os, string, subprocess, struct
 # Parse command line.
 #
 if len(sys.argv) < 2:
-    print "Usage: madlen-to-obj.py filename.punch"
+    print "Usage: punch-to-obj.py filename.punch"
     sys.exit(1)
 input_name = sys.argv[1]
 basename = os.path.splitext(input_name)[0]
@@ -66,7 +66,7 @@ for cardno in range(1024):
         b = (b >> 8) | (a << 4 & 0xff)
         a = a >> 4
         #print "%02x %02x %02x %02x %02x %02x" % (a, b, c, d, e, f)
-        obj_file.write(struct.pack(">BBBBBB", a, b, c, d, e, f))
+        obj_file.write(struct.pack("BBBBBB", a, b, c, d, e, f))
 
     if card[0][3] == 'O':
         # Last card.
