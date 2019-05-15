@@ -107,14 +107,16 @@ for line in dump_file.readlines():
             # Word value, for example:
             # с 1423 1456 1403 2456 ; 03776
             word = line.split()
-            if len(word) == 7:
-                addr = int(word[6], 8)
+            if len(word) == 7 or len(word) == 4:
+                addr = int(word[6 if len(word) == 7 else 3], 8)
                 if addr >= 04000:
                     #print addr, word
-                    a = int(word[1], 8)
-                    b = int(word[2], 8)
-                    c = int(word[3], 8)
-                    d = int(word[4], 8)
+                    a = int(word[1], 8) if len(word) == 7 else 0
+                    b = int(word[2], 8) if len(word) == 7 else 0
+                    c = int(word[3], 8) if len(word) == 7 else 0
+                    d = int(word[4], 8) if len(word) == 7 else 0
+                    print "%04o %04o %04o %04o" % (a, b, c, d)
+
                     f = d & 0xff
                     e = (d >> 8) | (c << 4 & 0xff)
                     d = c >> 4
