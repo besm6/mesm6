@@ -521,7 +521,7 @@ void disassemble(const char *fname)
                 size, size<2 ? "" : "s", getaddr(&obj, from, 2));
             printf("to %s", getaddr(&obj, to, 0));
             if (count != 1)
-                printf("replicate %u times", count);
+                printf(", replicate %u times", count);
             printf("\n");
         }
     }

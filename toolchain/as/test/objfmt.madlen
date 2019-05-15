@@ -1,7 +1,7 @@
  objfmt:    ,name,
- extvar:    ,lc  , 1
- loc:       ,lp  , 2
- loclong:   ,lp  , 3
+ extvar:    ,lc  , 1    . Common block
+ loc:       ,lp  , 2    . Private block, short name
+ loclong:   ,lp  , 3    . Private block, long name
  extfunc:   ,subp,
             ,wtc , myvar
             ,utc , myconst
@@ -12,6 +12,7 @@
           13,vjm , extfunc+1
           1 ,vzm , mycode
             ,uj  , mycode+1
+ mycode:    ,entry,
  mycode:    ,xta , myvar
             ,atx , extvar
             ,atx , extvar+5
@@ -38,6 +39,6 @@ C; Такая пара операторов осуществляет перес�
 C; начинающейся с адреса FROM, в массив ячеек, начинающийся
 C; с адреса TO, CNT раз.
 C;
-          1 ,set , mydata
+          1 ,set , mydata   . Рассылка данных
           1 ,    , myvar
             ,end ,
