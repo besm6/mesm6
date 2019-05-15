@@ -560,22 +560,22 @@ struct FileT : public Types {
     int64_t elsize;
 };
 
-struct RecordT : public Types {
-    static const Kind kind = kindRecord;
-    RecordT() : Types(0, 0, kind) { }
-    TypesPtr base;
-    IdentRecPtr ptr2;
-    bool flag, pckrec;
-};
-
 struct CasesT : public Types {
     static const Kind kind = kindCases;
     CasesT(int64_t s_, Word sel_, TypesPtr f_, TypesPtr n_, TypesPtr r_) :
-        Types(s_, 48, kind), sel(sel_), first(f_), next(n_), r6(r_) { }
+        Types(s_, 48, kind), sel(sel_), first(f_), next(n_), sameAs(r_) { }
     Word sel;
-    TypesPtr first, next, r6;
+    TypesPtr first, next, sameAs;
 };
     
+struct RecordT : public Types {
+    static const Kind kind = kindRecord;
+    RecordT() : Types(0, 0, kind) { }
+    CasesT * cases;
+    IdentRecPtr fields;
+    bool hasFiles, pckrec;
+};
+
 std::string Types::p() const
 {
     std::ostringstream ostr;
@@ -2349,7 +2349,7 @@ void P2672(IdentRecPtr & l3arg1z, IdentRecPtr l3arg2z)
 bool isFileType(TypesPtr typtr)
 {
     return (typtr->k == kindFile) or
-        ((typtr->k == kindRecord) and typtr->cast<RecordT>().flag);
+        ((typtr->k == kindRecord) and typtr->cast<RecordT>().hasFiles);
 }
 
 bool knownInType(IdentRecPtr & rec)
@@ -2396,14 +2396,14 @@ struct typeCheck {
 };
 std::vector<typeCheck*> typeCheck::super;
 
-bool checkRecord(TypesPtr l4arg1z, TypesPtr l4arg2z)
+bool checkRecord(IdentRecPtr l4arg1z, IdentRecPtr l4arg2z)
 {
     bool l4var1z = (l4arg1z == NULL) or (l4arg2z == NULL);
     if (l4var1z) {
         return l4arg1z == l4arg2z;
     } else {
-        return typeCheck(l4arg1z->cast<RecordT>().base, l4arg2z->cast<RecordT>().base) and
-            checkRecord(l4arg1z->cast<CasesT>().next, l4arg2z->cast<CasesT>().next);
+        return typeCheck(l4arg1z->typ, l4arg2z->typ) and
+            checkRecord(l4arg1z->list, l4arg2z->list);
     }
 } /* checkRecord */
 
@@ -2496,7 +2496,7 @@ L1:     ret = true;
                     goto L1;
             } break;
             case kindRecord: {
-                if (checkRecord(type1->cast<CasesT>().first, type2->cast<CasesT>().first))
+                if (checkRecord(type1->cast<RecordT>().fields, type2->cast<RecordT>().fields))
                     goto L1;
             } break;
             case kindCases:
@@ -4869,15 +4869,15 @@ void packFields()
     bool &isPacked = parseTypeRef::super.back()->isPacked;
 
     parseTypeRef(selType, skipTarget + mkbs(CASESY));
-    if (curType->cast<RecordT>().ptr2 == NULL) {
-        curType->cast<RecordT>().ptr2 = curField;
+    if (curType->cast<RecordT>().fields == NULL) {
+        curType->cast<RecordT>().fields = curField;
     } else {
         l3idr31z->list = curField;
     }
     cond = isFileType(selType);
     if (not isOuterDecl and cond)
         error(errTypeMustNotBeFile);
-    curType->cast<RecordT>().flag = cond or curType->cast<RecordT>().flag;
+    curType->cast<RecordT>().hasFiles |= cond;
     l3idr31z = curEnum;
     do {
         curField->typ = selType;
@@ -5049,7 +5049,7 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_)
                 if (l4var3z == NULL) {
                     tempType = l4var5z;
                 } else {
-                    l4var3z->cast<CasesT>().r6 = l4var5z;
+                    l4var3z->cast<CasesT>().sameAs = l4var5z;
                 }
                 l4var3z = l4var5z;
                 inSymbol();
@@ -5058,8 +5058,8 @@ parseRecordDecl::parseRecordDecl(TypesPtr rectype, bool isOuterDecl_)
                     inSymbol();
             } while (!cond);
             if (l4typ1z == NULL) {
-                if (curType->cast<RecordT>().base == NULL) {
-                    curType->cast<RecordT>().base = tempType;
+                if (curType->cast<RecordT>().cases == NULL) {
+                  curType->cast<RecordT>().cases = &tempType->cast<CasesT>();
                 } else {
                     rectype->cast<CasesT>().first = tempType;
                 }
@@ -5202,9 +5202,9 @@ L12366:             error(errNotAType);
             typ121z = curType;
             record.size = 0;
             record.bits = 48;
-            record.base = NULL;
-            record.ptr2 = NULL;
-            record.flag = false;
+            record.cases = NULL;
+            record.fields = NULL;
+            record.hasFiles = false;
             record.pckrec = isPacked;
             cases.size = 0;
             cases.count = 0;
@@ -7202,7 +7202,7 @@ L17362:
                   form1Insn(KATI+14);
               } else {
                   if (l2typ13z->k == kindRecord) {
-                      l4typ1z = l2typ13z->cast<RecordT>().base;
+                      l4typ1z = l2typ13z->cast<RecordT>().cases;
                       /*loop*/ while (SY == COMMA and l4typ1z != NULL) {
                           inSymbol();
                           parseLiteral(l4typ2z, curVal, true);
@@ -7217,7 +7217,7 @@ L17362:
                                           ii = l4typ1z->size;
                                           goto exit_loop2;
                                       }
-                                      l4typ2z = l4typ2z->cast<CasesT>().r6;
+                                      l4typ2z = l4typ2z->cast<CasesT>().sameAs;
                                   };
                                   l4typ1z = l4typ1z->cast<CasesT>().next;
                               } exit_loop2:;
@@ -7823,7 +7823,7 @@ struct initScalars {
         curIdRec->offset = 0;
         curIdRec->typ = temptype;
         curIdRec->cl = ROUTINEID;
-        curIdRec->maybeUnused = l3var9z;
+        curIdRec->low = l3var9z;
         l3var9z = l3var9z + 1;
         addToHashTab(curIdRec);
     } /* registerSysProc */
