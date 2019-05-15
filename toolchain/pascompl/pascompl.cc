@@ -2210,7 +2210,7 @@ void skipToEnd()
         sym = SY;
         inSymbol();
     }
-    if (CH == 'D')
+    if (CH == 'D' || CH == 'd')
         while (SY != ENDSY)
             inSymbol();
     throw 9999;
@@ -8077,7 +8077,7 @@ initScalars::initScalars() :
     do
         programme(l3var6z, programObj);
     while (SY != PERIOD);
-    if (CH != 'D') {
+    if (CH != 'D' && CH != 'd') {
         int92z = 0;
         int93z = 0;
     } else {
