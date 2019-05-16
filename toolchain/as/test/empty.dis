@@ -1,0 +1,15 @@
+empty.obj: file format besm6
+
+     Code size: 0 words
+    Const size: 0 words
+     Data size: 0 words
+      Set size: 0 words
+   Symhdr size: 1 words
+   Symtab size: 0 words
+  Longsym size: 0 words
+    Debug size: 0 words
+      BSS size: 0 words
+
+Disassembly of code:
+
+EMPTY:

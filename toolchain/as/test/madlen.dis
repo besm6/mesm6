@@ -1,0 +1,90 @@
+madlen.obj: file format besm6
+
+     Code size: 10 words
+    Const size: 1 words
+     Data size: 1 words
+      Set size: 1 words
+   Symhdr size: 1 words
+   Symtab size: 11 words
+  Longsym size: 3 words
+    Debug size: 16 words
+      BSS size: 1 words
+
+Disassembly of code:
+
+OBJFMT:
+    c0:  00 23 40013  wtc d13
+         00 22 40012  utc d12
+    c1:  00 23 40014  wtc d14
+         00 22 40013  utc d13
+    c2:  00 22 74005  utc 77754
+         15 31 74004  vjm EXTFUNC(13)
+    c3:  15 31 74006  vjm EXTFUNC+1(13)
+         00 22 00000  utc 
+    c4:  01 34 40005  vzm c5(1)
+         00 30 40006  uj c6
+    c5:  00 010 4007  xta d13
+         00 000 4001  atx EXTVAR
+    c6:  00 000 4010  atx EXTVAR+5
+         00 013 4011  arx d12
+    c7:  00 004 4012  a+x c5
+         00 015 4004  aox EXTFUNC
+   c10:  00 011 4006  aax EXTFUNC+1
+         00 017 4013  a*x 4567
+   c11:  00 007 4002  amx LOC
+         00 014 4003  avx LOCLONG
+
+Initialized data:
+
+   d12:  1234 5670 2222 5555  )..I+m  *ПNX22MM
+
+Uninitialized data:
+
+   d13:  1 word
+
+Transient data:
+
+   t13:  1771 2662 3553 4444  ?..v.$  /Y6R-KDD
+
+SET directives:
+
+   t14:  0001 4007 0001 4007  1 word from t13 to d13
+
+Symbol table:
+
+  4001:  0000 4016 6700 0001  EXTVAR (Common 1 word)
+  4002:  5457 4300 4600 0002  LOC (Private 2 words)
+  4003:  0000 4014 6600 0003  LOCLONG (Private 3 words)
+  4004:  0000 4015 6300 0000  EXTFUNC
+  4005:  0000 0000 4007 7754  77754
+  4006:  0000 4004 0000 0001  EXTFUNC + 1
+  4007:  0000 0000 4100 0013  d13
+  4010:  0000 4001 0000 0005  EXTVAR + 5
+  4011:  0000 0000 4100 0012  d12
+  4012:  0000 0000 4100 0005  c5
+  4013:  0000 0000 4000 4567  4567
+
+Long names:
+
+  4014:  5457 4354 5756 4700  LOCLONG
+  4015:  4570 6446 6556 4300  EXTFUNC
+  4016:  4570 6466 4162 0000  EXTVAR
+
+Debug information:
+
+     0:  5571 4357 4445 0000  MYCODE
+     1:  0000 0000 0100 0005  
+     2:  5571 4441 6441 0000  MYDATA
+     3:  0020 0000 0100 0013  
+     4:  5571 6641 6200 0000  MYVAR
+     5:  0000 0000 0100 0013  
+     6:  5457 4300 0000 0000  LOC
+     7:  0000 0000 0600 4002  
+    10:  5457 4354 5756 4700  LOCLONG
+    11:  0000 0000 0600 4003  
+    12:  4570 6446 6556 4300  EXTFUNC
+    13:  0000 0000 0300 4004  
+    14:  4570 6466 4162 0000  EXTVAR
+    15:  0000 0000 0700 4001  
+    16:  5571 4357 5663 6400  MYCONST
+    17:  0000 0000 0100 0012  

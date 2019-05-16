@@ -1,16 +1,16 @@
-OBJS            = algol.obj empty.obj bemsh.obj objfmt.obj ftn.obj \
+OBJS            = algol.obj empty.obj bemsh.obj madlen.obj ftn.obj \
                   forex.obj fortran.obj pascal.obj pascompl.obj
 
 all:            $(OBJS)
-		../dis algol.obj    > algol.dis
-		../dis empty.obj    > empty.dis
-		../dis bemsh.obj    > bemsh.dis
-		../dis objfmt.obj   > disfmt.dis
-		../dis fortran.obj  > fortran.dis
-		../dis ftn.obj      > ftn.dis
-		../dis forex.obj    > forex.dis
-		../dis pascal.obj   > pascal.dis
-		../dis pascompl.obj > pascompl.dis
+		../dis -d algol.obj    > algol.dis
+		../dis -d empty.obj    > empty.dis
+		../dis -d bemsh.obj    > bemsh.dis
+		../dis -d madlen.obj   > madlen.dis
+		../dis -d fortran.obj  > fortran.dis
+		../dis -d ftn.obj      > ftn.dis
+		../dis -d forex.obj    > forex.dis
+		../dis -d pascal.obj   > pascal.dis
+		../dis -d pascompl.obj > pascompl.dis
 
 algol.obj:      algol.alg algol-to-obj.py
 		./algol-to-obj.py algol.alg
@@ -21,8 +21,8 @@ empty.obj:      empty.madlen madlen-to-obj.py
 bemsh.obj:      bemsh.bemsh bemsh-to-obj.py
 		./bemsh-to-obj.py bemsh.bemsh
 
-objfmt.obj:     objfmt.madlen madlen-to-obj.py
-		./madlen-to-obj.py objfmt.madlen
+madlen.obj:     madlen.madlen madlen-to-obj.py
+		./madlen-to-obj.py madlen.madlen
 
 ftn.obj:        fortran.f ftn-to-obj.py
 		./ftn-to-obj.py fortran.f
@@ -42,4 +42,4 @@ pascompl.obj:   ../../pascompl/test/pascompl/pascompl.pas pascal-to-obj.py
 		./pascal-to-obj.py ../../pascompl/test/pascompl/pascompl.pas
 
 clean:
-		rm -f *.b6 *.lst *.punch *.obj *.dis
+		rm -f *.b6 *.lst *.punch *.obj pascompl.dis

@@ -1,0 +1,35 @@
+bemsh.obj: file format besm6
+
+     Code size: 3 words
+    Const size: 7 words
+     Data size: 0 words
+      Set size: 0 words
+   Symhdr size: 1 words
+   Symtab size: 1 words
+  Longsym size: 0 words
+    Debug size: 0 words
+      BSS size: 0 words
+
+Disassembly of code:
+
+PROG:
+    c0:  00 22 00000  utc 
+         00 064 4001  *64 c2
+    c1:  15 30 00000  uj (13)
+         00 22 00000  utc 
+    c2:  00 22 40004  utc d4
+         00 22 40004  utc d4
+
+Initialized data:
+
+    d3:  0001 0000 4000 0000  ......   .  З   
+    d4:  1363 0050 1042 2462  /0("%2  ЙS H(B4R
+    d5:  1202 5133 0363 6062  (*[.<2  *БI,ЦSPR
+    d6:  1340 7440 1043 1056  .. "2.  ЙЗЭЗ(C(N
+    d7:  1242 7044 0362 0445  *.$.!%  *BXDЦRДE
+   d10:  1303 4016 0360 7417  ,8....  ЙЦЗЖЦPЭ/
+   d11:  4620 0000 0000 0000  ......  F0      
+
+Symbol table:
+
+  4001:  0000 0000 4100 0002  c2
