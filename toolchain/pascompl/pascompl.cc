@@ -242,6 +242,7 @@ struct Bitset {
     bool operator <=(Bitset x) const {
         return !(val & ~x.val);
     }
+    std::string p() const;
 };
 
 Bitset Bits()
@@ -601,7 +602,10 @@ std::string Types::p() const
         ostr << "set of " << cast<SetT>().sbase->p();
         return ostr.str();
     case kindPtr:
-        ostr << "ptr to " << cast<PtrT>().pbase->p();
+        if (this == cast<PtrT>().pbase)
+            ostr << "typeless ptr";
+        else
+            ostr << "ptr to " << cast<PtrT>().pbase->p();
         return ostr.str();
     case kindFile:
         ostr << "file of " << cast<FileT>().fbase->p();
@@ -627,35 +631,30 @@ typedef Bitset Entries[43]; // [1..42]
 
 struct Expr : public BESM6Obj {
     union {
-//    NOOP:
-        struct {
-            Word val;
-            Operator op;
-            Word d1, d2;
-        };
-//    MUL:
-        struct {
-            TypesPtr typ;
-            Word d3;
-            ExprPtr expr1, expr2;
-        };
-//    BOUNDS:
-        struct {
-            Word d4, d5;
-            TypesPtr typ1, typ2;
-        };
-//    NOTOP:
-        struct {
-            Word d6, d7;
-            IdentRecPtr id1, id2;
-        };
-//    STANDPROC:
-        struct {
-            Word d8, d9;
-            int64_t num1, num2;
-        };
+        Word val;
+        TypesPtr typ;
     };
+    Operator op;
+    union {
+        Word d1;
+        ExprPtr expr1;
+        TypesPtr typ1;
+        IdentRecPtr id1;
+        int64_t num1;
+    };
+    union {
+        Word d2;
+        ExprPtr expr2;
+        TypesPtr typ2;
+        IdentRecPtr id2;
+        int64_t num2;
+    };
+    std::string p();
 };
+
+void p(ExprPtr e) {
+    fprintf(stderr, "%s\n", e->p().c_str());
+}
 
 struct KeyWord : public BESM6Obj {
     Word w;
@@ -722,17 +721,20 @@ struct IdentRec : public BESM6Obj {
             Bitset flags;
         };
     };
-    std::string p() const {
+    std::string p(bool verbose = false) const {
         std::string ret;
         char * strp;
         switch (cl) {
-        default: return  std::string();
+        default: ret = toAscii(id.m);
+            return ret.substr(ret.find_last_of(' ')+1, std::string::npos);
         case ROUTINEID:
-            ret = toAscii(id.m) + ": routine";
-            asprintf(&strp, "low: %ld high: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
-                     low, high, ord(argList), ord(preDefLink), level, pos, flags.val);
-            ret += strp;
-            free(strp);
+            ret = toAscii(id.m);
+            if (verbose) {
+                asprintf(&strp, "(routine) low: %ld high: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
+                         low, high, ord(argList), ord(preDefLink), level, pos, flags.val);
+                ret += strp;
+                free(strp);
+            }
         }
         return ret;
     }
@@ -821,6 +823,8 @@ bool atEOL,
     pseudoZ,
     allowCompat,
     checkFortran;
+
+int verbose;
 
 IdentRecPtr outputFile,
     inputFile,
@@ -912,6 +916,148 @@ static const char *koi2utf[64] = {
     "П","Я","Р","С","Т","У","Ж","В","Ь","Ы","З","Ш","Э","Щ","Ч","Ъ",
 };
 
+std::string escapeChar(int c) {
+    std::string ret;
+    if (c < 32 || c >= 127) {
+        char * strp;
+        asprintf(&strp, "_%03o", c);
+        ret = strp;
+        free(strp);
+    } else
+        ret = char(c);
+    return ret;
+}
+
+std::string Expr::p()
+{
+    static const char * op2str[] = {
+        " * ",      " /r ",     " and ",    " div ",    " mod ",
+        " + ",      " - ",      " or ",     " <> ",     " = ",
+        " < ",      " >= ",     " > ",      " <= ",     " in ",
+        " *i ",     " /i ",     " & ",      " ^ ",      " | ",
+        " \\ ",     " +i ",     " -i ",     " op27 ",   " op30 ",
+        " op31 ",   " .. ",     " := ",     " elt ",    " var ",
+        " op36 ",   " op37 ",   " enum ",   " field ",  " @ ",
+        " @f ",     " op44 ",   " alnum ",  " pcall ",  " fcall ",
+        " BOUNDS ", "(real)",   " not ",    " -i-",     " -r-",
+        " proc ",   "NOP"
+    };
+    static const char * fn2name[] = {
+        "SQRT", "SIN", "COS", "ATAN", "ASIN",
+        "LN",  "EXP",  "ABS",  "TRUNC",  "ODD",
+        "ORD", "CHR", "SUCC", "PRED", "EOF",
+        "REF", "EOLN", "SQR", "ROUND", "CARD",
+        "MINEL", "PTR", "ABSi", "SQRi"
+    };
+
+    std::ostringstream ostr;
+    switch (op) {
+    case NOOP:
+        ostr << "(R" << val.i << ')';
+        break;
+    case GETVAR:
+        ostr << id1->p();
+        break;
+    case MUL: case RDIVOP: case AMPERS: case IDIVOP: case IMODOP:
+    case PLUSOP: case MINUSOP: case OROP: case NEOP: case EQOP:
+    case LTOP: case GEOP: case GTOP: case LEOP: case INOP:
+    case IMULOP: case IDIVROP: case SETAND: case SETXOR: case SETOR:
+    case SETSUB: case INTPLUS: case INTMINUS:
+        // Regular binary ops
+        ostr << '(' << expr1->p() << op2str[op] << expr2->p() << ')';
+        break;
+    case INEGOP: case RNEGOP: case NOTOP: case TOREAL:
+        // Regular unary ops
+        ostr << op2str[op] << expr1->p();
+        break;
+    case FILEPTR: case DEREF:
+        ostr << expr1->p() << '@';
+        break;
+    case ASSIGNOP:
+        ostr << expr1->p() << op2str[op] << expr2->p();
+        break;
+    case GETELT:
+        ostr << expr1->p() << '[' << expr2->p() << ']';
+        break;
+    case GETFIELD:
+        ostr << expr1->p() << '.' << id2->p();
+        break;
+    case MKRANGE:
+        ostr << '[' << expr1->p() << ".." << expr2->p() << ']';
+        break;
+    case GETENUM:
+        if (typ == IntegerType)
+            ostr << d1.i;
+        else if (typ == CharType) {
+            ostr << "'" << escapeChar(d1.i) << "'";
+        } else if (typ == RealType)
+            ostr << "real" << d1.r;
+        else if (typ == BooleanType)
+            ostr << (d1.ii ? "TRUE" : "FALSE");
+        else if (typ == setType)
+            ostr << d1.m.p();
+        else if (typ == pointerType && d1.i == 074000)
+            ostr << "NIL";
+        else if (typ->k == kindScalar)
+            ostr << "enum" << num1;
+        else if (typ->k == kindArray && typ->cast<ArrayT>().base == CharType) {
+            int n;
+            for (n = 2; n <= 6; ++n) {
+                if (typ == smallStringType[n]) {
+                    ostr << "'";
+                    for (int i = 1; i <= n; ++i)
+                        ostr << escapeChar(d1.a[i]);
+                    ostr << "'";
+                    break;
+                }
+            }
+            if (n <= 6)
+                break;
+            ostr << "string literal @" << d1.i;
+        } else
+            ostr << "(? enum: " << typ->p() << " ?)";
+        break;
+    case STANDPROC:
+        if (typ == NULL && num2 < 30) {
+            Bitset t;
+            t.val = systemProcNames[num2];
+            ostr << toAscii(t) << '(' << expr1->p() << ')';
+        } else if (num2 < 24) {
+            ostr << fn2name[num2] << '(' << expr1->p() << ')';
+        } else if (num2 == 109) {
+            ostr << '[' << expr1->p() << ']';
+        } else {
+            ostr << "standproc" << num2 << '(' << expr1->p() << ')';
+        }
+        break;
+    case ALNUM:
+        ostr << "call " << id2->p();
+         if (expr1) {
+             ostr << "(";
+             Expr * t = expr1;
+             do {
+                 if (t != expr1) ostr << ", ";
+                 ostr << t->expr2->p();
+                 t = t->expr1;
+             } while (t);
+             ostr << ")";
+         }
+        break;
+    case PCALL:
+        ostr << "pcall " << id2->p();
+        break;
+    case FCALL:
+        ostr << "fcall " << id2->p();
+        break;
+    case BOUNDS:
+        ostr << "bound(" << expr1->p() << ", " << typ2->p() << ')';
+        break;
+    default:
+        ostr << "(?" << op2str[op] << "?)";
+    }
+    return ostr.str();
+}
+
 struct programme {
     programme(int64_t & l2arg1z, IdentRecPtr l2idr2z_);
 
@@ -959,7 +1105,9 @@ const char * pasmitxt(int64_t errNo)
 //    errVarTooComplex = 48,
 //    errFirstDigitInCharLiteralGreaterThan3 = 60;
     case 1: return "No comma nor semicolon";
+    case 5: return "Simple type required";
     case 16: return "Label not defined in block";
+    case 23: return "Type ID instead of a variable";
     case 29: return "Index out of bounds";
     case 33: return "Illegal types for assignment";
     case 37: return "Missing INPUT file in program header";
@@ -1351,6 +1499,36 @@ int64_t card(Bitset b)
         val &= val-1;
     }
     return ret;
+}
+
+std::string Bitset::p() const
+{
+    std::ostringstream ostr;
+    ostr <<'[';
+    Bitset t = *this;
+    int64_t start = minel(t);
+    int64_t prev = start;
+    t = t - Bits(start);
+    while (t) {
+        int64_t m = minel(t);
+        if (m != prev + 1) {
+            if (ostr.str().size() != 1) ostr << ',';
+            ostr << start;
+            if (start != prev)
+                ostr << (prev-start == 1 ? "," : "..") << prev;
+            start = m;
+        }
+        prev = m;
+        t = t - Bits(m);
+    }
+    if (ostr.str().size() != 1) ostr << ',';
+    if (start >= 0) {
+        ostr << start;
+        if (start != prev)
+            ostr << (prev-start == 1 ? "," : "..") << prev;
+    }
+    ostr << ']';
+    return ostr.str();
 }
 
 int64_t nrOfBits(Integer value)
@@ -4136,6 +4314,13 @@ L7530:
     } /* 7562 */
 } /* genComparison */
 
+struct Level {
+    int & cnt;
+    Level(int & c) : cnt(c) { ++c; }
+    ~Level() { if (cnt) --cnt; }
+    operator bool() const { return cnt == 1; }
+};
+
 genFullExpr::genFullExpr(ExprPtr exprToGen_)
     : exprToGen(exprToGen_)
 {
@@ -4146,11 +4331,19 @@ genFullExpr::genFullExpr(ExprPtr exprToGen_)
     InsnList * &saved = formOperator::super.back()->saved;
     IdentRecPtr &curIdRec = programme::super.back()->curIdRec;
 
+    static int level;
+    Level l(level);
+    
     super.push_back(this);
 
     if (exprToGen == NULL)
         return;
 L7567:
+    if (verbose) {
+        if (l) {
+            fprintf(stderr, "%ld: %s\n", lineCnt, exprToGen->p().c_str());
+        }
+    }
     curOP = exprToGen->op;
     if (curOP < GETELT) {
         genFullExpr(exprToGen->expr2);
@@ -6338,7 +6531,7 @@ void withStatement()
     set145z = set145z + l4var3z;
 } /* withStatement */
 
-void reportStmtType(int64_t l4arg1z)
+void reportStmtType(int64_t)
 {
     int64_t &startLine = Statement::super.back()->startLine;
 
@@ -8968,7 +9161,7 @@ void initOptions(int argc, char **argv)
     progname = progname ? progname+1 : argv[0];
 
     for (;;) {
-        switch (getopt(argc, argv, "vhe:p:t:c:r:m:y:u:f:a:d:k:b:s:l:")) {
+        switch (getopt(argc, argv, "vVhe:p:t:c:r:m:y:u:f:a:d:k:b:s:l:")) {
         case EOF:
             break;
         case 'a':
@@ -9051,6 +9244,9 @@ void initOptions(int argc, char **argv)
         case 'v':
             printf("%s\n", boilerplate);
             exit(0);
+        case 'V':
+            ++verbose;
+            continue;
         default:
             usage();
         }
