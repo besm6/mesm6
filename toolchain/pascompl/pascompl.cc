@@ -730,7 +730,7 @@ struct IdentRec : public BESM6Obj {
         case ROUTINEID:
             ret = toAscii(id.m);
             if (verbose) {
-                asprintf(&strp, "(routine) low: %ld high: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
+                (void) asprintf(&strp, "(routine) low: %ld high: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
                          low, high, ord(argList), ord(preDefLink), level, pos, flags.val);
                 ret += strp;
                 free(strp);
@@ -920,7 +920,7 @@ std::string escapeChar(int c) {
     std::string ret;
     if (c < 32 || c >= 127) {
         char * strp;
-        asprintf(&strp, "_%03o", c);
+        (void) asprintf(&strp, "_%03o", c);
         ret = strp;
         free(strp);
     } else
