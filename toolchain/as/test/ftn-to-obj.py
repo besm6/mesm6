@@ -42,6 +42,7 @@ task_file.write("""шифр 419999 зс5^
 eeв1а3
 *name %s
 *call yesmemory
+*debug
 *punch
 *ftn
 """ % basename)

@@ -6017,9 +6017,10 @@ begin (* caseStatement *)
 (loop)              while (curClause <> NIL) do begin
                         if (itemvalue = curClause@.value) then begin
                             error(73); (* errCaseLabelsIdentical *)
-                            exit loop
-                        end else if (itemvalue.i < curClause@.value.i) then begin
-                            exit loop
+                            exit loop;
+                        end else if (itemvalue.i < curClause@.value.i) then
+                        begin
+                            exit loop;
                         end else (q) begin
                             unused := curClause;
                             curClause := curClause@.next;

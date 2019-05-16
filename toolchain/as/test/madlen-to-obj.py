@@ -41,6 +41,7 @@ task_file.write("""шифр 419999 зс5^
 лен 67(2148)^
 eeв1а3
 *name %s
+*debug
 *punch
 *assem
 """ % basename)

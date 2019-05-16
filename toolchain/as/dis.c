@@ -115,6 +115,7 @@ const char *scmd_madlen[64] = {
 };
 
 const char **long_name = lcmd_madlen, **short_name = scmd_madlen;
+int debug_flag;
 
 static const char *text_to_utf[] = {
     " ", ".", "Б", "Ц", "Д", "Ф", "Г", "И",
@@ -559,29 +560,55 @@ void disassemble(const char *fname)
     //
     // Print symbol table.
     //
-    printf("\n");
-    printf("Symbol table:\n");
-    printf("\n");
-    for (i = 0; i < obj.sym_len; i++) {
-        uint64_t word = obj.word[i + 1 + obj.table_off];
+    if (obj.sym_len > 0) {
+        printf("\n");
+        printf("Symbol table:\n");
+        printf("\n");
+        for (i = 0; i < obj.sym_len; i++) {
+            uint64_t word = obj.word[i + 1 + obj.table_off];
 
-        printf("%6o:  %04o %04o %04o %04o  %s\n",
-            i + 04001,
-            (unsigned)(word >> 36) & 07777,
-            (unsigned)(word >> 24) & 07777,
-            (unsigned)(word >> 12) & 07777,
-            (unsigned)word & 07777,
-            getsyminfo(&obj, word, 1, 0));
+            printf("%6o:  %04o %04o %04o %04o  %s\n",
+                i + 04001,
+                (unsigned)(word >> 36) & 07777,
+                (unsigned)(word >> 24) & 07777,
+                (unsigned)(word >> 12) & 07777,
+                (unsigned)word & 07777,
+                getsyminfo(&obj, word, 1, 0));
+        }
+        if (obj.long_len > 0) {
+            printf("\n");
+            printf("Long names:\n");
+            printf("\n");
+            for (i = 0; i < obj.long_len; i++) {
+                uint64_t word = obj.word[i + obj.long_off];
+
+                printf("%6o:  %04o %04o %04o %04o  ",
+                    i + 04001 + obj.sym_len,
+                    (unsigned)(word >> 36) & 07777,
+                    (unsigned)(word >> 24) & 07777,
+                    (unsigned)(word >> 12) & 07777,
+                    (unsigned)word & 07777);
+                print_word_as_text(word);
+                printf("\n");
+            }
+        }
     }
-    if (obj.long_len > 0) {
-        printf("\n");
-        printf("Long names:\n");
-        printf("\n");
-        for (i = 0; i < obj.long_len; i++) {
-            uint64_t word = obj.word[i + obj.long_off];
 
-            printf("%6o:  %04o %04o %04o %04o  ",
-                i + 04001 + obj.sym_len,
+    //
+    // Print Debug section.
+    //
+    if (debug_flag && obj.debug_len > 0) {
+        printf("\n");
+        printf("Debug information:\n");
+        printf("\n");
+        for (i = 0; i < obj.debug_len; i++) {
+            uint64_t word  = obj.word[i + obj.debug_off];
+            unsigned size  = (word >> 36) & 07777;
+            unsigned from  = (word >> 24) & 07777;
+            unsigned count = (word >> 12) & 07777;
+            unsigned to    = word & 07777;
+
+            printf("%6o:  %04o %04o %04o %04o  ", i,
                 (unsigned)(word >> 36) & 07777,
                 (unsigned)(word >> 24) & 07777,
                 (unsigned)(word >> 12) & 07777,
@@ -599,19 +626,24 @@ void usage()
     printf("    besm6-dis [option...] infile...\n");
     printf("Options:\n");
     printf("    -b      Use BEMSH mnemonics\n");
+    printf("    -d      Print Debug section\n");
     exit(0);
 }
 
 int main(int argc, char **argv)
 {
     for (;;) {
-        switch (getopt(argc, argv, "b")) {
+        switch (getopt(argc, argv, "bd")) {
         case EOF:
             break;
         case 'b':
             // Use BEMSH mnemonics.
             long_name = lcmd_bemsh;
             short_name = scmd_bemsh;
+            continue;
+        case 'd':
+            // Print Debug section.
+            debug_flag++;
             continue;
         default:
             usage();
