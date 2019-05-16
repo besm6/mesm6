@@ -15,6 +15,7 @@ work/
 *.vcd
 *.obj
 *.dis
+*.punch
 transcript
 toolchain/as/as
 toolchain/as/dis

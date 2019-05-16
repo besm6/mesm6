@@ -47,7 +47,8 @@ eeв1а3
 """ % basename)
 for line in input_file.readlines():
     task_file.write(line.rstrip() + "\n")
-task_file.write("""*end file
+task_file.write("""*punch
+*end file
 ``````
 еконец
 """)
