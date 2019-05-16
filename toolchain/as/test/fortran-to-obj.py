@@ -20,7 +20,7 @@ if len(sys.argv) < 2:
     print "Usage: fortran-to-obj.py filename.f"
     sys.exit(1)
 input_name = sys.argv[1]
-basename = os.path.splitext(input_name)[0]
+basename = os.path.splitext(os.path.basename(input_name))[0]
 #print "basename =", basename
 
 #

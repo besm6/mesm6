@@ -13,7 +13,9 @@
 //  +---------+
 //  | magic   |     "BESM6\0"
 //  +---------+
-//  | header  |     3 words
+//  | entries |     Table of entries
+//  +---------+
+//  | header  |     10 words or 3 words
 //  +---------+
 //  | code    |     Executable code
 //  +---------+
@@ -29,9 +31,7 @@
 //  +---------+
 //  | longsym |     Names of 5 characters and more
 //  +---------+
-//  | debug   |     (unused)
-//  +---------+
-//  | comment |     (unused)
+//  | debug   |     Debug information
 //  +---------+
 //
 typedef struct _obj_image_t {
@@ -116,6 +116,7 @@ const char *scmd_madlen[64] = {
 
 const char **long_name = lcmd_madlen, **short_name = scmd_madlen;
 int debug_flag;
+int raw_flag;
 
 static const char *text_to_utf[] = {
     " ", ".", "Б", "Ц", "Д", "Ф", "Г", "И",
@@ -345,21 +346,23 @@ int obj_read(const char *fname, obj_image_t *obj)
     }
     fclose(fd);
 
-#if 0
-    // Dump raw data.
-    int i;
-    for (i = 0; i < nwords; i++) {
-        printf("%05o:  %04o %04o %04o %04o", i,
-            (unsigned)(obj->word[i] >> 36) & 07777,
-            (unsigned)(obj->word[i] >> 24) & 07777,
-            (unsigned)(obj->word[i] >> 12) & 07777,
-            (unsigned)(obj->word[i]) & 07777);
-        printf("  %c%c%c%c%c%c\n",
-            getiso(obj->word[i], 0), getiso(obj->word[i], 1),
-            getiso(obj->word[i], 2), getiso(obj->word[i], 3),
-            getiso(obj->word[i], 4), getiso(obj->word[i], 5));
+    if (raw_flag) {
+        // Dump raw data.
+        int i;
+        for (i = 0; i < nwords; i++) {
+            printf("%05o:  %04o %04o %04o %04o", i,
+                (unsigned)(obj->word[i] >> 36) & 07777,
+                (unsigned)(obj->word[i] >> 24) & 07777,
+                (unsigned)(obj->word[i] >> 12) & 07777,
+                (unsigned)(obj->word[i]) & 07777);
+            printf("  %c%c%c%c%c%c\n",
+                getiso(obj->word[i], 0), getiso(obj->word[i], 1),
+                getiso(obj->word[i], 2), getiso(obj->word[i], 3),
+                getiso(obj->word[i], 4), getiso(obj->word[i], 5));
+        }
+        printf("\n");
     }
-#endif
+
     if (obj->word[0] != BESM6_MAGIC) {
         // Check file magic.
         fprintf(stderr, "Bad magic: %#jx\n", (intmax_t)obj->word[0]);
@@ -627,13 +630,14 @@ void usage()
     printf("Options:\n");
     printf("    -b      Use BEMSH mnemonics\n");
     printf("    -d      Print Debug section\n");
+    printf("    -r      Dump raw data\n");
     exit(0);
 }
 
 int main(int argc, char **argv)
 {
     for (;;) {
-        switch (getopt(argc, argv, "bd")) {
+        switch (getopt(argc, argv, "bdr")) {
         case EOF:
             break;
         case 'b':
@@ -644,6 +648,10 @@ int main(int argc, char **argv)
         case 'd':
             // Print Debug section.
             debug_flag++;
+            continue;
+        case 'r':
+            // Dump raw data.
+            raw_flag++;
             continue;
         default:
             usage();
