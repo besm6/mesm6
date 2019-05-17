@@ -1,11 +1,11 @@
 madlen.obj: file format besm6
 
-     Code size: 14 words
+     Code size: 15 words
     Const size: 1 words
      Data size: 1 words
       Set size: 1 words
    Symhdr size: 1 words
-   Symtab size: 27 words
+   Symtab size: 28 words
   Longsym size: 3 words
     Debug size: 24 words
       BSS size: 2 words
@@ -13,115 +13,118 @@ madlen.obj: file format besm6
 Entries:
 
  00000:  OBJFMT
- 00005:  MYCODE
+ 00006:  MYCODE
 
 Disassembly of code:
 
 OBJFMT:
-    c0:  00 23 40017  wtc d17
-         00 22 40016  utc d16
-    c1:  00 23 40020  wtc d20
+    c0:  00 23 40020  wtc d20
          00 22 40017  utc d17
+    c1:  00 23 40021  wtc d21
+         00 22 40020  utc d20
     c2:  00 22 74005  utc 77754
-         15 31 74004  vjm EXTFUNC(13)
-    c3:  15 31 74006  vjm EXTFUNC+1(13)
+         00 000 4006  atx 77754
+    c3:  15 31 74004  vjm EXTFUNC(13)
          00 22 00000  utc 
-    c4:  01 34 40005  vzm c5(1)
-         00 30 40006  uj c6
-    c5:  00 010 4007  xta d17
+    c4:  15 31 74007  vjm EXTFUNC+1(13)
+         00 22 00000  utc 
+    c5:  01 34 40006  vzm c6(1)
+         00 30 40007  uj c7
+    c6:  00 010 4010  xta d20
          00 000 4001  atx EXTVAR
-    c6:  00 000 4010  atx EXTVAR+5
-         00 013 4011  arx d16
-    c7:  00 004 4012  a+x c5
+    c7:  00 000 4011  atx EXTVAR+5
+         00 013 4012  arx d17
+   c10:  00 004 4013  a+x c6
          00 015 4004  aox EXTFUNC
-   c10:  00 011 4006  aax EXTFUNC+1
-         00 017 4013  a*x 4567
-   c11:  00 007 4002  amx LOC
+   c11:  00 011 4007  aax EXTFUNC+1
+         00 017 4014  a*x 4567
+   c12:  00 007 4002  amx LOC
          00 014 4003  avx LOCLONG
-   c12:  00 016 4015  a/x [EXTVAR+3]
-         00 005 4017  a-x [EXTFUNC+2]
-   c13:  00 010 4021  xta (EXTVAR+LOC)
-         00 020 4023  apx (EXTVAR-LOC)
-   c14:  00 030 4026  rte (EXTVAR*LOC)
-         00 040 4027  ati (EXTVAR/LOC)
-   c15:  00 050 4031  *50 (EXTVAR*LOC+EXTFUNC)
-         00 060 4033  *60 (EXTVAR*LOC-EXTVAR/LOC)
+   c13:  00 016 4016  a/x [EXTVAR+3]
+         00 005 4020  a-x [EXTFUNC+2]
+   c14:  00 010 4022  xta (EXTVAR+LOC)
+         00 020 4024  apx (EXTVAR-LOC)
+   c15:  00 030 4027  rte (EXTVAR*LOC)
+         00 040 4030  ati (EXTVAR/LOC)
+   c16:  00 050 4032  *50 (EXTVAR*LOC+EXTFUNC)
+         00 060 4034  *60 (EXTVAR*LOC-EXTVAR/LOC)
 
 Initialized data:
 
-   d16:  1234 5670 2222 5555  )..I+m  *ПNX22MM
+   d17:  1234 5670 2222 5555  )..I+m  *ПNX22MM
 
 Uninitialized data:
 
-   d17-d20:  2 words
+   d20-d21:  2 words
 
 Transient data:
 
-   t17:  1771 2662 3553 4444  ?..v.$  /Y6R-KDD
+   t20:  1771 2662 3553 4444  ?..v.$  /Y6R-KDD
 
 SET directives:
 
-   t20:  0001 4007 0001 4007  1 word from t17 to d17
+   t21:  0001 4010 0001 4010  1 word from t20 to d20
 
 Symbol table:
 
-  4001:  0000 4036 6700 0001  EXTVAR (Common 1 word)
+  4001:  .... 4037 6700 0001  EXTVAR (Common 1 word)
   4002:  5457 4300 4600 0002  LOC (Private 2 words)
-  4003:  0000 4034 6600 0003  LOCLONG (Private 3 words)
-  4004:  0000 4035 6300 0000  EXTFUNC
-  4005:  0000 0000 4007 7754  77754
-  4006:  0000 4004 0000 0001  EXTFUNC + 1
-  4007:  0000 0000 4100 0017  d17
-  4010:  0000 4001 0000 0005  EXTVAR + 5
-  4011:  0000 0000 4100 0016  d16
-  4012:  0000 0000 4100 0005  c5
-  4013:  0000 0000 4000 4567  4567
-  4014:  0000 4001 0000 0003  EXTVAR + 3
-  4015:  0000 0000 5010 0014  [EXTVAR + 3]
-  4016:  0000 4004 0000 0002  EXTFUNC + 2
-  4017:  0000 0000 5010 0016  [EXTFUNC + 2]
-  4020:  0000 4002 0010 0001  EXTVAR + LOC
-  4021:  0000 0000 5210 0020  (EXTVAR + LOC)
-  4022:  0000 4001 0030 0002  EXTVAR - LOC
-  4023:  0000 0000 5210 0022  (EXTVAR - LOC)
-  4024:  0000 4001 1010 0002  EXTVAR * LOC
-  4025:  0000 4001 1030 0002  EXTVAR / LOC
-  4026:  0000 0000 5210 0024  (EXTVAR * LOC)
-  4027:  0000 0000 5210 0025  (EXTVAR / LOC)
-  4030:  0000 4004 0010 0024  EXTVAR*LOC + EXTFUNC
-  4031:  0000 0000 5210 0030  (EXTVAR*LOC + EXTFUNC)
-  4032:  0000 4024 0030 0025  EXTVAR*LOC - EXTVAR/LOC
-  4033:  0000 0000 5210 0032  (EXTVAR*LOC - EXTVAR/LOC)
+  4003:  .... 4035 6600 0003  LOCLONG (Private 3 words)
+  4004:  .... 4036 6300 0000  EXTFUNC
+  4005:  .... .... 4007 7754  77754
+  4006:  .... .... 5207 7754  77754
+  4007:  .... 4004 0000 0001  EXTFUNC + 1
+  4010:  .... .... 4100 0020  d20
+  4011:  .... 4001 0000 0005  EXTVAR + 5
+  4012:  .... .... 4100 0017  d17
+  4013:  .... .... 4100 0006  c6
+  4014:  .... .... 4000 4567  4567
+  4015:  .... 4001 0000 0003  EXTVAR + 3
+  4016:  .... .... 5010 0015  [EXTVAR + 3]
+  4017:  .... 4004 0000 0002  EXTFUNC + 2
+  4020:  .... .... 5010 0017  [EXTFUNC + 2]
+  4021:  .... 4002 0010 0001  EXTVAR + LOC
+  4022:  .... .... 5210 0021  (EXTVAR + LOC)
+  4023:  .... 4001 0030 0002  EXTVAR - LOC
+  4024:  .... .... 5210 0023  (EXTVAR - LOC)
+  4025:  .... 4001 1010 0002  EXTVAR * LOC
+  4026:  .... 4001 1030 0002  EXTVAR / LOC
+  4027:  .... .... 5210 0025  (EXTVAR * LOC)
+  4030:  .... .... 5210 0026  (EXTVAR / LOC)
+  4031:  .... 4004 0010 0025  EXTVAR*LOC + EXTFUNC
+  4032:  .... .... 5210 0031  (EXTVAR*LOC + EXTFUNC)
+  4033:  .... 4025 0030 0026  EXTVAR*LOC - EXTVAR/LOC
+  4034:  .... .... 5210 0033  (EXTVAR*LOC - EXTVAR/LOC)
 
 Long names:
 
-  4034:  5457 4354 5756 4700  LOCLONG
-  4035:  4570 6446 6556 4300  EXTFUNC
-  4036:  4570 6466 4162 0000  EXTVAR
+  4035:  5457 4354 5756 4700  LOCLONG
+  4036:  4570 6446 6556 4300  EXTFUNC
+  4037:  4570 6466 4162 0000  EXTVAR
 
 Debug information:
 
      0:  5571 4357 4445 0000  MYCODE
-     1:  0000 0000 0100 0005
+     1:  .... .... 0100 0006
      2:  5571 4441 6441 0000  MYDATA
-     3:  0020 0000 0100 0017
+     3:  0020 .... 0100 0020
      4:  5571 6641 6200 0000  MYVAR
-     5:  0000 0000 0100 0017
+     5:  .... .... 0100 0020
      6:  5156 4451 6243 5744  INDIRCOD
-     7:  0000 0000 0010 4017
+     7:  .... .... 0010 4020
     10:  5156 4451 6244 4164  INDIRDAT
-    11:  0000 0000 0010 4015
-    12:  5457 4300 0000 0000  LOC
-    13:  0000 0000 0600 4002
+    11:  .... .... 0010 4016
+    12:  5457 4300 .... 0000  LOC
+    13:  .... .... 0600 4002
     14:  5457 4354 5756 4700  LOCLONG
-    15:  0000 0000 0600 4003
-    16:  4451 6600 0000 0000  DIV
-    17:  0000 0000 0010 4025
+    15:  .... .... 0600 4003
+    16:  4451 6600 .... 0000  DIV
+    17:  .... .... 0010 4026
     20:  4570 6446 6556 4300  EXTFUNC
-    21:  0000 0000 0300 4004
-    22:  5565 5400 0000 0000  MUL
-    23:  0000 0000 0010 4024
+    21:  .... .... 0300 4004
+    22:  5565 5400 .... 0000  MUL
+    23:  .... .... 0010 4025
     24:  4570 6466 4162 0000  EXTVAR
-    25:  0000 0000 0700 4001
+    25:  .... .... 0700 4001
     26:  5571 4357 5663 6400  MYCONST
-    27:  0000 0000 0100 0016
+    27:  .... .... 0100 0017

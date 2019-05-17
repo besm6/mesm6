@@ -7,7 +7,8 @@
             ,utc , myconst
             ,wtc , myvar+1
             ,utc , myconst+1
-            ,utc , 77754b
+            ,utc , -20
+            ,z00 , -20
           13,vjm , extfunc
           13,vjm , extfunc+1
           1 ,vzm , mycode

@@ -77,6 +77,7 @@ enum {
     SYM_PRIVATE_S   = 0460,     // Private block (short name)
     SYM_COMMON_S    = 0470,     // Common block (short name)
     SYM_INDIRECT    = 0501,     // Dereference, like *ptr
+    SYM_CONST       = 0520,     // Constant value, same as SYM_ABS
     SYM_ADDRESS     = 0521,     // Deferred address of symbol, at load time
     SYM_EXT_L       = 0630,     // External reference (long name)
     SYM_PRIVATE_L   = 0660,     // Private block (long name)
@@ -202,6 +203,17 @@ void text_to_buf(char *p, uint64_t word)
     *p = 0;
 }
 
+static const char *octaldots(unsigned n)
+{
+    static char buf[8];
+
+    n &= 07777;
+    if (n == 0)
+        return "....";
+    snprintf(buf, sizeof(buf), "%04o", n);
+    return buf;
+}
+
 const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int transient_flag)
 {
     static char buf[64];
@@ -276,6 +288,7 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
         break;
 
     case SYM_ABS:         // Absolute address
+    case SYM_CONST:
         snprintf(buf, sizeof(buf), "%o", addr);
         break;
 
@@ -635,10 +648,7 @@ void disassemble(const char *fname)
 
             printf("%6s:  %04o %04o %04o %04o",
                 getlabel('t', i + obj.cmd_len + obj.const_len + obj.data_len),
-                (unsigned)(word >> 36) & 07777,
-                (unsigned)(word >> 24) & 07777,
-                (unsigned)(word >> 12) & 07777,
-                (unsigned)word & 07777);
+                size, from, count, to);
             printf("  %u word%s from %s ",
                 size, size<2 ? "" : "s", getaddr(&obj, from, 2));
             printf("to %s", getaddr(&obj, to, 0));
@@ -658,10 +668,10 @@ void disassemble(const char *fname)
         for (i = 0; i < obj.sym_len; i++) {
             uint64_t word = obj.word[i + 1 + obj.table_off];
 
-            printf("%6o:  %04o %04o %04o %04o  %s\n",
-                i + 04001,
-                (unsigned)(word >> 36) & 07777,
-                (unsigned)(word >> 24) & 07777,
+            printf("%6o:  %s ", i + 04001,
+                octaldots(word >> 36));
+            printf("%s %04o %04o  %s\n",
+                octaldots(word >> 24),
                 (unsigned)(word >> 12) & 07777,
                 (unsigned)word & 07777,
                 getsyminfo(&obj, word, 1, 0));
@@ -697,10 +707,9 @@ void disassemble(const char *fname)
         for (i = 0; i < obj.debug_len; i++) {
             uint64_t word  = obj.word[i + obj.debug_off];
 
-            printf("%6o:  %04o %04o %04o %04o", i,
-                (unsigned)(word >> 36) & 07777,
-                (unsigned)(word >> 24) & 07777,
-                (unsigned)(word >> 12) & 07777,
+            printf("%6o:  %s ", i, octaldots(word >> 36));
+            printf("%s ", octaldots(word >> 24));
+            printf("%s %04o", octaldots(word >> 12),
                 (unsigned)word & 07777);
             if ((word >> 42) != 0)
                 printf("  ");
