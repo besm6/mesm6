@@ -1,5 +1,25 @@
 /*
  * Show contents of BESM-6 object file.
+ *
+ * Copyright (c) 2019 Serge Vakulenko
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 #include <stdio.h>
 #include <ctype.h>
@@ -78,7 +98,7 @@ enum {
     SYM_COMMON_S    = 0470,     // Common block (short name)
     SYM_INDIRECT    = 0501,     // Dereference, like *ptr
     SYM_CONST       = 0520,     // Constant value, same as SYM_ABS
-    SYM_ADDRESS     = 0521,     // Deferred address of symbol, at load time
+    SYM_EXPRESSION  = 0521,     // Expression to compute at load time
     SYM_EXT_L       = 0630,     // External reference (long name)
     SYM_PRIVATE_L   = 0660,     // Private block (long name)
     SYM_COMMON_L    = 0670,     // Common block (long name)
@@ -223,108 +243,123 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
     unsigned ref  = (word >> 24) & 03777;
 
     switch (type) {
-    case SYM_OFFSET:        // Offset from another symbol
+    case SYM_OFFSET:
+        // Offset from another symbol.
         getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
         strcat(buf, verbose_flag ? " + " : "+");
         sprintf(buf + strlen(buf), "%o", addr);
         break;
 
-    case SYM_ADD:           // Add two symbols
-        // Second symbol
+    case SYM_ADD:
+        // Add two symbols.
+        // Second symbol.
         getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
         strcpy(buf2, buf);
 
-        // First symbol
+        // First symbol.
         getsyminfo(obj, obj->word[addr + obj->table_off], 0, transient_flag);
         strcat(buf, verbose_flag ? " + " : "+");
         strcat(buf, buf2);
         break;
 
-    case SYM_SUBTRACT:      // Subtract two symbols
-        // Second symbol
+    case SYM_SUBTRACT:
+        // Subtract two symbols.
+        // Second symbol.
         getsyminfo(obj, obj->word[addr + obj->table_off], 0, transient_flag);
         strcpy(buf2, buf);
 
-        // First symbol
+        // First symbol.
         getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
         strcat(buf, verbose_flag ? " - " : "-");
         strcat(buf, buf2);
         break;
 
-    case SYM_MULTIPLY:      // Multiply two symbols
-        // Second symbol
+    case SYM_MULTIPLY:
+        // Multiply two symbols.
+        // Second symbol.
         getsyminfo(obj, obj->word[addr + obj->table_off], 0, transient_flag);
         strcpy(buf2, buf);
 
-        // First symbol
+        // First symbol.
         getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
         strcat(buf, verbose_flag ? " * " : "*");
         strcat(buf, buf2);
         break;
 
-    case SYM_DIVIDE:        // Divide two symbols
-        // Second symbol
+    case SYM_DIVIDE:
+        // Divide two symbols.
+        // Second symbol.
         getsyminfo(obj, obj->word[addr + obj->table_off], 0, transient_flag);
         strcpy(buf2, buf);
 
-        // First symbol
+        // First symbol.
         getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
         strcat(buf, verbose_flag ? " / " : "/");
         strcat(buf, buf2);
         break;
 
-    case SYM_INDIRECT:      // Dereference, like *ptr
+    case SYM_INDIRECT:
+        // Dereference, like *ptr.
         getsyminfo(obj, obj->word[addr + obj->table_off], verbose_flag, transient_flag);
         memmove(buf+1, buf, 1 + strlen(buf));
         buf[0] = '[';
         strcat(buf, "]");
         break;
 
-    case SYM_ADDRESS:       // Address of anotner symbol
+    case SYM_EXPRESSION:
+        // Expression to compute at load time.
         getsyminfo(obj, obj->word[addr + obj->table_off], verbose_flag, transient_flag);
         memmove(buf+1, buf, 1 + strlen(buf));
         buf[0] = '(';
         strcat(buf, ")");
         break;
 
-    case SYM_ABS:         // Absolute address
+    case SYM_ABS:
     case SYM_CONST:
+        // Absolute address.
         snprintf(buf, sizeof(buf), "%o", addr);
         break;
 
-    case SYM_RELOC:       // Relocatable address
+    case SYM_RELOC:
+        // Relocatable address.
         snprintf(buf, sizeof(buf), "%c%o",
             (addr < obj->cmd_len) ? 'c' :
             transient_flag ? 't' : 'd', addr);
         break;
 
-    case SYM_EXT_S:       // External reference (short name)
+    case SYM_EXT_S:
+        // External reference (short name).
         text_to_buf(buf, word & 07777777700000000);
         break;
 
-    case SYM_PRIVATE_S:   // Private block (short name)
+    case SYM_PRIVATE_S:
+        // Private block (short name).
         text_to_buf(buf, word & 07777777700000000);
         if (verbose_flag)
             sprintf(buf + strlen(buf), " (Private %u word%s)", addr, addr==1 ? "" : "s");
         break;
 
-    case SYM_COMMON_S:    // Common block (short name)
+    case SYM_COMMON_S:
+        // Common block (short name).
         text_to_buf(buf, word & 07777777700000000);
         if (verbose_flag)
             sprintf(buf + strlen(buf), " (Common %u word%s)", addr, addr==1 ? "" : "s");
         break;
 
-    case SYM_EXT_L:       // External reference (long name)
+    case SYM_EXT_L:
+        // External reference (long name).
         text_to_buf(buf, obj->word[ref + obj->table_off]);
         break;
 
-    case SYM_PRIVATE_L:   // Private block (long name)
+    case SYM_PRIVATE_L:
+        // Private block (long name).
         text_to_buf(buf, obj->word[ref + obj->table_off]);
         if (verbose_flag)
             sprintf(buf + strlen(buf), " (Private %u word%s)", addr, addr==1 ? "" : "s");
         break;
 
-    case SYM_COMMON_L:    // Common block (long name)
+    case SYM_COMMON_L:
+        // Common block (long name).
         text_to_buf(buf, obj->word[ref + obj->table_off]);
         if (verbose_flag)
             sprintf(buf + strlen(buf), " (Common %u word%s)", addr, addr==1 ? "" : "s");
