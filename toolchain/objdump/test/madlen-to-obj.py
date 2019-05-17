@@ -66,9 +66,30 @@ for line in dispak.stdout.readlines():
 
     # Find status: number of errors.
     line = line.decode('utf-8')
-    if len(line) == 52 and line[23:45] == u"ЧИСЛО ОШИБ. ОПЕРАТОРОВ":
-        nerrors = int(line[47:51])
+    if len(line) == 52:
+        # *assem: old Madlen version
+        if line[23:45] == u"ЧИСЛО ОШИБ. ОПЕРАТОРОВ":
+            nerrors = int(line[47:51])
+
+        # *madlen: new Madlen version
+        if line[25:47] == u"ЧИСЛО ОШИБ. ОПЕРАТОРОВ":
+            nerrors = int(line[49:51])
+
+        #print len(line), line[25:47]
         #print "nerrors =", nerrors
+
+    if len(line) == 117:
+        # *assem: old Madlen version
+        if line[88:110] == u"ЧИСЛО ОШИБ. ОПЕРАТОРОВ":
+            nerrors = int(line[112:116])
+
+        # *madlen: new Madlen version
+        if line[90:112] == u"ЧИСЛО ОШИБ. ОПЕРАТОРОВ":
+            nerrors = int(line[114:116])
+
+        #print len(line), line[90:112]
+        #print "nerrors =", nerrors
+
 lst_file.close()
 
 retval = dispak.wait()

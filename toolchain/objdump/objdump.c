@@ -67,12 +67,17 @@ typedef struct _obj_image_t {
 //
 enum {
     SYM_OFFSET      = 0000,     // Offset from another symbol
+    SYM_ADD         = 0001,     // Add two symbols
+    SYM_SUBTRACT    = 0003,     // Subtract two symbols
+    SYM_MULTIPLY    = 0101,     // Multiply two symbols
+    SYM_DIVIDE      = 0103,     // Divide two symbols
     SYM_ABS         = 0400,     // Absolute address
     SYM_RELOC       = 0410,     // Relocatable address
     SYM_EXT_S       = 0430,     // External reference (short name)
     SYM_PRIVATE_S   = 0460,     // Private block (short name)
     SYM_COMMON_S    = 0470,     // Common block (short name)
-    SYM_INDIRECT    = 0501,     // Indirect address
+    SYM_INDIRECT    = 0501,     // Dereference, like *ptr
+    SYM_ADDRESS     = 0521,     // Deferred address of symbol, at load time
     SYM_EXT_L       = 0630,     // External reference (long name)
     SYM_PRIVATE_L   = 0660,     // Private block (long name)
     SYM_COMMON_L    = 0670,     // Common block (long name)
@@ -200,22 +205,74 @@ void text_to_buf(char *p, uint64_t word)
 const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int transient_flag)
 {
     static char buf[64];
+    char buf2[64];
     unsigned type = (word >> 15) & 0777;
     unsigned addr = word & 077777;
     unsigned ref  = (word >> 24) & 03777;
 
     switch (type) {
-    case SYM_OFFSET:      // Offset from another symbol
+    case SYM_OFFSET:        // Offset from another symbol
         getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
         strcat(buf, verbose_flag ? " + " : "+");
         sprintf(buf + strlen(buf), "%o", addr);
         break;
 
-    case SYM_INDIRECT:      // Indirect address
+    case SYM_ADD:           // Add two symbols
+        // Second symbol
+        getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
+        strcpy(buf2, buf);
+
+        // First symbol
+        getsyminfo(obj, obj->word[addr + obj->table_off], 0, transient_flag);
+        strcat(buf, verbose_flag ? " + " : "+");
+        strcat(buf, buf2);
+        break;
+
+    case SYM_SUBTRACT:      // Subtract two symbols
+        // Second symbol
+        getsyminfo(obj, obj->word[addr + obj->table_off], 0, transient_flag);
+        strcpy(buf2, buf);
+
+        // First symbol
+        getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
+        strcat(buf, verbose_flag ? " - " : "-");
+        strcat(buf, buf2);
+        break;
+
+    case SYM_MULTIPLY:      // Multiply two symbols
+        // Second symbol
+        getsyminfo(obj, obj->word[addr + obj->table_off], 0, transient_flag);
+        strcpy(buf2, buf);
+
+        // First symbol
+        getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
+        strcat(buf, verbose_flag ? " * " : "*");
+        strcat(buf, buf2);
+        break;
+
+    case SYM_DIVIDE:        // Divide two symbols
+        // Second symbol
+        getsyminfo(obj, obj->word[addr + obj->table_off], 0, transient_flag);
+        strcpy(buf2, buf);
+
+        // First symbol
+        getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
+        strcat(buf, verbose_flag ? " / " : "/");
+        strcat(buf, buf2);
+        break;
+
+    case SYM_INDIRECT:      // Dereference, like *ptr
         getsyminfo(obj, obj->word[addr + obj->table_off], verbose_flag, transient_flag);
         memmove(buf+1, buf, 1 + strlen(buf));
         buf[0] = '[';
         strcat(buf, "]");
+        break;
+
+    case SYM_ADDRESS:       // Address of anotner symbol
+        getsyminfo(obj, obj->word[addr + obj->table_off], verbose_flag, transient_flag);
+        memmove(buf+1, buf, 1 + strlen(buf));
+        buf[0] = '(';
+        strcat(buf, ")");
         break;
 
     case SYM_ABS:         // Absolute address

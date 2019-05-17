@@ -27,22 +27,18 @@
  indircod:  ,weq , extfunc+2
             ,a/x , indirdat
             ,a-x , indircod
+            ,z01 , extvar + loc
+            ,z02 , extvar - loc
+ mul:       ,p*p , (extvar) (loc)
+ div:       ,p/p , (extvar) (loc)
+            ,z03 , mul
+            ,z04 , div
+            ,z05 , mul + extfunc
+            ,z06 , mul - div
  myconst:   ,log , 1234 5670 2222 5555
  myvar:     ,bss , 2
             ,data,
  mydata:    ,log , 1771 2662 3553 4444
-C;
-C; Указания о рассылке представляются последовательностью пар
-C; операторов вида:
-C;
-C;      SZ ,SET, FROM
-C;     CNT ,   , TO
-C;
-C; где SZ и CNT - целые десятичные числа, FROM и TO - полные адреса.
-C; Такая пара операторов осуществляет пересылку группы из SZ слов,
-C; начинающейся с адреса FROM, в массив ячеек, начинающийся
-C; с адреса TO, CNT раз.
-C;
           1 ,set , mydata   . Рассылка данных
           1 ,    , myvar
             ,end ,
