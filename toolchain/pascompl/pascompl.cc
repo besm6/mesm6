@@ -730,8 +730,9 @@ struct IdentRec : public BESM6Obj {
         case ROUTINEID:
             ret = toAscii(id.m);
             if (verbose) {
-                (void) asprintf(&strp, "(routine) low: %ld high: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
-                         low, high, ord(argList), ord(preDefLink), level, pos, flags.val);
+                if (asprintf(&strp, "(routine) low: %ld high: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
+                         low, high, ord(argList), ord(preDefLink), level, pos, flags.val) < 0)
+                    perror("asprintf");
                 ret += strp;
                 free(strp);
             }
@@ -920,7 +921,8 @@ std::string escapeChar(int c) {
     std::string ret;
     if (c < 32 || c >= 127) {
         char * strp;
-        (void) asprintf(&strp, "_%03o", c);
+        if (asprintf(&strp, "_%03o", c) < 0)
+            perror("asprintf");
         ret = strp;
         free(strp);
     } else
@@ -4333,7 +4335,7 @@ genFullExpr::genFullExpr(ExprPtr exprToGen_)
 
     static int level;
     Level l(level);
-    
+
     super.push_back(this);
 
     if (exprToGen == NULL)
