@@ -23,8 +23,12 @@
             ,a*x , 4567b
             ,amx , loc
             ,avx , loclong
+ indirdat:  ,weq , extvar+3
+ indircod:  ,weq , extfunc+2
+            ,a/x , indirdat
+            ,a-x , indircod
  myconst:   ,log , 1234 5670 2222 5555
- myvar:     ,bss , 1
+ myvar:     ,bss , 2
             ,data,
  mydata:    ,log , 1771 2662 3553 4444
 C;

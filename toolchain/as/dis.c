@@ -64,15 +64,16 @@ typedef struct _obj_image_t {
 // Symbol types
 //
 enum {
-    SYM_OFFSET      = 000,          // Offset from another symbol
-    SYM_ABS         = 040,          // Absolute address
-    SYM_RELOC       = 041,          // Relocatable address
-    SYM_EXT_S       = 043,          // External reference (short name)
-    SYM_PRIVATE_S   = 046,          // Private block (short name)
-    SYM_COMMON_S    = 047,          // Common block (short name)
-    SYM_EXT_L       = 063,          // External reference (long name)
-    SYM_PRIVATE_L   = 066,          // Private block (long name)
-    SYM_COMMON_L    = 067,          // Common block (long name)
+    SYM_OFFSET      = 0000,     // Offset from another symbol
+    SYM_ABS         = 0400,     // Absolute address
+    SYM_RELOC       = 0410,     // Relocatable address
+    SYM_EXT_S       = 0430,     // External reference (short name)
+    SYM_PRIVATE_S   = 0460,     // Private block (short name)
+    SYM_COMMON_S    = 0470,     // Common block (short name)
+    SYM_INDIRECT    = 0501,     // Indirect address
+    SYM_EXT_L       = 0630,     // External reference (long name)
+    SYM_PRIVATE_L   = 0660,     // Private block (long name)
+    SYM_COMMON_L    = 0670,     // Common block (long name)
 };
 
 //
@@ -197,7 +198,7 @@ void text_to_buf(char *p, uint64_t word)
 const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int transient_flag)
 {
     static char buf[64];
-    unsigned type = (word >> 18) & 077;
+    unsigned type = (word >> 15) & 0777;
     unsigned addr = word & 077777;
     unsigned ref  = (word >> 24) & 03777;
 
@@ -206,6 +207,13 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
         getsyminfo(obj, obj->word[ref + obj->table_off], 0, transient_flag);
         strcat(buf, verbose_flag ? " + " : "+");
         sprintf(buf + strlen(buf), "%o", addr);
+        break;
+
+    case SYM_INDIRECT:      // Indirect address
+        getsyminfo(obj, obj->word[addr + obj->table_off], verbose_flag, transient_flag);
+        memmove(buf+1, buf, 1 + strlen(buf));
+        buf[0] = '[';
+        strcat(buf, "]");
         break;
 
     case SYM_ABS:         // Absolute address
@@ -248,6 +256,10 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
         text_to_buf(buf, obj->word[ref + obj->table_off]);
         if (verbose_flag)
             sprintf(buf + strlen(buf), " (Common %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    default:
+        sprintf(buf, "Unknown%03o", type);
         break;
     }
     return buf;
@@ -585,12 +597,14 @@ void disassemble(const char *fname)
             for (i = 0; i < obj.long_len; i++) {
                 uint64_t word = obj.word[i + obj.long_off];
 
-                printf("%6o:  %04o %04o %04o %04o  ",
+                printf("%6o:  %04o %04o %04o %04o",
                     i + 04001 + obj.sym_len,
                     (unsigned)(word >> 36) & 07777,
                     (unsigned)(word >> 24) & 07777,
                     (unsigned)(word >> 12) & 07777,
                     (unsigned)word & 07777);
+                if ((word >> 42) != 0)
+                    printf("  ");
                 print_word_as_text(word);
                 printf("\n");
             }
@@ -611,11 +625,13 @@ void disassemble(const char *fname)
             unsigned count = (word >> 12) & 07777;
             unsigned to    = word & 07777;
 
-            printf("%6o:  %04o %04o %04o %04o  ", i,
+            printf("%6o:  %04o %04o %04o %04o", i,
                 (unsigned)(word >> 36) & 07777,
                 (unsigned)(word >> 24) & 07777,
                 (unsigned)(word >> 12) & 07777,
                 (unsigned)word & 07777);
+            if ((word >> 42) != 0)
+                printf("  ");
             print_word_as_text(word);
             printf("\n");
         }
