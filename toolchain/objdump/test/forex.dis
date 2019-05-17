@@ -10,6 +10,11 @@ forex.obj: file format besm6
     Debug size: 0 words
       BSS size: 104 words
 
+Entries:
+
+ 00000:  MAIN
+ 00000:  PROGRAM
+
 Disassembly of code:
 
 MAIN:

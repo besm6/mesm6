@@ -10,6 +10,11 @@ madlen.obj: file format besm6
     Debug size: 20 words
       BSS size: 2 words
 
+Entries:
+
+ 00000:  OBJFMT
+ 00005:  MYCODE
+
 Disassembly of code:
 
 OBJFMT:

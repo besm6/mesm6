@@ -1,5 +1,5 @@
 /*
- * Disassembler for MESM-6.
+ * Show contents of BESM-6 object file.
  */
 #include <stdio.h>
 #include <ctype.h>
@@ -57,6 +57,8 @@ typedef struct _obj_image_t {
 
 #define MAXSZ 50000
     uint64_t word[MAXSZ];
+    unsigned nwords;
+    unsigned nentries;
 
 } obj_image_t;
 
@@ -335,7 +337,6 @@ void print_insn(obj_image_t *obj, int opcode)
 int obj_read(const char *fname, obj_image_t *obj)
 {
     FILE *fd;
-    unsigned nwords;
 
     fd = fopen(fname, "r");
     if (!fd) {
@@ -344,14 +345,15 @@ int obj_read(const char *fname, obj_image_t *obj)
     }
 
     // Read file contents.
-    nwords = 0;
-    obj->word[nwords++] = freadw(fd);
-    for (;; nwords++) {
-        if (nwords >= MAXSZ) {
+    obj->nwords = 0;
+    obj->nentries = 0;
+    obj->word[obj->nwords++] = freadw(fd);
+    for (;; obj->nwords++) {
+        if (obj->nwords >= MAXSZ) {
             fprintf(stderr, "File too large\n");
             return -1;
         }
-        obj->word[nwords] = freadw(fd);
+        obj->word[obj->nwords] = freadw(fd);
         if (feof(fd))
             break;
     }
@@ -360,7 +362,7 @@ int obj_read(const char *fname, obj_image_t *obj)
     if (raw_flag) {
         // Dump raw data.
         int i;
-        for (i = 0; i < nwords; i++) {
+        for (i = 0; i < obj->nwords; i++) {
             printf("%05o:  %04o %04o %04o %04o", i,
                 (unsigned)(obj->word[i] >> 36) & 07777,
                 (unsigned)(obj->word[i] >> 24) & 07777,
@@ -387,6 +389,7 @@ int obj_read(const char *fname, obj_image_t *obj)
         // Skip entry table.
         while ((obj->word[obj->head_off + 1] >> 45) != 0) {
             obj->head_off += 2;
+            obj->nentries++;
         }
 
         // Unpacked header.
@@ -453,6 +456,23 @@ void disassemble(const char *fname)
     printf("  Debug offset: %#o words\n", obj.debug_off);
     printf("Comment offset: %#o words\n", obj.comment_off);
 #endif
+
+    //
+    // Print entries.
+    //
+    if (obj.nentries > 0) {
+        printf("\n");
+        printf("Entries:\n");
+        printf("\n");
+        for (i = 0; i < obj.nentries; i++) {
+            uint64_t name = obj.word[2*i + 1];
+            uint64_t addr = obj.word[2*i + 2];
+
+            printf(" %05o:  ", (unsigned)addr & 077777);
+            print_word_as_text(name);
+            printf("\n");
+        }
+    }
 
     //
     // Print code.

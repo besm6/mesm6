@@ -10,6 +10,11 @@ ftn.obj: file format besm6
     Debug size: 29 words
       BSS size: 103 words
 
+Entries:
+
+ 00000:  MAIN
+ 00000:  PROGRAM
+
 Disassembly of code:
 
 MAIN:

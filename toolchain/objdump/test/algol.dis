@@ -10,6 +10,10 @@ algol.obj: file format besm6
     Debug size: 0 words
       BSS size: 0 words
 
+Entries:
+
+ 00000:  PROGRAM
+
 Disassembly of code:
 
 PROGRAM:
