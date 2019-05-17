@@ -334,7 +334,6 @@ void print_insn(obj_image_t *obj, int opcode)
 //
 int obj_read(const char *fname, obj_image_t *obj)
 {
-    uint64_t word1, word2, word3;
     FILE *fd;
     unsigned nwords;
 
@@ -620,10 +619,6 @@ void disassemble(const char *fname)
         printf("\n");
         for (i = 0; i < obj.debug_len; i++) {
             uint64_t word  = obj.word[i + obj.debug_off];
-            unsigned size  = (word >> 36) & 07777;
-            unsigned from  = (word >> 24) & 07777;
-            unsigned count = (word >> 12) & 07777;
-            unsigned to    = word & 07777;
 
             printf("%6o:  %04o %04o %04o %04o", i,
                 (unsigned)(word >> 36) & 07777,

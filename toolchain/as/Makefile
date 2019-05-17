@@ -7,32 +7,23 @@ LDFLAGS =
 VPATH   = ../ld
 
 as      = besm6-as
-dis     = besm6-dis
 
-all:    as dis
+all:    as
 
 as:     as.o
 	$(MAKE) -C ../ld fputsym.o fputhdr.o fgeth.o fputh.o
 	$(CC) $(LDFLAGS) as.o -o as ../ld/fputsym.o ../ld/fputhdr.o ../ld/fgeth.o ../ld/fputh.o
 
-dis:    dis.o
-	$(MAKE) -C ../ld fgethdr.o fgeth.o
-	$(CC) $(LDFLAGS) dis.o -o dis ../ld/fgethdr.o ../ld/fgeth.o
-
-install: $(DESTDIR)/bin/$(as) $(DESTDIR)/bin/$(dis)
+install: $(DESTDIR)/bin/$(as)
 
 clean:
-	rm -f *.o *.b a.out core as dis
+	rm -f *.o *.b a.out core as
 
 $(DESTDIR)/bin/$(as): as
 	install -s as $(DESTDIR)/bin/$(as)
 
-$(DESTDIR)/bin/$(dis): dis
-	install -s dis $(DESTDIR)/bin/$(dis)
-
 ###
 as.o: as.c ../mesm6/a.out.h
-dis.o: dis.c ../mesm6/a.out.h
 #fgeth.o: ../ld/fgeth.c ../mesm6/a.out.h
 #fgethdr.o: ../ld/fgethdr.c ../mesm6/a.out.h
 #fputh.o: ../ld/fputh.c ../mesm6/a.out.h

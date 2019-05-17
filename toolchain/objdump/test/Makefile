@@ -2,15 +2,15 @@ OBJS            = algol.obj empty.obj bemsh.obj madlen.obj ftn.obj \
                   forex.obj fortran.obj pascal.obj pascompl.obj
 
 all:            $(OBJS)
-		../dis -d algol.obj    > algol.dis
-		../dis -d empty.obj    > empty.dis
-		../dis -d bemsh.obj    > bemsh.dis
-		../dis -d madlen.obj   > madlen.dis
-		../dis -d fortran.obj  > fortran.dis
-		../dis -d ftn.obj      > ftn.dis
-		../dis -d forex.obj    > forex.dis
-		../dis -d pascal.obj   > pascal.dis
-		../dis -d pascompl.obj > pascompl.dis
+		../objdump -d algol.obj    > algol.dis
+		../objdump -d empty.obj    > empty.dis
+		../objdump -d bemsh.obj    > bemsh.dis
+		../objdump -d madlen.obj   > madlen.dis
+		../objdump -d fortran.obj  > fortran.dis
+		../objdump -d ftn.obj      > ftn.dis
+		../objdump -d forex.obj    > forex.dis
+		../objdump -d pascal.obj   > pascal.dis
+		../objdump -d pascompl.obj > pascompl.dis
 
 algol.obj:      algol.alg algol-to-obj.py
 		./algol-to-obj.py algol.alg
