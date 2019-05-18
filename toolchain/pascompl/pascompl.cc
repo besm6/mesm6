@@ -235,7 +235,6 @@ struct Bitset {
     }
     bool operator==(Bitset x) const { return val == x.val; }
     bool operator!=(Bitset x) const { return !(*this == x); }
-    operator bool() const { return val != 0; }
     bool has(int64_t b) const {
             return b < 48 && (val >> (47-b)) & 1;
     }
@@ -627,7 +626,7 @@ typedef char charmap[128];
 typedef char textmap[128];
 
 typedef int64_t four[5]; // [1..4]
-typedef Bitset Entries[43]; // [1..42]
+typedef int64_t Entries[43]; // [1..42]
 
 struct Expr : public BESM6Obj {
     union {
@@ -677,11 +676,11 @@ struct NumLabel : public BESM6Obj {
     bool defined;
 };
 
-std::string toAscii(Bitset val)
+std::string toAscii(int64_t val)
 {
     std::string ret;
     for (int i = 0; i < 8; ++i) {
-        int c = (val.val >> (42-(i*6))) & 077;
+        int c = (val >> (42-(i*6))) & 077;
         if (c == 0) ret += ' ';
         else if (020 <= c && c <= 031) ret += char(c-020+'0');
         else if (041 <= c && c <= 072) ret += char (c-041+'A');
@@ -775,10 +774,10 @@ struct IdentRec : public BESM6Obj {
         std::string ret;
         char * strp;
         switch (cl) {
-        default: ret = toAscii(id.m);
+        default: ret = toAscii(id.ii);
             return ret.substr(ret.find_last_of(' ')+1, std::string::npos);
         case ROUTINEID:
-            ret = toAscii(id.m);
+            ret = toAscii(id.ii);
             if (verbose) {
                 if (0 <= asprintf(&strp, "(routine) procno: %ld value: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
                                   procno_, value_, ord(argList_), ord(preDefLink_), level_, pos_, flags_.val)) {
@@ -901,7 +900,10 @@ TypesPtr arg1Type, arg2Type;
 NumLabel *  numLabList;
 TypeChain * chain;
 Word curToken, curVal;
-Bitset O77777, intZero, extSymMask, halfWord, leftInsn;
+Bitset intZero;
+const int64_t extSymMask = 043000000L;
+const int64_t halfWord = 077777777L;
+int64_t leftInsn;
 Word  hashMask, curIdent;
 Bitset toAlloc, set145z, set146z, set147z, set148z;
 Word optSflags, litOct, litExternal, litForward, litFortran;
@@ -913,7 +915,7 @@ int64_t maxSmallString, extSymAdornment;
 TypesPtr smallStringType[7]; // [2..6]
 int64_t symTabCnt;
 
-Word symTabArray[SYMTAB_MAX+1]; // array [1..80] of Word;
+int64_t symTabArray[SYMTAB_MAX+1]; // array [1..80] of Word;
 int64_t symTabIndex[SYMTAB_MAX+1]; // array [1..80] of Integer;
 Operator iMulOpMap[48]; // array [MUL..IMODOP] of Operator;
 Operator setOpMap[48]; // array [MUL..MINUSOP] of Operator;
@@ -939,21 +941,21 @@ Symbol charSymTabBase[256]; // array ['_000'..'_177'] of Symbol;
 IdentRecPtr symHashTabBase[128]; // array [0..127] of IdentRecPtr;
 IdentRecPtr typeHashTabBase[128]; //array [0..127] of IdentRecPtr;
 int64_t helperMap[100]; // array [1..99] of Integer;
-extern Bitset helperNames[100]; // array [1..99] of Bitset;
+extern int64_t helperNames[100]; // array [1..99] of Bitset;
 
-Bitset symTab[SYMTAB_LIMIT + 1]; // array [74000B..75500B] of Bitset;
+int64_t symTab[SYMTAB_LIMIT + 1]; // array [74000B..75500B] of Bitset;
 extern int64_t systemProcNames[30]; // array [0..29] of Integer;
 extern int64_t resWordNameBase[30]; // array [0..29] of Integer;
 int64_t longSymCnt;
 int64_t longSymTabBase[91]; // array [1..90] of Integer;
-Bitset longSyms[91]; // array [1..90] of Bitset;
+int64_t longSyms[91]; // array [1..90] of Bitset;
 Word constVals[MAXLIT+1]; // array [1..500] of Alfa;
 int64_t constNums[MAXLIT+1]; // array [1..500] of Integer;
-Bitset objBuffer[OBJBUF_SIZE+1]; // array [1..1024] of Bitset;
+int64_t objBuffer[OBJBUF_SIZE+1]; // array [1..1024] of Bitset;
 char koi2text[256];
-std::vector<Bitset> FCST; // file of Bitset; /* last */
+std::vector<int64_t> FCST; // file of Bitset; /* last */
 
-std::vector<Bitset> CHILD; // file of Bitset;
+std::vector<int64_t> CHILD; // file of Bitset;
 
 struct PasInfor {
     int64_t listMode;
@@ -1071,8 +1073,8 @@ std::string Expr::p()
         break;
     case STANDPROC:
         if (typ == NULL && num2 < 30) {
-            Bitset t;
-            t.val = systemProcNames[num2];
+            int64_t t;
+            t = systemProcNames[num2];
             ostr << toAscii(t) << '(' << expr1->p() << ')';
         } else if (num2 < 24) {
             ostr << fn2name[num2] << '(' << expr1->p() << ')';
@@ -1221,7 +1223,7 @@ void printErrMsg(int64_t errNo)
 
 void printTextWord(Word val)
 {
-    const char *s = toAscii(val.m).c_str();
+    const char *s = toAscii(val.ii).c_str();
     while (*s == ' ')
         s++;
     fputs(s, stdout);
@@ -1275,7 +1277,7 @@ void addToHashTab(IdentRecPtr arg)
 
 void error(int64_t errNo);
 
-void storeObjWord(Bitset insn)
+void storeObjWord(int64_t insn)
 {
     objBuffer[objBufIdx] = insn;
     moduleOffset = moduleOffset + 1;
@@ -1289,32 +1291,33 @@ void storeObjWord(Bitset insn)
 void form1Insn(int64_t arg)
 {
     Word Insn, opcode;
-    Bitset half1, half2;
     int64_t pos;
     Insn.i = arg;
     opcode.i = Insn.i & ~077777;
     if (opcode.i == InsnTemp[UJ]) {
         if (prevOpcode == opcode.i)
+            // No need for a jump after jump.
             return;
         if (putLeft and (prevOpcode == 1)) {
             pos = objBufIdx - 1;
-            if (objBuffer[pos] * BitRange(0, 8) == Bits(0, 1, 8) + BitRange(3,5)) {
+            if (((objBuffer[pos] >> 24) & ~077777) == I13+KVJM) {
+                // Chaining the call and the jump.
+                int64_t addr1, addr2;
                 prevOpcode = opcode.i;
-                half1 = (Insn.m * BitRange(33,47)) << 24;
-                half2 = (objBuffer[pos] * BitRange(9,23)) >> 24;
-                objBuffer[pos] = Bits(0, 1, 3, 4) + Bits(6, 28, 29) +
-                    half1 + half2;
+                addr1 = Insn.ii & 077777;
+                addr2 = (objBuffer[pos] >> 24) & 077777;
+                objBuffer[pos] = (I13+KVTM+addr1) << 24 | (KUJ+addr2);
                 return;
             }
         }
     };
     prevOpcode = opcode.i;
     if (putLeft) {
-        leftInsn = (Insn.m * halfWord) << 24;
+        leftInsn = Insn.ii << 24;
         putLeft = false;
     } else {
         putLeft = true;
-        storeObjWord(leftInsn + (Insn.m * halfWord));
+        storeObjWord(leftInsn | (Insn.ii & halfWord));
     }
 }
 
@@ -1374,7 +1377,7 @@ void formAndAlign(int64_t arg)
     prevOpcode = 1;
 }
 
-void putToSymTab(Bitset arg)
+void putToSymTab(int64_t arg)
 {
     symTab[symTabPos] = arg;
     if (symTabPos == SYMTAB_LIMIT) {
@@ -1387,14 +1390,14 @@ void putToSymTab(Bitset arg)
 //
 // Allocate external symbol: name in curVal.
 //
-int64_t allocExtSymbol(Bitset newSym)
+int64_t allocExtSymbol(int64_t newSym)
 {
     int64_t ret = symTabPos;
 
-    if (curVal.m * halfWord) {
+    if (curVal.ii & halfWord) {
         int64_t i;
         for (i = 1; i <= longSymCnt; ++i) {
-            if (curVal.m == longSyms[i]) {
+            if (curVal.ii == longSyms[i]) {
                 return longSymTabBase[i];
             }
         }
@@ -1404,10 +1407,10 @@ int64_t allocExtSymbol(Bitset newSym)
             longSymCnt = 1;
         };
         longSymTabBase[longSymCnt] = symTabPos;
-        longSyms[longSymCnt] = curVal.m;
-        newSym = newSym + Bits(25);
+        longSyms[longSymCnt] = curVal.ii;
+        newSym |= 020000000;
     } else {
-        newSym = newSym + curVal.m;
+        newSym |= curVal.ii;
     }
     putToSymTab(newSym);
     return ret;
@@ -1416,7 +1419,7 @@ int64_t allocExtSymbol(Bitset newSym)
 int64_t getHelperProc(int64_t l3arg1z)
 {
     if (helperMap[l3arg1z] == 0)  {
-        curVal.m = helperNames[l3arg1z];
+        curVal.ii = helperNames[l3arg1z];
         helperMap[l3arg1z] = allocExtSymbol(extSymMask);
     };
     return helperMap[l3arg1z] + (KVJM+I13);
@@ -1424,7 +1427,7 @@ int64_t getHelperProc(int64_t l3arg1z)
 
 void toFCST()
 {
-    FCST.push_back(curVal.m);
+    FCST.push_back(curVal.ii);
     FcstCnt = FcstCnt + 1;
 }
 
@@ -1471,13 +1474,13 @@ int64_t addCurValToFCST()
     return ret;
 }
 
-int64_t allocSymtab(Bitset newSym)
+int64_t allocSymtab(int64_t newSym)
 {
     int64_t ret = symTabPos;
 
     if (symTabCnt == 0) {
         symTabCnt = 1;
-        symTabArray[1].m = newSym;
+        symTabArray[1] = newSym;
         symTabIndex[1] = symTabPos;
     } else {
         int64_t low = 1;
@@ -1486,10 +1489,10 @@ int64_t allocSymtab(Bitset newSym)
 
         do {
             mid = (low + high) / 2;
-            if (newSym == symTabArray[mid].m) {
+            if (newSym == symTabArray[mid]) {
                 return symTabIndex[mid];
             }
-            if (newSym.val < symTabArray[mid].m.val)
+            if (newSym < symTabArray[mid])
                 high = mid - 1;
             else
                 low = mid + 1;
@@ -1498,7 +1501,7 @@ int64_t allocSymtab(Bitset newSym)
         if (symTabCnt >= SYMTAB_MAX) {
             error(50); /* errSymbolTableOverflow */
         } else {
-            if (newSym.val < symTabArray[mid].m.val)
+            if (newSym < symTabArray[mid])
                 high = mid;
             else
                 high = mid + 1;
@@ -1508,7 +1511,7 @@ int64_t allocSymtab(Bitset newSym)
                 symTabIndex[low] = symTabIndex[mid];
             }
             symTabCnt = symTabCnt + 1;
-            symTabArray[high].m = newSym;
+            symTabArray[high] = newSym;
             symTabIndex[high] = symTabPos;
         }
     }
@@ -1519,15 +1522,15 @@ int64_t allocSymtab(Bitset newSym)
 int64_t getFCSToffset()
 {
     int64_t ret;
-    Word offset;
+    int64_t offset;
     ret = addCurValToFCST();
-    offset.i = ret;
-    if (offset.i < 2048) {
+    offset = ret;
+    if (offset < 2048) {
         /* empty */
-    } else if (offset.i >= 4096)
+    } else if (offset >= 4096)
         error(204);
     else {
-        ret = allocSymtab(offset.m + Bits(24)) - 070000;
+        ret = allocSymtab(offset + 040000000) - 070000;
     }
     return ret;
 }
@@ -1562,7 +1565,7 @@ std::string Bitset::p() const
     int64_t start = minel(t);
     int64_t prev = start;
     t = t - Bits(start);
-    while (t) {
+    while (t != Bits()) {
         int64_t m = minel(t);
         if (m != prev + 1) {
             if (ostr.str().size() != 1) ostr << ',';
@@ -1622,7 +1625,7 @@ int64_t getValueOrAllocSymtab(int64_t value)
         return curVal.i;
     else
         return
-            allocSymtab((curVal.m + Bits(24)) * halfWord);
+            allocSymtab((curVal.ii | 040000000) & halfWord);
 }
 
 void P0715(int64_t mode, int64_t arg)
@@ -1640,7 +1643,7 @@ L1:     addr = curVal.m * BitRange(33, 47);
                 isLarge = true;
                 arg = arg - 4096;
             } else isLarge = false;
-            insn = objBuffer[arg];
+            insn.val = objBuffer[arg];
             if (isLarge) {
                 curVal.m = insn * BitRange(9, 23);
                 curVal.m = curVal.m >> 24;
@@ -1650,7 +1653,7 @@ L1:     addr = curVal.m * BitRange(33, 47);
                 curVal.m = /* intZero + */ insn * BitRange(33, 47);
                 insn = insn * BitRange(0, 32) + addr;
             };
-            objBuffer[arg] = insn;
+            objBuffer[arg] = insn.val;
             arg = curVal.i;
         };
         return;
@@ -1694,11 +1697,11 @@ void prInsn(int insn)
         printf("%02o %03o %04o", insn >> 20, (insn >> 12) & 0177, insn & 07777);
 }
 
-void OBPROG(Bitset & start, Bitset & fin)
+void OBPROG(int64_t & start, int64_t & fin)
 {
-    for (Bitset * p = &start; p <= &fin; ++p) {
+    for (int64_t * p = &start; p <= &fin; ++p) {
         if (p != &start && (p - &start) % 4 == 0) putchar('\n');
-        prInsn(int(p->val >> 24)); putchar(' '); prInsn(p->val & 0xFFFFFF); printf("     ");
+        prInsn(*p >> 24); putchar(' '); prInsn(*p & 0xFFFFFF); printf("     ");
     }
     putchar('\n');
 }
@@ -2762,7 +2765,7 @@ int64_t F3307(IdentRecPtr l3arg1z)
     return l3var1z;
 } /* F3307 */
 
-Bitset makeNameWithStars(bool isProc)
+int64_t makeNameWithStars(bool isProc)
 {
     bool wantBoth = not isProc and (extSymAdornment == 0);
     if (curVal.m * BitRange(0, 5) == Bits()) {
@@ -2780,7 +2783,7 @@ Bitset makeNameWithStars(bool isProc)
             }
         }
     }
-    return curVal.m;
+    return curVal.ii;
 }
 
 struct formOperator {
@@ -3000,7 +3003,7 @@ L3556:
                 case 22: {
                     add2InsnsToBuf(KVTM+I14, KXTA+I14);
                       curVal.ii = 040077777;
-                      add2InsnsToBuf(allocSymtab(curVal.m) + (KXTS+SP),
+                      add2InsnsToBuf(allocSymtab(curVal.ii) + (KXTS+SP),
                                      KAAX+I8 + curInsn.i);
                       add2InsnsToBuf(KAEX+SP, KATX+I14);
                 } break;
@@ -3015,7 +3018,7 @@ L3556:
                     else
                         if ((curVal.i >= 28672) or (curVal.i < 4096)) {
                             addInsnToBuf(
-                                allocSymtab((curVal.m + Bits(24))*halfWord)
+                                allocSymtab((curVal.ii | 040000000) & halfWord)
                                 + tempInsn.i - 28672);
                         } else {
                             add2InsnsToBuf(getValueOrAllocSymtab(curVal.i)
@@ -3315,7 +3318,7 @@ L4650:      P4613();
                 l4var5z = 074003;
 L4654:
                 l4var1z.i = macro * l4var5z + l4var6z;
-                l4var6z = allocSymtab(l4var1z.m * BitRange(12,47));
+                l4var6z = allocSymtab(l4var1z.ii & 0777777777777L);
                 addToInsnList(regField + opCode + l4var6z);
             } else if (l4var4z != 0) {
                 addInsnAndOffset(l4var4z + InsnTemp[UTC], l4var6z);
@@ -3329,7 +3332,7 @@ L4654:
             l4var5z = insnList->next->code - InsnTemp[UTC];
             if (l4var4z != 0) {
                 l4var1z.i = macro * l4var5z + l4var4z;
-                l4var5z = allocSymtab(l4var1z.m * BitRange(12,47));
+                l4var5z = allocSymtab(l4var1z.ii & 0777777777777L);
             }
             insnList->next->code = regField + l4var5z + opCode;
         } else if (l4int2z == 16) {
@@ -3918,7 +3921,7 @@ void genGetElt()
                         curVal.i = 7;
                     curVal.m = curVal.m << 24;
                     addToInsnList(allocSymtab(  /* P/00C */
-                        helperNames[76] + curVal.m)+(KVTM+I11));
+                        helperNames[76] | curVal.ii)+(KVTM+I11));
                     insnCopy.ilf7 = 16;
                     insnCopy.shift = 0;
                     saved->next->next = insnCopy.next2;
@@ -3955,11 +3958,11 @@ int64_t allocGlobalObject(IdentRecPtr l6arg1z)
     if (l6arg1z->pos() == 0) {
         if (l6arg1z->flags() * Bits(20, 21) != Bits()) {
             curVal = l6arg1z->id;
-            curVal.m = makeNameWithStars(true);
+            curVal.ii = makeNameWithStars(true);
             l6arg1z->pos() = allocExtSymbol(extSymMask);
         } else {
             l6arg1z->pos() = symTabPos;
-            putToSymTab(Bits());
+            putToSymTab(0);
         }
     }
     return l6arg1z->pos();
@@ -4063,6 +4066,9 @@ genEntry::genEntry()
                         form2Insn(
                             getHelperProc(63/*P/B6*/) - 0500000,
                             allocGlobalObject(l5idr4z) + KUJ);
+                        // If a routine is passed as an actual parameter,
+                        // its (rough) prototype is stored for checking
+                        // against calls to formal parameters at runtime.
                         if (l5idr3z != NULL) {
                             do {
                                 l5idc22z = l5idr3z->cl;
@@ -4073,7 +4079,7 @@ genEntry::genEntry()
                                 l5idr3z = l5idr3z->list();
                             } while (l5idr4z != l5idr3z);
                         } /* 6745 */
-                        storeObjWord(Bits());
+                        storeObjWord(0);
                         P0715(0, l5var16z);
                     }
                 } /* 6752 */
@@ -5699,14 +5705,14 @@ void parseDecls(int64_t l3arg1z)
         l3arg1z = l2idr2z->pos();
         frame.i = moduleOffset - 040000;
         if (l3arg1z != 0)
-            symTab[l3arg1z] = Bits(24, 29) + frame.m * halfWord;
+            symTab[l3arg1z] = 041000000 + (frame.ii & halfWord);
         l2idr2z->pos() = moduleOffset;
         l3arg1z = F3307(l2idr2z);
         if (l3var3z) {
             if (41 >= entryPtCnt) {
                 curVal = l2idr2z->id;
                 entryPtTable[entryPtCnt] = makeNameWithStars(true);
-                entryPtTable[entryPtCnt+1] = Bits(1) + frame.m - Bits(0, 3);
+                entryPtTable[entryPtCnt+1] = (1L << 46) | frame.i;
                 entryPtCnt = entryPtCnt + 2;
             } else
                 error(87); /* errTooManyEntryProcs */
@@ -6816,7 +6822,7 @@ void caseStatement()
         curVal.i = ((moduleOffset + (1)) - curVal.i);
         if (curVal.i < 040000) {
             curVal.i = (curVal.i - 040000);
-            curVal.i = allocSymtab(Bits(24, 29) + (curVal.m * O77777));
+            curVal.i = allocSymtab(041000000 | (curVal.ii & 077777));
         }
         form1Insn(KUJ+I14 + curVal.i);
         while (allClauses != NULL) {
@@ -6942,14 +6948,14 @@ void ifWhileStatement(Symbol delim)
 
 struct ParseData {
     struct DATAREC {
-        Bitset b;
+        int64_t b;
         unsigned operator[](int i) {
-            return (b.val >> (12*(3-i))) & 4095;
+            return (b >> (12*(3-i))) & 4095;
         }
         void assn(int i, int64_t val) {
             val &= 4095;
             val ^= (*this)[i];
-            b.val = (b.val ^ (val << (12*(3-i)))) & 0xFFFFFFFFFFFFL;
+            b = (b ^ (val << (12*(3-i)))) & 0xFFFFFFFFFFFFL;
         }
     };
 
@@ -6962,7 +6968,7 @@ struct ParseData {
     int64_t allocDataRef(int64_t l6arg1z) {
         if (l6arg1z >= 2048) {
             curVal.i = l6arg1z;
-            return allocSymtab((curVal.m + Bits(24)) * halfWord);
+            return allocSymtab((curVal.ii | 040000000) & halfWord);
         } else {
             return l6arg1z;
         }
@@ -6978,12 +6984,12 @@ struct ParseData {
         } else {
             curVal = l4var3z;
         }
-        l5var1z.assn(1, allocSymtab(Bits(12,23) + curVal.m * halfWord));
+        l5var1z.assn(1, allocSymtab(0400100000000L | (curVal.ii & halfWord)));
         l5var1z.assn(2, allocDataRef(l5arg1z));
         if (l4var9z.i == 0) {
             curVal.m = l4var7z.m >> 24;
         } else {
-            curVal.i = allocSymtab(l4var7z.m + l4var9z.m * halfWord);
+            curVal.i = allocSymtab(l4var7z.ii | (l4var9z.ii & halfWord));
         }
         l5var1z.assn(3, curVal.i);
         l4var9z.i = l5arg1z * l4var4z.i + l4var9z.i;
@@ -7022,7 +7028,7 @@ L16545:             error(errNotDefined);
             (void) formOperator(gen5);
             if (objBufIdx != 1)
                 error(errVarTooComplex);
-            l4var7z.m = (leftInsn * BitRange(12,23));
+            l4var7z.ii = leftInsn & 0777700000000L;
             l4var3z.i = FcstCnt;
             l4var4z.i = 0;
             l4var9z.i = 0;
@@ -7063,13 +7069,6 @@ L16545:             error(errNotDefined);
         } while (SY == SEMICOLON); /* 16645 */
         if (SY != ENDSY)
             error(errBadSymbol);
-        /*
-          reset(F);
-          while not eof(F) do {
-          write(FCST, F->b);
-          get(F);
-          };
-        */
         for (size_t s = 0; s < F.size(); ++s) FCST.push_back(F[s].b);
         int92z = FcstCnt - dsize;
         FcstCnt = dsize;
@@ -7641,7 +7640,7 @@ Statement::Statement()
     setup(boundary);
     bool110z = false;
     startLine = lineCnt;
-    if (set147z == halfWord)
+    if (set147z.val == halfWord)
         ParseData();
     else {
         if (SY == INTCONST) {
@@ -7666,8 +7665,7 @@ Statement::Statement()
                             /* empty */
                         } else if (l3var2z->offset >= 074000) {
                             curVal.i = (moduleOffset - 040000);
-                            symTab[l3var2z->offset] = Bits(24,29) +
-                                                         curVal.m * O77777;
+                            symTab[l3var2z->offset] = 041000000 | (curVal.ii & 077777);
                         } else {
                             P0715(0, l3var2z->offset);
                         } /* 20342 */
@@ -7788,7 +7786,7 @@ L8888:
                     } else {
                         if (l3var2z->offset == 0) {
                             l3var2z->offset = symTabPos;
-                            putToSymTab(Bits());
+                            putToSymTab(0);
                         }
                         form3Insn(l3var2z->frame + (KMTJ + 13), KVTM+I14 + l3var2z->offset,
                                   getHelperProc(18/*"P/RC"*/) + (-064100000));
@@ -7926,7 +7924,7 @@ void defineRoutine()
     bool &l2bool8z = programme::super.back()->l2bool8z;
 
     objBufIdx = 1;
-    objBuffer[objBufIdx] = Bits();
+    objBuffer[objBufIdx] = 0;
     curInsnTemplate = InsnTemp[XTA];
     bool48z = l2idr2z->flags().has(22);
     lineStartOffset = moduleOffset;
@@ -7991,17 +7989,17 @@ void defineRoutine()
         P0715(0, int53z);
     if (not bool48z and not doPMD and (l2int21z == 3) and
         (curProcNesting != 1) and (set145z * BitRange(1,15) != BitRange(1,15))) {
-        objBuffer[1] = BitRange(7,11) + BitRange(21,23) + Bits(28,31);
+        objBuffer[1] = int64_t(KNTR+7) << 24 | KUTC;
         l2idr2z->flags() = l2idr2z->flags() + Bits(25);
         if (objBufIdx == 2) {
-            objBuffer[1] = Bits(0,1) + BitRange(3,5);
+            objBuffer[1] = int64_t(KUJ+I13) << 24;
             putLeft = true;
         } else {
             l2idr2z->pos() = l3var1z;
             if (set145z.has(13)) {
                 curVal.i = minel(BitRange(1,15) - set145z);
                 l3var7z.m = curVal.m << 24;
-                objBuffer[2] = objBuffer[2] + Bits(0,1,3) + Bits(6,9) + l3var7z.m;
+                objBuffer[2] |= int64_t(I13+KMTJ) << 24 | l3var7z.ii;
             } else {
                 curVal.i = 13;
             }
@@ -8019,14 +8017,13 @@ void defineRoutine()
                 formAndAlign(getHelperProc(78)); /* "P/PMDSET" */
             form1Insn(InsnTemp[UJ] + l3var1z);
             curVal.i = l2idr2z->pos() - 040000;
-            symTab[074002] = Bits(24,29) + (curVal.m * halfWord);
+            symTab[074002] = 041000000 | (curVal.ii & halfWord);
         }
         curVal.i = l2int21z;
         if (curProcNesting != 1) {
             curVal.i = curVal.i - 2;
             l3var7z.m = curVal.m << 24;
-            objBuffer[savedObjIdx] = objBuffer[savedObjIdx] +
-                l3var7z.m + BitRange(0,4) + Bits(6,8);
+            objBuffer[savedObjIdx] |= l3var7z.ii | int64_t(KUTM+SP) << 24;
         }
     } /* 21261 */
     outputObjFile();
@@ -8187,8 +8184,7 @@ initScalars::initScalars() :
     regSysProc(toText("MINEL"));
     temptype = pointerType;
     regSysProc(toText("PTR"));
-    l3var11z.i = 30;
-    l3var11z.m = l3var11z.m * halfWord + Bits(24,27,28,29);
+    l3var11z.ii = 047000000 + 30;
     programObj = new IdentRec;
     programObj->cl = ROUTINEID;
     curVal.ii = toText("OUTPUT");
@@ -8211,13 +8207,11 @@ initScalars::initScalars() :
     }
     if (curIdent != noProgram) {
         entryPtTable[1] = symTab[074000];
-        entryPtTable[3].val = toText("PROGRAM ");
-        entryPtTable[2] = Bits(1);
-        entryPtTable[4] = Bits(1);
+        entryPtTable[3] = toText("PROGRAM ");
+        entryPtTable[2] = 1L << 46;
+        entryPtTable[4] = 1L << 46;
         entryPtCnt = 5;
-        Bitset foo;
-        foo.val = (010L<<20|02474001L)<<24|003074002L; /*10 24 74001 00 30 74002*/
-        CHILD.push_back(foo);
+        CHILD.push_back(int64_t(I8+KVTM+074001) << 24 | (KUJ+074002));  /*10 24 74001 00 30 74002*/
         moduleOffset = 040001;
     } else {
         entryPtCnt = 1;
@@ -8247,13 +8241,13 @@ initScalars::initScalars() :
     l3var7z->cl = VARID;
     l3var7z->list() = NULL;
     curVal.ii = toText("*OUTPUT*");
-    l3var7z->value() = allocExtSymbol(l3var11z.m);
+    l3var7z->value() = allocExtSymbol(l3var11z.ii);
     addToHashTab(l3var7z);
     l3var5z = 1;
     while (SY == IDENT) {
         l3var8z = 0;
         curVal = curIdent;
-        l3var1z.m = makeNameWithStars(false);
+        l3var1z.ii = makeNameWithStars(false);
         if (curIdent == l3var4z) {
             inputFile = new IdentRec;
             inputFile->id = curIdent;
@@ -8262,7 +8256,7 @@ initScalars::initScalars() :
             inputFile->cl = VARID;
             inputFile->list() = NULL;
             curVal = l3var1z;
-            inputFile->value() = allocExtSymbol(l3var11z.m);
+            inputFile->value() = allocExtSymbol(l3var11z.ii);
             addToHashTab(inputFile);
             l3var8z = lineCnt;
         } else if (curIdent == l3var3z) {
@@ -8330,14 +8324,13 @@ initScalars::initScalars() :
         int92z = 0;
         int93z = 0;
     } else {
-        set147z = halfWord;
+        set147z.val = halfWord;
         dataCheck = false;
         Statement();
     }
     readToPos80();
     curVal.i = l3var6z;
-    symTab[074003] = (helperNames[25] + Bits(24,27,28,29)) +
-        (curVal.m * halfWord);
+    symTab[074003] = helperNames[25] | 047000000 | (curVal.ii & halfWord);
 } /* initScalars */
 
 void makeExtFile()
@@ -8666,13 +8659,13 @@ L22421:
                     curExternFile = externFileList;
                     l2var12z = workidr->id;
                     curVal.i = jj;
-                    toAlloc = curVal.m * halfWord + Bits(24,27,28,29);
+                    toAlloc.val = (curVal.ii & halfWord) | 047000000;
                     while (l2bool8z and curExternFile != NULL) {
                         if (curExternFile->id == l2var12z) {
                             l2bool8z = false;
                             if (curExternFile->line == 0) {
                                 curVal = curExternFile->offset;
-                                workidr->value() = allocExtSymbol(toAlloc);
+                                workidr->value() = allocExtSymbol(toAlloc.val);
                                 curExternFile->line = lineCnt;
                             }
                         } else {
@@ -9055,7 +9048,7 @@ struct initTables {
                , 64);
         CHILD.clear();
         for (jdx = 1; jdx <= 10; ++jdx)
-            CHILD.push_back(Bitset());
+            CHILD.push_back(0);
         for (idx = 0; idx <= 127; ++idx) {
             symHashTabBase[idx] = NULL;
             typeHashTabBase[idx] = NULL;
@@ -9088,11 +9081,11 @@ void finalize()
     sizes[9] = int92z;
     sizes[10] = int93z;
     curVal.i = moduleOffset - 040000;
-    symTab[074001] = Bits(24,29) + curVal.m - intZero;
+    symTab[074001] = 041000000 | curVal.i;
     // Forming the compact form of the module header.
-    CHILD[7].val = sizes[1] | (sizes[2] << 12);
-    CHILD[8].val = sizes[5] << 30 | sizes[9] << 15 | sizes[10];
-    CHILD[9].val = sizes[8] << 30 | sizes[7] << 15 | sizes[6];
+    CHILD[7] = sizes[1] | (sizes[2] << 12);
+    CHILD[8] = sizes[5] << 30 | sizes[9] << 15 | sizes[10];
+    CHILD[9] = sizes[8] << 30 | sizes[7] << 15 | sizes[6];
     /*
     reset(FCST);
     while not eof(FCST) do {
@@ -9104,7 +9097,7 @@ void finalize()
     curVal.i = (symTabPos - 070000L) * 0100000000L;
     for (cnt = 1; cnt <= longSymCnt; ++cnt) {
         idx = longSymTabBase[cnt];
-        symTab[idx] = (symTab[idx] + (curVal.m * BitRange(9,23)));
+        symTab[idx] |= curVal.ii & 07777700000000L;
         curVal.i = (curVal.i + 0100000000L);
     }
     symTabPos = symTabPos - 1;
@@ -9118,7 +9111,7 @@ void finalize()
             printf("%ld ", sizes[idx]);
         putchar('\n');
     }
-    entryPtTable[entryPtCnt] = Bits();
+    entryPtTable[entryPtCnt] = 0;
 
 } /* finalize */
 
@@ -9334,11 +9327,8 @@ int main(int argc, char **argv)
     blockBegSys = Bits(LABELSY, CONSTSY, TYPESY, VARSY) + Bits(FUNCSY, PROCSY, BEGINSY);
     statBegSys = Bits(BEGINSY, IFSY, CASESY, REPEATSY) + Bits(WHILESY, FORSY, WITHSY) +
         Bits(GOTOSY, SELECTSY);
-    O77777 = BitRange(33,47);
     intZero = Bits(0,1,3);
     // unused138z = 063000000L;
-    extSymMask.val = 043000000L;
-    halfWord = BitRange(24,47);
     hashMask.m.val = 0203407;
     statEndSys = Bits(SEMICOLON, ENDSY, ELSESY, UNTILSY);
     lvalOpSet = Bits(GETELT, GETVAR, op36, op37) + Bits(GETFIELD, DEREF, FILEPTR);
@@ -9447,7 +9437,7 @@ L9999:  printf(" IN %ld LINES %ld ERRORS\n", lineCnt-1, totalErrors);
         fwrite("BESM6\0", 6, 1, f);
         for (size_t i = 7; i < CHILD.size(); ++i) {
             for (int j = 40; j >= 0; j -= 8)
-                fputc((CHILD[i].val >> j) & 0xFF, f);
+                fputc((CHILD[i] >> j) & 0xFF, f);
         }
         fclose(f);
         exit(0);
@@ -9505,104 +9495,104 @@ int64_t resWordNameBase[30] = {
     charSymTabBase['≥'] := RELOP;
 #endif
 
-Bitset helperNames[100] = { {0L},
-       {06017210000000000L}     /*"P/1     "*/,
-       {06017220000000000L}     /*"P/2     "*/,
-       {06017230000000000L}     /*"P/3     "*/,
-       {06017240000000000L}     /*"P/4     "*/,
-       {06017250000000000L}     /*"P/5     "*/,
-       {06017260000000000L}     /*"P/6     "*/,
-       {06017434100000000L}     /*"P/CA    "*/,
-       {06017455700000000L}     /*"P/EO    "*/,
-       {06017636300000000L}     /*"P/SS    "*/,
-/*10*/ {06017455400000000L}     /*"P/EL    "*/,
-       {06017554400000000L}     /*"P/MD    "*/,
-       {06017555100000000L}     /*"P/MI    "*/,
-       {06017604100000000L}     /*"P/PA    "*/,
-       {06017655600000000L}     /*"P/UN    "*/,
-       {06017436000000000L}     /*"P/CP    "*/,
-       {06017414200000000L}     /*"P/AB    "*/,
-       {06017445100000000L}     /*"P/DI    "*/,
-       {06017624300000000L}     /*"P/RC    "*/,
-       {06017454100000000L}     /*"P/EA    "*/,
-/*20*/ {06017564100000000L}     /*"P/NA    "*/,
-       {06017424100000000L}     /*"P/BA    "*/,
-       {06017515100000000L}     /*"P/II   u"*/,
-       {06017626200000000L}     /*"P/RR    "*/,
-       {06017625100000000L}     /*"P/RI    "*/,
-       {06017214400000000L}     /*"P/1D    "*/,
-       {06017474400000000L}     /*"P/GD    "*/,
-       {06017450000000000L}     /*"P/E     "*/,
-       {06017454600000000L}     /*"P/EF    "*/,
-       {06017604600000000L}     /*"P/PF    "*/,
-/*30*/ {06017474600000000L}     /*"P/GF    "*/,
-       {06017644600000000L}     /*"P/TF    "*/,
-       {06017624600000000L}     /*"P/RF    "*/,
-       {06017566700000000L}     /*"P/NW    "*/,
-       {06017446300000000L}     /*"P/DS    "*/,
-       {06017506400000000L}     /*"P/HT    "*/,
-       {06017675100000000L}     /*"P/WI    "*/,
-       {06017676200000000L}     /*"P/WR    "*/,
-       {06017674300000000L}     /*"P/WC    "*/,
-       {06017412600000000L}     /*"P/A6    "*/,
-/*40*/ {06017412700000000L}     /*"P/A7    "*/,
-       {06017677000000000L}     /*"P/WX    "*/,
-       {06017675700000000L}     /*"P/WO    "*/,
-       {06017436700000000L}     /*"P/CW    "*/,
-       {06017264100000000L}     /*"P/6A    "*/,
-       {06017274100000000L}     /*"P/7A    "*/,
-       {06017675400000000L}     /*"P/WL    "*/,
-       {06017624451000000L}     /*"P/RDI   "*/,
-       {06017624462000000L}     /*"P/RDR   "*/,
-       {06017624443000000L}     /*"P/RDC   "*/,
-/*50*/ {06017624126000000L}     /*"P/RA6   "*/,
-       {06017624127000000L}     /*"P/RA7   "*/,
-       {06017627000000000L}     /*"P/RX   u"*/,
-       {06017625400000000L}     /*"P/RL    "*/,
-       {06017675754560000L}     /*"P/WOLN  "*/,
-       {06017625154560000L}     /*"P/RILN  "*/,
-       {06017626200000000L}     /*"P/RR    "*/,
-       {06017434500000000L}     /*"P/CE    "*/,
-       {06017646200000000L}     /*"P/TR    "*/,
-       {06017546600000000L}     /*"P/LV    "*/,
-/*60*/ {06017724155000000L}     /*"P/ZAM  u"*/,
-       {06017605100000000L}     /*"P/PI    "*/,
-       {06017426000000000L}     /*"P/BP    "*/,
-       {06017422600000000L}     /*"P/B6    "*/,
-       {06017604200000000L}     /*"P/PB    "*/,
-       {06017422700000000L}     /*"P/B7    "*/,
-       {06017515600000000L}     /*"P/IN    "*/,
-       {06017516300000000L}     /*"P/IS    "*/,
-       {06017444100000000L}     /*"P/DA    "*/,
-       {06017435700000000L}     /*"P/CO    "*/,
-/*70*/ {06017516400000000L}     /*"P/IT    "*/,
-       {06017435300000000L}     /*"P/CK    "*/,
-       {06017534300000000L}     /*"P/KC    "*/,
-       {06017545647604162L}     /*"P/LNGPAR"*/,
-       {06017544441620000L}     /*"P/LDAR  "*/,
-       {06017544441625156L}     /*"P/LDARIN"*/,
-       {06017202043000000L}     /*"P/00C   "*/,
-       {06017636441620000L}     /*"P/STAR  "*/,
-       {06017605544634564L}     /*"P/PMDSET"*/,
-       {06017435100000000L}     /*"P/CI    "*/,
-/*80*/ {06041514200000000L}     /*"PAIB    "*/,
-       {06017674100000000L}     /*"P/WA    "*/,
-       {06361626412000000L}     /*"SQRT*   "*/,
-       {06351561200000000L}     /*"SIN*    "*/,
-       {04357631200000000L}     /*"COS*    "*/,
-       {04162436441561200L}     /*"ARCTAN* "*/,
-       {04162436351561200L}     /*"ARCSIN* "*/,
-       {05456120000000000L}     /*"LN*     "*/,
-       {04570601200000000L}     /*"EXP*    "*/,
-       {06017456100000000L}     /*"P/EQ    "*/,
-/*90*/ {06017624100000000L}     /*"P/RA    "*/,
-       {06017474500000000L}     /*"P/GE    "*/,
-       {06017554600000000L}     /*"P/MF    "*/,
-       {06017465500000000L}     /*"P/FM    "*/,
-       {06017565600000000L}     /*"P/NN    "*/,
-       {06017634300000000L}     /*"P/SC    "*/,
-       {06017444400000000L}     /*"P/DD    "*/,
-       {06017624500000000L}     /*"P/RE    "*/};
+int64_t helperNames[100] = { 0L,
+        06017210000000000L      /*"P/1     "*/,
+        06017220000000000L      /*"P/2     "*/,
+        06017230000000000L      /*"P/3     "*/,
+        06017240000000000L      /*"P/4     "*/,
+        06017250000000000L      /*"P/5     "*/,
+        06017260000000000L      /*"P/6     "*/,
+        06017434100000000L      /*"P/CA    "*/,
+        06017455700000000L      /*"P/EO    "*/,
+        06017636300000000L      /*"P/SS    "*/,
+/*10*/  06017455400000000L      /*"P/EL    "*/,
+        06017554400000000L      /*"P/MD    "*/,
+        06017555100000000L      /*"P/MI    "*/,
+        06017604100000000L      /*"P/PA    "*/,
+        06017655600000000L      /*"P/UN    "*/,
+        06017436000000000L      /*"P/CP    "*/,
+        06017414200000000L      /*"P/AB    "*/,
+        06017445100000000L      /*"P/DI    "*/,
+        06017624300000000L      /*"P/RC    "*/,
+        06017454100000000L      /*"P/EA    "*/,
+/*20*/  06017564100000000L      /*"P/NA    "*/,
+        06017424100000000L      /*"P/BA    "*/,
+        06017515100000000L      /*"P/II   u"*/,
+        06017626200000000L      /*"P/RR    "*/,
+        06017625100000000L      /*"P/RI    "*/,
+        06017214400000000L      /*"P/1D    "*/,
+        06017474400000000L      /*"P/GD    "*/,
+        06017450000000000L      /*"P/E     "*/,
+        06017454600000000L      /*"P/EF    "*/,
+        06017604600000000L      /*"P/PF    "*/,
+/*30*/  06017474600000000L      /*"P/GF    "*/,
+        06017644600000000L      /*"P/TF    "*/,
+        06017624600000000L      /*"P/RF    "*/,
+        06017566700000000L      /*"P/NW    "*/,
+        06017446300000000L      /*"P/DS    "*/,
+        06017506400000000L      /*"P/HT    "*/,
+        06017675100000000L      /*"P/WI    "*/,
+        06017676200000000L      /*"P/WR    "*/,
+        06017674300000000L      /*"P/WC    "*/,
+        06017412600000000L      /*"P/A6    "*/,
+/*40*/  06017412700000000L      /*"P/A7    "*/,
+        06017677000000000L      /*"P/WX    "*/,
+        06017675700000000L      /*"P/WO    "*/,
+        06017436700000000L      /*"P/CW    "*/,
+        06017264100000000L      /*"P/6A    "*/,
+        06017274100000000L      /*"P/7A    "*/,
+        06017675400000000L      /*"P/WL    "*/,
+        06017624451000000L      /*"P/RDI   "*/,
+        06017624462000000L      /*"P/RDR   "*/,
+        06017624443000000L      /*"P/RDC   "*/,
+/*50*/  06017624126000000L      /*"P/RA6   "*/,
+        06017624127000000L      /*"P/RA7   "*/,
+        06017627000000000L      /*"P/RX   u"*/,
+        06017625400000000L      /*"P/RL    "*/,
+        06017675754560000L      /*"P/WOLN  "*/,
+        06017625154560000L      /*"P/RILN  "*/,
+        06017626200000000L      /*"P/RR    "*/,
+        06017434500000000L      /*"P/CE    "*/,
+        06017646200000000L      /*"P/TR    "*/,
+        06017546600000000L      /*"P/LV    "*/,
+/*60*/  06017724155000000L      /*"P/ZAM  u"*/,
+        06017605100000000L      /*"P/PI    "*/,
+        06017426000000000L      /*"P/BP    "*/,
+        06017422600000000L      /*"P/B6    "*/,
+        06017604200000000L      /*"P/PB    "*/,
+        06017422700000000L      /*"P/B7    "*/,
+        06017515600000000L      /*"P/IN    "*/,
+        06017516300000000L      /*"P/IS    "*/,
+        06017444100000000L      /*"P/DA    "*/,
+        06017435700000000L      /*"P/CO    "*/,
+/*70*/  06017516400000000L      /*"P/IT    "*/,
+        06017435300000000L      /*"P/CK    "*/,
+        06017534300000000L      /*"P/KC    "*/,
+        06017545647604162L      /*"P/LNGPAR"*/,
+        06017544441620000L      /*"P/LDAR  "*/,
+        06017544441625156L      /*"P/LDARIN"*/,
+        06017202043000000L      /*"P/00C   "*/,
+        06017636441620000L      /*"P/STAR  "*/,
+        06017605544634564L      /*"P/PMDSET"*/,
+        06017435100000000L      /*"P/CI    "*/,
+/*80*/  06041514200000000L      /*"PAIB    "*/,
+        06017674100000000L      /*"P/WA    "*/,
+        06361626412000000L      /*"SQRT*   "*/,
+        06351561200000000L      /*"SIN*    "*/,
+        04357631200000000L      /*"COS*    "*/,
+        04162436441561200L      /*"ARCTAN* "*/,
+        04162436351561200L      /*"ARCSIN* "*/,
+        05456120000000000L      /*"LN*     "*/,
+        04570601200000000L      /*"EXP*    "*/,
+        06017456100000000L      /*"P/EQ    "*/,
+/*90*/  06017624100000000L      /*"P/RA    "*/,
+        06017474500000000L      /*"P/GE    "*/,
+        06017554600000000L      /*"P/MF    "*/,
+        06017465500000000L      /*"P/FM    "*/,
+        06017565600000000L      /*"P/NN    "*/,
+        06017634300000000L      /*"P/SC    "*/,
+        06017444400000000L      /*"P/DD    "*/,
+        06017624500000000L      /*"P/RE    "*/};
 
 int64_t systemProcNames[30] = {
 /*0*/   0606564L                /*"     PUT"*/,
