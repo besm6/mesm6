@@ -7028,7 +7028,7 @@ L16545:             error(errNotDefined);
             (void) formOperator(gen5);
             if (objBufIdx != 1)
                 error(errVarTooComplex);
-            l4var7z.ii = leftInsn & 0777700000000;
+            l4var7z.ii = leftInsn & 0777700000000L;
             l4var3z.i = FcstCnt;
             l4var4z.i = 0;
             l4var9z.i = 0;
