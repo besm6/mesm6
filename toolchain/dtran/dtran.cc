@@ -172,6 +172,8 @@ struct Dtran {
     uint cmd_len;
     uint bss_len;
     uint const_len;
+    uint head_off;
+    uint cmd_off;
     uint table_off;
     uint debug_off;
     uint long_off;
@@ -180,20 +182,43 @@ struct Dtran {
     bool nolabels, noequs, nooctal;
 
     void fill_lengths() {
-        head_len = memory[0] & 07777;
-        sym_len = (memory[0] >> 12) & 07777;
-        debug_len = (memory[0] >> 36);
-        set_len = memory[1] & 077777;
-        data_len = (memory[1] >> 15) & 077777;
-        long_len = (memory[1] >> 30) & 077777;
-        cmd_len = memory[2] & 077777;
-        bss_len = (memory[2] >> 15) & 077777;
+        // Detect packed or unpacked header.
+        head_off = 0;
+        if ((memory[1] >> 45) != 0) {
+            // Skip entry table.
+            while ((memory[head_off + 1] >> 45) != 0) {
+                head_off += 2;
+            }
+            // Unpacked header.
+            head_len  = memory[head_off];
+            sym_len   = memory[head_off + 1];
+            // Unknown: memory[head_off + 2]
+            debug_len = memory[head_off + 3];
+            long_len  = memory[head_off + 4];
+            cmd_len   = memory[head_off + 5];
+            bss_len   = memory[head_off + 6];
+            const_len = memory[head_off + 7];
+            data_len  = memory[head_off + 8];
+            set_len   = memory[head_off + 9];
+            cmd_off = head_off + 10;
+        } else {
+            // Packed header.
+            head_len = memory[0] & 07777;
+            sym_len = (memory[0] >> 12) & 07777;
+            debug_len = (memory[0] >> 36);
+            set_len = memory[1] & 077777;
+            data_len = (memory[1] >> 15) & 077777;
+            long_len = (memory[1] >> 30) & 077777;
+            cmd_len = memory[2] & 077777;
+            bss_len = (memory[2] >> 15) & 077777;
+            const_len = (memory[2] >> 30) & 077777;
+            cmd_off = 3;
+        }
         if (bss_len != 0) {
             fprintf(stderr, "BSS section not supported yet\n");
             exit(1);
         }
-        const_len = (memory[2] >> 30) & 077777;
-        table_off = 3 + cmd_len + const_len + data_len + set_len;
+        table_off = cmd_off + cmd_len + const_len + data_len + set_len;
         long_off = table_off + head_len + sym_len;
         debug_off = long_off + long_len;
         comment_off = debug_off + debug_len;
@@ -353,7 +378,7 @@ prinsn (uint32 memaddr, uint32 opcode)
 }
 
 std::string get_literal(uint32 addr) {
-    uint64 val = memory[addr + 3];
+    uint64 val = memory[addr + cmd_off];
     std::string ret;
     if ((val >> 24) == 064000000) {
         uint d = val & 077777777;
@@ -390,7 +415,7 @@ std::string quoteiso(std::string str)
 
 void prconst (uint32 addr, uint32 len, bool litconst) {
     for (uint cur = addr; cur < addr + len; ++cur) {
-        uint64 val = memory[cur+3];
+        uint64 val = memory[cur + cmd_off];
         if (litconst) {
             printf(" /%d:", cur-cmd_len);
         } else if (labels[cur].empty()) {
@@ -522,7 +547,7 @@ prtext (bool litconst)
     uint32 addr = 0;
     uint32 limit = cmd_len;
     for (uint32 cur = addr; cur < limit; ++cur) {
-        uint64 & opcode = memory[cur+3];
+        uint64 & opcode = memory[cur + cmd_off];
         mklabels(cur, opcode >> 24, litconst);
         mklabels(cur, opcode & 0xffffff, litconst);
     }
@@ -539,13 +564,13 @@ prtext (bool litconst)
             }
         } else
             putchar(' ');
-        opcode = memory[addr+3];
+        opcode = memory[addr + cmd_off];
         prinsn (addr, opcode >> 24);
         // Do not print the non-insn part of a word
         // if it looks like a placeholder
         opcode &= 0xffffff;
         if (opcode == 02200000) {
-            opcode = memory[addr+3] >> 24;
+            opcode = memory[addr + cmd_off] >> 24;
             opcode &= 03700000;
             if (opcode != 03100000 &&
                 labels[addr+1].empty()) {
