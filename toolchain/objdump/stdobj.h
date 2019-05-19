@@ -89,7 +89,13 @@ static const uint64_t BESM6_MAGIC = 0x4245534d3600;
 // Read object image from a file.
 // Return negative in case of failure.
 //
-extern int obj_read(FILE *fd, obj_image_t *obj);
+extern int obj_read_fd(FILE *fd, obj_image_t *obj);
+
+//
+// Read object image from a data buffer.
+// Return negative in case of failure.
+//
+extern int obj_read_data(char *data, unsigned nbytes, obj_image_t *obj);
 
 //
 // Allocate a copy if object image.

@@ -24,17 +24,16 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <archive.h>
+#include <archive_entry.h>
 #include "stdobj.h"
 
 #include "mesm6/a.out.h"
-#include "mesm6/ar.h"
-#include "mesm6/ranlib.h"
 
 #define WSZ     6               /* длина слова в байтах */
 #define LOCSYM  'L'             /* убрать локальные символы, нач. с 'L' */
 #define SYMDEF  "__.SYMDEF"
 
-struct ar_hdr archdr;
 FILE *input;                    /* input file */
 
 obj_image_t *obj_head, *obj_tail;
@@ -166,8 +165,9 @@ int open_input(char *name)
 
     if (! fgetint(input, &c))
         error(1, "unexpected EOF");
+    fseek(input, 0L, 0);
 
-    if (c != ARMAG)
+    if (c == BESM6_MAGIC)
         return 0;       /* regular file */
 
     return 1;           /* archive */
@@ -332,24 +332,28 @@ void append_to_obj_list(obj_image_t *obj)
 }
 
 /*
- * Pass 1: load one object file (opened as input).
+ * Pass 1: load one object file.
+ * The file can be opened as file descriptor fd,
+ * or supplied as byte array of given size.
  * Return 1 in case any names have been resolved,
  * otherwise return 0.
  */
-int load1obj(long input_offset, int force_linking)
+int load1obj(FILE *fd, char *data, unsigned nbytes)
 {
     obj_image_t obj = {0};
 
-    fseek(input, input_offset, 0);
-    if (obj_read(input, &obj) < 0)
-        error(2, "bad format");
+    if (fd) {
+        if (obj_read_fd(fd, &obj) < 0)
+            error(2, "bad format");
+    } else {
+        if (obj_read_data(data, nbytes, &obj) < 0)
+            error(2, "bad format");
 
-    /* Does this component have anything useful for us? */
-    if (!force_linking && !need_this_obj(&obj)) {
-        return 0;
+        /* Does this component have anything useful for us? */
+        if (!need_this_obj(&obj)) {
+            return 0;
+        }
     }
-    if (trace && filname)
-        printf("%s:\n", filname);
 
     /* Link in the object file. */
     cur_text_rel = 0;
@@ -382,31 +386,53 @@ struct nlist **slookup(char *s)
 }
 
 /*
- * scan file to find defined symbols
+ * Read callback for archive.
+ */
+ssize_t myread(struct archive *a, void *fd, const void **pbuf)
+{
+    static char buf[4096];
+
+    *pbuf = buf;
+    return fread(buf, 1, sizeof(buf), (FILE*)fd);
+}
+
+/*
+ * Scan file to find defined symbols.
  */
 void load1name(char *fname)
 {
-    long nloc;
-
     if (open_input(fname) == 0) {
-        /* regular file */
+        /*
+         * Regular file.
+         */
         if (trace > 1)
-            printf("Pass 1: %s\n", fname);
-        load1obj(0L, 1);
+            printf("%s\n", fname);
+        load1obj(input, NULL, 0);
     } else {
-        /* archive */
-        nloc = WSZ;
-        for (;;) {
-            /* scan archive items */
-            fseek(input, nloc, 0);
-            if (!fgetarhdr(input, &archdr)) {
-                break;
-            }
-            if (trace > 1)
-                printf("Pass 1: %.14s\n", archdr.ar_name);
+        /*
+         * Archive.
+         */
+        struct archive *a = archive_read_new();
+        struct archive_entry *entry;
 
-            load1obj(nloc + ARHDRSZ, 0);
-            nloc += archdr.ar_size + ARHDRSZ;
+        archive_read_support_filter_all(a);
+        archive_read_support_format_all(a);
+        archive_read_open(a, input, NULL, myread, NULL);
+        while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
+            const char *name = archive_entry_pathname(entry);
+            unsigned nbytes = archive_entry_size(entry);
+            static char data[MAXSZ*6];
+
+            if (trace > 1)
+                printf("%s(%s):\n", fname, name);
+
+            if (nbytes > sizeof(data)) {
+                error(2, "too long array entry");
+            }
+            if (archive_read_data(a, data, nbytes) != nbytes) {
+                error(2, "read error");
+            }
+            load1obj(NULL, data, nbytes);
         }
     }
     fclose(input);
@@ -572,7 +598,6 @@ void middle()
     /*
      * Assign common locations.
      */
-
     cmsize = 0;
     if (dflag || !rflag) {
         ldrsym(p_etext, text_size, N_EXT+N_TEXT);

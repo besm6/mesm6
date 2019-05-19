@@ -350,7 +350,7 @@ void disassemble(const char *fname)
         fprintf(stderr, "dis: %s not found\n", fname);
         return;
     }
-    if (obj_read(fd, &obj) < 0) {
+    if (obj_read_fd(fd, &obj) < 0) {
         fclose(fd);
         fprintf(stderr, "dis: %s not an object file\n", fname);
         return;
