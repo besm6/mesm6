@@ -8,7 +8,7 @@ SOURCES         = mesm6_alu.sv \
                   mesm6_timer.sv \
                   mesm6_mmu.sv \
                   mesm6_cpu.sv \
-                  mesm6_uart.sv \
+                  mesm6_uart2.sv \
 				  testbench.sv \
                   testbench_pic.sv \
                   imemory.sv \

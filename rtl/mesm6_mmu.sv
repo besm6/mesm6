@@ -75,6 +75,7 @@ module mesm6_mmu(
     input  wire [47:0]  uart_rdata,
     output wire [47:0]  uart_wdata,
     input  wire         uart_done,
+    input  wire         uart_int,
 
     // Signals to Timer 0
     output wire [14:0]  tim_addr,      // register address
@@ -91,7 +92,7 @@ assign mem_addr  = cpu_addr;
 assign pic_addr  = cpu_addr;
 assign gpio_addr = cpu_addr;
 assign tim_addr  = cpu_addr;
-assign uart_addr   = cpu_addr;
+assign uart_addr = cpu_addr;
 
 // Connect CPU write bus to all devices
 assign mem_wdata  = cpu_wdata;
@@ -103,7 +104,8 @@ assign uart_wdata = cpu_wdata;
 // Connect PIC interrupt signals
 assign pic_irq[0]    = gpio_int;
 assign pic_irq[1]    = tim_int;
-assign pic_irq[47:2] = '0;
+assign pic_irq[2]    = uart_int;
+assign pic_irq[47:3] = '0;
 
 
 // Chip select mux

@@ -161,13 +161,28 @@ mesm6_timer tim(
     tim_done
 );
 
-// Dummy UART wires
+// UART wires
+wire        uart_irq;
 wire [14:0] uart_addr;
 wire        uart_read;
 wire        uart_write;
 wire [47:0] uart_rdata;
 wire [47:0] uart_wdata;
 wire        uart_done;
+wire        uart_tx_pin;
+reg         uart_rx_pin;
+
+mesm6_uart uart(
+    clk, reset, uart_irq,
+
+    uart_addr,
+    uart_read, uart_write,
+    uart_rdata, uart_wdata,
+    uart_done,
+
+    uart_tx_pin,
+    uart_rx_pin
+);
 
 mesm6_mmu mmu(
     dbus_addr,
@@ -196,6 +211,7 @@ mesm6_mmu mmu(
     uart_read, uart_write,
     uart_rdata, uart_wdata,
     uart_done,
+    uart_irq,
 
     tim_addr,
     tim_read, tim_write,

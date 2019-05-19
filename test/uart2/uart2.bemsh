@@ -1,0 +1,57 @@
+*
+* UART self test.
+*
+start   start   '1'
+* UART registers
+U0_DT   equ     '77740'   , data fifo
+U0_CT   equ     '77747'   , control and status reg
+U0_CTS  equ     '77746'   , set bits
+U0_CTC  equ     '77745'   , clear bits
+        ntr 3
+* reset uart
+        xta     '0'
+        atx     U0_CT
+        xta     =b'10000'  , set self test mode
+        atx     U0_CTS
+* set divider
+        xta     =b'0'      , fastest divisor
+        atx     U0_CTS
+* fill tx fifo
+        xta     =b'125'
+        atx     U0_DT
+        xta     =b'252'
+        atx     U0_DT
+* enable tx
+        xta     =b'1000'   , rxtx_en bit
+        atx     U0_CTS
+* wait for send complete
+loop    xta     U0_CT
+        aax     =b'10000'   , tx_finish bit
+        uza     loop
+* ---------------------------
+        xta     =b'125'    , add another data
+        atx     U0_DT
+        xta     =b'252'
+        atx     U0_DT
+* -------------------------
+loop1   xta     U0_CT
+        aax     =b'10000'
+        uza     loop1
+        xta     U0_DT
+        aax     =b'125'
+        u1a     l2
+        стоп    '76543'(2)    , fail
+l2      xta     U0_DT
+        xta     U0_DT
+        aax     =b'400'    , 
+        u1a     fail
+        xta     U0_DT
+        xta     U0_CT
+        aax     =b'4000'   , rx fifo must be empty
+        u1a     pass
+fail    стоп    '76543'(2)
+pass    стоп    '12345'(6)
+*-------------------------
+align   адрес   start+'1777'            , данные с адреса 2000
+        fin
+
