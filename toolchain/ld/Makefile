@@ -2,7 +2,7 @@
 # Linker, archiver and other object file utilities
 #
 DESTDIR = /usr/SVSB
-CFLAGS  = -I.. -Werror
+CFLAGS  = -I.. -Werror -Wall
 LDFLAGS =
 
 ld      = mkb-ld

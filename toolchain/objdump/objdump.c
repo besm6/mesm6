@@ -24,90 +24,9 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <getopt.h>
-
-//
-// Object file has the following format:
-//  +---------+
-//  | magic   |     "BESM6\0"
-//  +---------+
-//  | entries |     Table of entries
-//  +---------+
-//  | header  |     10 words or 3 words
-//  +---------+
-//  | code    |     Executable code
-//  +---------+
-//  | const   |     Initialized data
-//  +---------+
-//  | data    |     Transient data for SET section
-//  +---------+
-//  | set     |     SET directives
-//  +---------+
-//  | symhdr  |     Name of the subroutine
-//  +---------+
-//  | symtab  |     Symbol table
-//  +---------+
-//  | longsym |     Names of 5 characters and more
-//  +---------+
-//  | debug   |     Debug information
-//  +---------+
-//
-typedef struct _obj_image_t {
-
-    unsigned head_len;          // length of symhdr
-    unsigned sym_len;           // length of symtab
-    unsigned debug_len;         // length of debug section
-
-    unsigned set_len;           // length of SET section
-    unsigned data_len;          // length of data section
-    unsigned long_len;          // length of longsym section
-
-    unsigned cmd_len;           // length of code section
-    unsigned bss_len;           // length of bss section
-    unsigned const_len;         // length of const section
-
-    unsigned head_off;          // offset of header
-    unsigned cmd_off;           // offset of code section
-    unsigned table_off;         // offset of symhdr section
-    unsigned long_off;          // offset of longsym section
-    unsigned debug_off;         // offset of debug section
-    unsigned comment_off;       // offset of comment section
-
-#define MAXSZ 50000
-    uint64_t word[MAXSZ];
-    unsigned nwords;
-    unsigned nentries;
-
-} obj_image_t;
-
-//
-// Symbol types
-//
-enum {
-    SYM_OFFSET      = 0000,     // Offset from another symbol
-    SYM_ADD         = 0001,     // Add two symbols
-    SYM_SUBTRACT    = 0003,     // Subtract two symbols
-    SYM_MULTIPLY    = 0101,     // Multiply two symbols
-    SYM_DIVIDE      = 0103,     // Divide two symbols
-    SYM_ABS         = 0400,     // Absolute address
-    SYM_RELOC       = 0410,     // Relocatable address
-    SYM_EXT_S       = 0430,     // External reference (short name)
-    SYM_PRIVATE_S   = 0460,     // Private block (short name)
-    SYM_COMMON_S    = 0470,     // Common block (short name)
-    SYM_INDIRECT    = 0501,     // Dereference, like *ptr
-    SYM_CONST       = 0520,     // Constant value, same as SYM_ABS
-    SYM_EXPRESSION  = 0521,     // Expression to compute at load time
-    SYM_EXT_L       = 0630,     // External reference (long name)
-    SYM_PRIVATE_L   = 0660,     // Private block (long name)
-    SYM_COMMON_L    = 0670,     // Common block (long name)
-};
-
-//
-// First word of object file: magic key.
-//
-const uint64_t BESM6_MAGIC = 0x4245534d3600;
+#include "stdobj.h"
 
 #define WSZ 6           // word size in bytes
 
@@ -157,21 +76,6 @@ static const char *text_to_utf[] = {
     "P", "Q", "R", "S", "T", "U", "V", "W",
     "X", "Y", "Z", "Ш", "Э", "Щ", "Ч", "Ю",
 };
-
-//
-// Read a 48-bit word at the current file position.
-//
-uint64_t freadw(FILE *fd)
-{
-    uint64_t val = 0;
-    int i;
-
-    for (i = 0; i < 6; ++i) {
-        val <<= 8;
-        val |= getc (fd);
-    }
-    return val;
-}
 
 const char *getlabel(char ch, int n)
 {
@@ -435,105 +339,6 @@ void print_insn(obj_image_t *obj, int opcode)
     }
 }
 
-//
-// Read object image from a file.
-// Return negative in case of failure.
-//
-int obj_read(const char *fname, obj_image_t *obj)
-{
-    FILE *fd;
-
-    fd = fopen(fname, "r");
-    if (!fd) {
-        fprintf(stderr, "dis: %s not found\n", fname);
-        return -1;
-    }
-
-    // Read file contents.
-    obj->nwords = 0;
-    obj->nentries = 0;
-    obj->word[obj->nwords++] = freadw(fd);
-    for (;; obj->nwords++) {
-        if (obj->nwords >= MAXSZ) {
-            fprintf(stderr, "File too large\n");
-            return -1;
-        }
-        obj->word[obj->nwords] = freadw(fd);
-        if (feof(fd))
-            break;
-    }
-    fclose(fd);
-
-    if (raw_flag) {
-        // Dump raw data.
-        int i;
-        for (i = 0; i < obj->nwords; i++) {
-            printf("%05o:  %04o %04o %04o %04o", i,
-                (unsigned)(obj->word[i] >> 36) & 07777,
-                (unsigned)(obj->word[i] >> 24) & 07777,
-                (unsigned)(obj->word[i] >> 12) & 07777,
-                (unsigned)(obj->word[i]) & 07777);
-            printf("  %c%c%c%c%c%c\n",
-                getiso(obj->word[i], 0), getiso(obj->word[i], 1),
-                getiso(obj->word[i], 2), getiso(obj->word[i], 3),
-                getiso(obj->word[i], 4), getiso(obj->word[i], 5));
-        }
-        printf("\n");
-    }
-
-    if (obj->word[0] != BESM6_MAGIC) {
-        // Check file magic.
-        fprintf(stderr, "Bad magic: %#jx\n", (intmax_t)obj->word[0]);
-        return -1;
-    }
-
-    // Detect packed or unpacked header.
-    obj->head_off = 1;
-    if ((obj->word[2] >> 45) != 0) {
-
-        // Skip entry table.
-        while ((obj->word[obj->head_off + 1] >> 45) != 0) {
-            obj->head_off += 2;
-            obj->nentries++;
-        }
-
-        // Unpacked header.
-        obj->head_len  = obj->word[obj->head_off];
-        obj->sym_len   = obj->word[obj->head_off + 1];
-        // Unknown: obj->word[obj->head_off + 2]
-        obj->debug_len = obj->word[obj->head_off + 3];
-        obj->long_len  = obj->word[obj->head_off + 4];
-        obj->cmd_len   = obj->word[obj->head_off + 5];
-        obj->bss_len   = obj->word[obj->head_off + 6];
-        obj->const_len = obj->word[obj->head_off + 7];
-        obj->data_len  = obj->word[obj->head_off + 8];
-        obj->set_len   = obj->word[obj->head_off + 9];
-
-        obj->cmd_off = obj->head_off + 10;
-    } else {
-        // Packed header.
-        obj->head_len  = obj->word[obj->head_off] & 07777;
-        obj->sym_len   = (obj->word[obj->head_off] >> 12) & 07777;
-        obj->debug_len = (obj->word[obj->head_off] >> 36);
-
-        obj->set_len  = obj->word[obj->head_off + 1] & 077777;
-        obj->data_len = (obj->word[obj->head_off + 1] >> 15) & 077777;
-        obj->long_len = (obj->word[obj->head_off + 1] >> 30) & 077777;
-
-        obj->cmd_len   = obj->word[obj->head_off + 2] & 077777;
-        obj->bss_len   = (obj->word[obj->head_off + 2] >> 15) & 077777;
-        obj->const_len = (obj->word[obj->head_off + 2] >> 30) & 077777;
-
-        obj->cmd_off = obj->head_off + 3;
-    }
-
-    obj->table_off = obj->cmd_off + obj->cmd_len + obj->const_len + obj->data_len + obj->set_len;
-    obj->long_off = obj->table_off + obj->head_len + obj->sym_len;
-    obj->debug_off = obj->long_off + obj->long_len;
-    obj->comment_off = obj->debug_off + obj->debug_len;
-    return 0;
-}
-
 void disassemble(const char *fname)
 {
     obj_image_t obj = {0};
@@ -542,6 +347,23 @@ void disassemble(const char *fname)
     if (obj_read(fname, &obj) < 0) {
         fprintf(stderr, "dis: %s not an object file\n", fname);
         return;
+    }
+
+    if (raw_flag) {
+        // Dump raw data.
+        int i;
+        for (i = 0; i < obj.nwords; i++) {
+            printf("%05o:  %04o %04o %04o %04o", i,
+                (unsigned)(obj.word[i] >> 36) & 07777,
+                (unsigned)(obj.word[i] >> 24) & 07777,
+                (unsigned)(obj.word[i] >> 12) & 07777,
+                (unsigned)(obj.word[i]) & 07777);
+            printf("  %c%c%c%c%c%c\n",
+                getiso(obj.word[i], 0), getiso(obj.word[i], 1),
+                getiso(obj.word[i], 2), getiso(obj.word[i], 3),
+                getiso(obj.word[i], 4), getiso(obj.word[i], 5));
+        }
+        printf("\n");
     }
 
     printf("%s: file format besm6\n", fname);

@@ -4,15 +4,14 @@
 DESTDIR = /usr/local
 CFLAGS  = -I.. -O0 -Werror -Wall
 LDFLAGS =
-VPATH   = ../ld
+OBJ     = objdump.o stdobj.o
 
 objdump = besm6-objdump
 
 all:    objdump
 
-objdump: objdump.o
-	$(MAKE) -C ../ld fgethdr.o fgeth.o
-	$(CC) $(LDFLAGS) objdump.o -o objdump ../ld/fgethdr.o ../ld/fgeth.o
+objdump: $(OBJ)
+	$(CC) $(LDFLAGS) $(OBJ) -o objdump
 
 install: $(DESTDIR)/bin/$(objdump)
 
