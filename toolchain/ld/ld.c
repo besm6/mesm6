@@ -24,6 +24,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "stdobj.h"
 
 #include "mesm6/a.out.h"
 #include "mesm6/ar.h"
@@ -31,13 +32,12 @@
 
 #define WSZ     6               /* длина слова в байтах */
 #define LOCSYM  'L'             /* убрать локальные символы, нач. с 'L' */
-#define BADDR   1               /* память 0...BADDR-1 свободна */
 #define SYMDEF  "__.SYMDEF"
 
-struct exec filhdr;             /* aout header */
 struct ar_hdr archdr;
 FILE *input;                    /* input file */
 
+obj_image_t *obj_head, *obj_tail;
 /*
  * output management
  */
@@ -65,9 +65,7 @@ struct nlist *hshtab[NSYM+2];   /* хэш-таблица для символов
 struct local local[NSYMPR];
 int symindex;                   /* следующий свободный вход таблицы символов */
 int newindex[NCONST];           /* таблица переиндексации констант */
-long basaddr = BADDR;           /* base address of loading */
-
-long liblist[LLSIZE], *libp;    /* library management */
+long basaddr = 02000;           /* base address of loading */
 
 /*
  * internal symbols
@@ -88,9 +86,9 @@ int     dflag;                  /* define common even with rflag */
 int     alflag;                 /* const и text выровнены на границу листа */
 
 /*
- * cumulative sizes set in pass 1
+ * Cumulative sizes set in pass 1 (in words).
  */
-long    tsize, dsize, bsize, ssize, nsym;
+long    text_size, data_size, bss_size;
 
 /*
  * symbol relocation; both passes
@@ -175,25 +173,6 @@ int open_input(char *name)
     return 1;           /* archive */
 }
 
-void readhdr(long loc)
-{
-    fseek(input, loc, 0);
-    if (!fgethdr(input, &filhdr))
-        error(2, "bad format");
-    if (filhdr.a_magic != FMAGIC)
-        error(2, "bad magic");
-    if (filhdr.a_text % WSZ)
-        error(2, "bad length of text");
-    if (filhdr.a_data % WSZ)
-        error(2, "bad length of data");
-    if (filhdr.a_bss % WSZ)
-        error(2, "bad length of bss");
-
-    cur_text_rel = - BADDR;
-    cur_data_rel = - BADDR - (filhdr.a_text) / WSZ;
-    cur_bss_rel = - BADDR - (filhdr.a_text + filhdr.a_data) / WSZ;
-}
-
 void symreloc()
 {
     switch (cursym.n_type) {
@@ -251,7 +230,8 @@ struct nlist **lookup()
     struct nlist **hp;
 
     i = 0;
-    for (cp = cursym.n_name; *cp; i = (i << 1) + *cp++);
+    for (cp = cursym.n_name; *cp; i = (i << 1) + *cp++)
+        ;
     for (hp = &hshtab[(i & 077777) % NSYM + 2]; *hp != 0;) {
         cp1 = (*hp)->n_name;
         clash = 0;
@@ -269,44 +249,12 @@ struct nlist **lookup()
     return hp;
 }
 
-long add(long a, long b, char *s)
-{
-    a += b;
-    if (a >= 04000000L*WSZ)
-        error(1, s);
-    return a;
-}
-
-long addlong(long a, long b, char *s)
-{
-    a += b;
-    if (a >= 01000000000L*WSZ)
-        error(1, s);
-    return a;
-}
-
-/*
- * Pass 1: load one object file (opened as input).
- * Return 1 in case any names have been resolved,
- * otherwise return 0.
- */
-int load1obj(long input_offset, int force_linking)
+void merge_symbols(obj_image_t *obj)
 {
     struct nlist *sp;
-    int savindex;
-    int nresolved, type, symlen, nsymbol, nsymbytes;
+    int type, symlen;
 
-    readhdr(input_offset);
-    cur_text_rel += tsize/WSZ;
-    cur_data_rel += dsize/WSZ;
-    cur_bss_rel += bsize/WSZ;
-
-    input_offset += HDRSZ + (filhdr.a_text + filhdr.a_data) * 2;
-    fseek(input, input_offset, 0);
-    nresolved = 0;
-    savindex = symindex;
-    nsymbol = 0;
-    nsymbytes = 0;
+    //TODO: merge symbols from the object file into a common symbol table.
     for (;;) {
         symlen = fgetsym(input, &cursym);
         if (symlen == 0)
@@ -321,10 +269,8 @@ int load1obj(long input_offset, int force_linking)
             continue;
         }
         if (! (type & N_EXT)) {
-            if (!sflag && !xflag &&
-                (!Xflag || cursym.n_name[0] != LOCSYM)) {
-                nsymbol++;
-                nsymbytes += symlen;
+            if (!sflag && !xflag && (!Xflag || cursym.n_name[0] != LOCSYM)) {
+                //nsym++;
             }
             free(cursym.n_name);
             continue;
@@ -351,39 +297,79 @@ int load1obj(long input_offset, int force_linking)
                 cursym.n_type == N_EXT+N_BSS)
             {
                 // Resolve undefined symbol.
-                nresolved++;
                 sp->n_type = cursym.n_type;
                 sp->n_value = cursym.n_value;
             }
         }
     }
-    if (nresolved || force_linking) {
-        tsize = add(tsize, filhdr.a_text, "text segment overflow");
-        dsize = add(dsize, filhdr.a_data, "data segment overflow");
-        bsize = add(bsize, filhdr.a_bss, "bss segment overflow");
-        ssize = add(ssize, (long) nsymbytes, "symbol table overflow");
-        nsym += nsymbol;
-        return 1;
-    }
-
-    /*
-     * No symbols defined by this library item.
-     * Rip out the hash table entries and reset the symbol table.
-     */
-    while (symindex > savindex) {
-        struct nlist **p;
-
-        p = symhash[--symindex];
-        free((*p)->n_name);
-        *p = 0;
-    }
-    return 0;
 }
 
-void checklibp()
+/*
+ * Check whether the object file provides any symbols we need.
+ */
+int need_this_obj(obj_image_t *obj)
 {
-    if (libp >= &liblist[LLSIZE])
-        error(2, "library table overflow");
+    //TODO
+    return 1;
+}
+
+/*
+ * Append object structure to the single-linked list.
+ */
+void append_to_obj_list(obj_image_t *obj)
+{
+    if (!obj)
+        error(2, "out of memory");
+
+    obj->next = 0;
+
+    if (obj_tail) {
+        obj_tail->next = obj;
+    } else {
+        obj_head = obj;
+    }
+    obj_tail = obj;
+}
+
+/*
+ * Pass 1: load one object file (opened as input).
+ * Return 1 in case any names have been resolved,
+ * otherwise return 0.
+ */
+int load1obj(long input_offset, int force_linking)
+{
+    obj_image_t obj = {0};
+
+    fseek(input, input_offset, 0);
+    if (obj_read(input, &obj) < 0)
+        error(2, "bad format");
+
+    /* Does this component have anything useful for us? */
+    if (!force_linking && !need_this_obj(&obj)) {
+        return 0;
+    }
+    if (trace && filname)
+        printf("%s:\n", filname);
+
+    /* Link in the object file. */
+    cur_text_rel = 0;
+    cur_data_rel = - obj.cmd_len;
+    cur_bss_rel = - obj.cmd_len - obj.const_len;
+
+    cur_text_rel += text_size;
+    cur_data_rel += data_size;
+    cur_bss_rel += bss_size;
+
+    text_size += obj.cmd_len;
+    data_size += obj.const_len;
+    bss_size += obj.data_len;
+
+    /* Merge symbols into a common symbol table. */
+    merge_symbols(&obj);
+
+    /* Reallocate the object image and add to the list. */
+    append_to_obj_list(obj_copy(&obj));
+    return 1;
 }
 
 struct nlist **slookup(char *s)
@@ -414,16 +400,12 @@ void load1name(char *fname)
             /* scan archive items */
             fseek(input, nloc, 0);
             if (!fgetarhdr(input, &archdr)) {
-                *libp++ = -1;
-                checklibp();
                 break;
             }
             if (trace > 1)
                 printf("Pass 1: %.14s\n", archdr.ar_name);
-            if (load1obj(nloc + ARHDRSZ, 0))
-                *libp++ = nloc;
-            checklibp();
 
+            load1obj(nloc + ARHDRSZ, 0);
             nloc += archdr.ar_size + ARHDRSZ;
         }
     }
@@ -441,7 +423,6 @@ void pass1(int argc, char **argv)
     char save;
 
     p = argv + 1;
-    libp = liblist;
     for (c=1; c<argc; ++c) {
         filname = 0;
         ap = *p++;
@@ -476,14 +457,14 @@ void pass1(int argc, char **argv)
                 entrypt = lastsym;
                 continue;
 
-                /* set data size */
+                /* set data size in words */
             case 'D':
                 if (++c >= argc)
                     error(2, "-D: argument missing");
-                num = WSZ * atoi(*p++);
-                if (dsize > num)
+                num = atoi(*p++);
+                if (data_size > num)
                     error(2, "-D: too small");
-                dsize = num;
+                data_size = num;
                 continue;
 
                 /* base address of loading */
@@ -594,15 +575,14 @@ void middle()
 
     cmsize = 0;
     if (dflag || !rflag) {
-        ldrsym(p_etext, tsize/WSZ, N_EXT+N_TEXT);
-        ldrsym(p_edata, dsize/WSZ, N_EXT+N_DATA);
-        ldrsym(p_end, bsize/WSZ, N_EXT+N_BSS);
+        ldrsym(p_etext, text_size, N_EXT+N_TEXT);
+        ldrsym(p_edata, data_size, N_EXT+N_DATA);
+        ldrsym(p_end, bss_size, N_EXT+N_BSS);
         for (sp=symtab; sp<symp; sp++)
             if ((sp->n_type & N_TYPE) == N_COMM) {
                 t = sp->n_value;
-                sp->n_value = cmsize/WSZ;
-                cmsize = add(cmsize, (long) t*WSZ,
-                    "переполнен сегмент bss");
+                sp->n_value = cmsize;
+                cmsize += t;
             }
     }
 
@@ -612,11 +592,11 @@ void middle()
     torigin = basaddr;
     if (alflag)
         torigin = ALIGN(torigin, 1024);
-    dorigin = torigin + tsize/WSZ;
+    dorigin = torigin + text_size;
     if (alflag)
         dorigin = ALIGN(dorigin, 1024);
-    cmorigin = dorigin + dsize/WSZ;
-    borigin = cmorigin + cmsize/WSZ;
+    cmorigin = dorigin + data_size;
+    borigin = cmorigin + cmsize;
     nund = 0;
     for (sp=symtab; sp<symp; sp++) {
         switch (sp->n_type) {
@@ -650,20 +630,7 @@ void middle()
         if (sp->n_value & ~0777777777)
             error(1, "long address: %s=0%lo", sp->n_name, sp->n_value);
     }
-    if (sflag || xflag) ssize = 0;
-    bsize = add(bsize, cmsize, "переполнен сегмент bss");
-
-    /*
-     * Compute ssize; add length of local symbols, if need,
-     * and one more zero byte. Alignment will be taken at setupout.
-     */
-    if (sflag) ssize = 0;
-    else {
-        if (xflag) ssize = 0;
-        for (sp = symtab; sp < &symtab[symindex]; sp++)
-            ssize += sp->n_len + 6;
-        ssize++;
-    }
+    bss_size += cmsize;
 }
 
 void tcreat(FILE **buf, int tempflg)
@@ -693,11 +660,13 @@ void setupout()
         tcreat(&troutb, 1);
         tcreat(&droutb, 1);
     }
+#if 0
+    // Write header.
     filhdr.a_magic = alflag ? AMAGIC : FMAGIC;
-    filhdr.a_text = tsize;
-    filhdr.a_data = dsize;
-    filhdr.a_bss = bsize;
-    filhdr.a_syms = ALIGN(ssize, WSZ);
+    filhdr.a_text = text_size;
+    filhdr.a_data = data_size;
+    filhdr.a_bss = bss_size;
+    filhdr.a_syms = ALIGN(symtab_size, WSZ);
     if (entrypt) {
         if (entrypt->n_type != N_EXT+N_TEXT &&
             entrypt->n_type != N_EXT+N_UNDF)
@@ -714,6 +683,7 @@ void setupout()
     }
 
     fputhdr(&filhdr, outb);
+#endif
 }
 
 struct nlist *lookloc(struct local *lp, int sn)
@@ -799,7 +769,7 @@ void relhalf(struct local *lp, long t, long *pt)
         if (sp->n_type == N_EXT+N_UNDF ||
             sp->n_type == N_EXT+N_COMM)
         {
-            t |= REXT | RPUTIX(nsym+(sp-symtab));
+            //t |= REXT | RPUTIX(nsym + (sp - symtab));
             break;
         }
         t |= reltype(sp->n_type);
@@ -850,7 +820,7 @@ void relocate(struct local *lp, FILE *b1, FILE *b2, long len)
     }
 }
 
-void load2obj(long loc)
+void load2obj(obj_image_t *obj)
 {
     struct nlist *sp;
     struct local *lp;
@@ -858,7 +828,10 @@ void load2obj(long loc)
     int type;
     long count;
 
-    readhdr(loc);
+    cur_text_rel = 0;
+    cur_data_rel = - obj->cmd_len;
+    cur_bss_rel = - obj->cmd_len - obj->const_len;
+
     cur_text_rel += torigin;
     cur_data_rel += dorigin;
     cur_bss_rel += borigin;
@@ -872,8 +845,6 @@ void load2obj(long loc)
      */
     lp = local;
     symno = -1;
-    loc += HDRSZ;
-    fseek(input, loc + (filhdr.a_text + filhdr.a_data) * 2, 0);
     for (;;) {
         symno++;
         count = fgetsym(input, &cursym);
@@ -918,90 +889,23 @@ void load2obj(long loc)
 
     if (trace > 1)
         printf("** TEXT **\n");
-    fseek(input, loc, 0);
-    relocate(lp, toutb, troutb, filhdr.a_text);
+    relocate(lp, toutb, troutb, obj->cmd_len);
 
     if (trace > 1)
         printf("** DATA **\n");
-    fseek(input, loc + filhdr.a_text, 0);
-    relocate(lp, doutb, droutb, filhdr.a_data);
+    relocate(lp, doutb, droutb, obj->const_len);
 
-    torigin += filhdr.a_text/WSZ;
-    dorigin += filhdr.a_data/WSZ;
-    borigin += filhdr.a_bss/WSZ;
-}
-
-void load2name(char *fname)
-{
-    long *lp;
-
-    if (open_input(fname) == 0) {
-        if (trace)
-            printf("%s:\n", fname);
-        load2obj(0L);
-    } else {
-        /* scan archive members referenced */
-
-        for (lp = libp; *lp != -1; lp++) {
-            fseek(input, *lp, 0);
-            fgetarhdr(input, &archdr);
-            if (trace)
-                printf("%s(%.14s):\n", fname, archdr.ar_name);
-            load2obj(*lp + ARHDRSZ);
-        }
-        libp = ++lp;
-    }
-    fclose(input);
+    torigin += obj->cmd_len;
+    dorigin += obj->const_len;
+    borigin += obj->data_len;
 }
 
 void pass2(int argc, char **argv)
 {
-    int c, i;
-    long dnum;
-    char *ap, **p;
+    obj_image_t *obj;
 
-    p = argv+1;
-    libp = liblist;
-    for (c=1; c<argc; c++) {
-        ap = *p++;
-        if (*ap != '-') {
-            load2name(ap);
-            continue;
-        }
-        for (i=1; ap[i]; i++) {
-            switch (ap[i]) {
-
-            case 'D':
-/*
- * по-моему, все-таки, должно быть так.
-                for (dnum=atoi(*p); dorigin<dnum; dorigin++) {
- */
-                for (dnum=atoi(*p); dnum>0; --dnum) {
-                    fputh(0L, doutb);
-                    fputh(0L, doutb);
-                    if (rflag) {
-                        fputh(0L, droutb);
-                        fputh(0L, droutb);
-                    }
-                }
-            case 'u':
-            case 'e':
-            case 'o':
-            case 'v':
-                ++c;
-                ++p;
-
-            default:
-                continue;
-
-            case 'l':
-                ap[--i] = '-';
-                load2name(&ap[i]);
-                break;
-
-            }
-            break;
-        }
+    for (obj = obj_head; obj; obj = obj->next) {
+        load2obj(obj);
     }
 }
 
@@ -1045,8 +949,6 @@ void finishout()
         for (p=symtab; p<&symtab[symindex]; ++p)
             fputsym(p, outb);
         putc(0, outb);
-        while (ssize++ % WSZ)
-            putc(0, outb);
     }
     fclose(outb);
 }

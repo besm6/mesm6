@@ -341,13 +341,21 @@ void print_insn(obj_image_t *obj, int opcode)
 
 void disassemble(const char *fname)
 {
+    FILE *fd;
     obj_image_t obj = {0};
     int i;
 
-    if (obj_read(fname, &obj) < 0) {
+    fd = fopen(fname, "r");
+    if (!fd) {
+        fprintf(stderr, "dis: %s not found\n", fname);
+        return;
+    }
+    if (obj_read(fd, &obj) < 0) {
+        fclose(fd);
         fprintf(stderr, "dis: %s not an object file\n", fname);
         return;
     }
+    fclose(fd);
 
     if (raw_flag) {
         // Dump raw data.

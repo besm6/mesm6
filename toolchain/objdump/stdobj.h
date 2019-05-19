@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 
 //
@@ -47,10 +48,13 @@ typedef struct _obj_image_t {
     unsigned debug_off;         // offset of debug section
     unsigned comment_off;       // offset of comment section
 
-#define MAXSZ 50000
-    uint64_t word[MAXSZ];
     unsigned nwords;
     unsigned nentries;
+    struct _obj_image_t *next;
+
+    // Last element: can be re-allocated with smaller size.
+#define MAXSZ 50000
+    uint64_t word[MAXSZ];
 
 } obj_image_t;
 
@@ -85,4 +89,10 @@ static const uint64_t BESM6_MAGIC = 0x4245534d3600;
 // Read object image from a file.
 // Return negative in case of failure.
 //
-extern int obj_read(const char *fname, obj_image_t *obj);
+extern int obj_read(FILE *fd, obj_image_t *obj);
+
+//
+// Allocate a copy if object image.
+// Return NULL when failed.
+//
+extern obj_image_t *obj_copy(obj_image_t *from);

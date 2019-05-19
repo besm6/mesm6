@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "stdobj.h"
 
 //
@@ -20,16 +22,8 @@ static uint64_t freadw(FILE *fd)
 // Read object image from a file.
 // Return negative in case of failure.
 //
-int obj_read(const char *fname, obj_image_t *obj)
+int obj_read(FILE *fd, obj_image_t *obj)
 {
-    FILE *fd;
-
-    fd = fopen(fname, "r");
-    if (!fd) {
-        fprintf(stderr, "dis: %s not found\n", fname);
-        return -1;
-    }
-
     // Read file contents.
     obj->nwords = 0;
     obj->nentries = 0;
@@ -43,7 +37,6 @@ int obj_read(const char *fname, obj_image_t *obj)
         if (feof(fd))
             break;
     }
-    fclose(fd);
 
     if (obj->word[0] != BESM6_MAGIC) {
         // Check file magic.
@@ -96,4 +89,20 @@ int obj_read(const char *fname, obj_image_t *obj)
     obj->debug_off = obj->long_off + obj->long_len;
     obj->comment_off = obj->debug_off + obj->debug_len;
     return 0;
+}
+
+//
+// Allocate a copy if object image.
+// Return NULL when failed.
+//
+obj_image_t *obj_copy(obj_image_t *from)
+{
+    unsigned nbytes = sizeof(obj_image_t) - sizeof(from->word) +
+                      from->nwords * sizeof(from->word[0]);
+
+    obj_image_t *to = (obj_image_t*) calloc(1, nbytes);
+
+    if (to)
+        memcpy(to, from, nbytes);
+    return to;
 }

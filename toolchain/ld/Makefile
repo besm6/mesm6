@@ -2,7 +2,7 @@
 # Linker, archiver and other object file utilities
 #
 DESTDIR = /usr/SVSB
-CFLAGS  = -I.. -Werror -Wall
+CFLAGS  = -I.. -I../objdump -Werror -Wall
 LDFLAGS =
 
 ld      = mkb-ld
@@ -15,34 +15,31 @@ ranlib  = mkb-ranlib
 
 all:    ld #ar strip nm size ranlib
 
-ld:     ld.o fgetarhdr.o fgetint.o fgetsym.o fputsym.o fgethdr.o fputhdr.o\
-		fgeth.o fputh.o fgetran.o
-	$(CC) $(LDFLAGS) ld.o -o ld fgetarhdr.o fgetint.o fgetsym.o fputsym.o\
-		fgethdr.o fputhdr.o fgeth.o fputh.o fgetran.o
+ld:     ld.o ../objdump/stdobj.o fgetarhdr.o fgetint.o fgetsym.o fputsym.o \
+		fgeth.o fputh.o
+	$(CC) $(LDFLAGS) ld.o -o ld ../objdump/stdobj.o fgetarhdr.o fgetint.o \
+		fgetsym.o fputsym.o fgeth.o fputh.o
 
 ar:     ar.o getarhdr.o putarhdr.o getint.o putint.o
 	$(CC) $(LDFLAGS) ar.o -o ar getarhdr.o putarhdr.o getint.o putint.o
 
-ranlib: ranlib.o getarhdr.o putarhdr.o fgetarhdr.o fgeth.o fgetsym.o\
-		fputran.o fputh.o fgethdr.o
-	$(CC) $(LDFLAGS) ranlib.o -o ranlib getarhdr.o putarhdr.o fgetarhdr.o\
-		fgeth.o fgetsym.o fputran.o fputh.o fgethdr.o
+strip:  strip.o fgeth.o fputh.o
+	$(CC) $(LDFLAGS) strip.o -o strip fgeth.o fputh.o
 
-strip:  strip.o fgethdr.o fputhdr.o fgeth.o fputh.o
-	$(CC) $(LDFLAGS) strip.o -o strip fgethdr.o fputhdr.o fgeth.o fputh.o
+nm:     nm.o fgetsym.o fgetarhdr.o fgetint.o fgeth.o
+	$(CC) $(LDFLAGS) nm.o -o nm fgetsym.o fgetarhdr.o fgetint.o fgeth.o
 
-nm:     nm.o fgetsym.o fgethdr.o fgetarhdr.o fgetint.o fgeth.o
-	$(CC) $(LDFLAGS) nm.o -o nm fgetsym.o fgethdr.o fgetarhdr.o fgetint.o\
-		fgeth.o
-
-size:   size.o fgethdr.o fgeth.o
-	$(CC) $(LDFLAGS) size.o -o size fgethdr.o fgeth.o
+size:   size.o fgeth.o
+	$(CC) $(LDFLAGS) size.o -o size fgeth.o
 
 install: $(DESTDIR)/bin/$(ld) $(DESTDIR)/bin/$(ar) $(DESTDIR)/bin/$(nm)\
 		$(DESTDIR)/bin/$(size) $(DESTDIR)/bin/$(strip)\
 		$(DESTDIR)/bin/$(lorder) $(DESTDIR)/bin/$(ranlib)
 clean:
 	rm -f *.o *.b a.out core ot ld ar strip nm size ranlib
+
+../objdump/stdobj.o:
+	$(MAKE) -C ../objdump stdobj.o
 
 $(DESTDIR)/bin/$(ld): ld
 	install -s ld $(DESTDIR)/bin/$(ld)
@@ -68,11 +65,9 @@ $(DESTDIR)/bin/$(lorder): lorder.sh
 ###
 fgetarhdr.o: fgetarhdr.c ../mesm6/a.out.h ../mesm6/ar.h
 fgeth.o: fgeth.c ../mesm6/a.out.h
-fgethdr.o: fgethdr.c ../mesm6/a.out.h
 fgetint.o: fgetint.c ../mesm6/a.out.h
 fgetran.o: fgetran.c ../mesm6/a.out.h ../mesm6/ranlib.h
 fgetsym.o: fgetsym.c ../mesm6/a.out.h
 fputh.o: fputh.c ../mesm6/a.out.h
-fputhdr.o: fputhdr.c ../mesm6/a.out.h
 fputsym.o: fputsym.c ../mesm6/a.out.h
 ld.o: ld.c ../mesm6/a.out.h ../mesm6/ar.h ../mesm6/ranlib.h
