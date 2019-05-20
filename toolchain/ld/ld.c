@@ -32,7 +32,6 @@
 
 #define WSZ     6               /* длина слова в байтах */
 #define LOCSYM  'L'             /* убрать локальные символы, нач. с 'L' */
-#define SYMDEF  "__.SYMDEF"
 
 FILE *input;                    /* input file */
 
@@ -99,8 +98,8 @@ char    *ofilename = "l.out";
 char    *filname;
 int     errlev;
 int     delarg    = 4;
-char    tfname[] = "/tmp/ldaXXXXX";
-char    libname[] = "/usr/local/lib/mesm6/libxxxxxxxxxxxxxxx";
+char    tfname[] = "/tmp/ldaXXXXXX";
+char    libname[] = "/usr/local/lib/besm6/libxxxxxxxxxxxxxxx";
 
 #define LNAMLEN 17             /* originally 12 */
 
