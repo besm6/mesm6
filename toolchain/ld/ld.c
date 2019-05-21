@@ -1,20 +1,25 @@
 /*
- * Linker for micro-BESM.
- * Options:
- *      -o filename     output file name
- *      -u symbol       'use'
- *      -e symbol       'entry'
- *      -D size         set data size
- *      -Taddress       base address of loading
- *      -llibname       library
- *      -x              discard local symbols
- *      -X              discard locals starting with LOCSYM
- *      -S              discard all except locals and globals
- *      -r              preserve rel. bits, don't define common's
- *      -s              discard all symbols
- *      -d              define common even with rflag
- *      -t              tracing
- *      -k              align const and text on page boundary
+ * Linker for MESM-6 project.
+ *
+ * Copyright (c) 2019 Serge Vakulenko
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,82 +35,69 @@
 
 #include "mesm6/a.out.h"
 
-#define WSZ     6               /* длина слова в байтах */
-#define LOCSYM  'L'             /* убрать локальные символы, нач. с 'L' */
+#define NSYM    2000            // max number of symbols
+#define LOCSYM  'L'             // temporary symbol names start with 'L'
 
-FILE *input;                    /* input file */
-
-obj_image_t *obj_head, *obj_tail;
-/*
- * output management
- */
+//
+// Input and output files.
+//
+FILE *input;
 FILE *outb, *toutb, *doutb, *troutb, *droutb, *soutb;
 
-/*
- * symbol management
- */
-struct local {
-    long locindex;              /* index to symbol in file */
-    struct nlist *locsymbol;    /* ptr to symbol table */
-};
+//
+// List of input object files.
+//
+obj_image_t *obj_head, *obj_tail;
 
-#define NSYM        2000
-#define NSYMPR      1000
-#define NCONST      512
-#define LLSIZE      256
-#define RANTABSZ    1000
+struct nlist cursym;            // current symbol
+struct nlist symtab[NSYM];      // symbol table
+struct nlist **symhash[NSYM];   // pointers to hash table
+struct nlist *lastsym;          // last symbol created
+struct nlist *hshtab[NSYM+2];   // hash table of symbols
+int symindex;                   // next free symtab index
+long basaddr = 1;               // base address of loading
 
-struct nlist cursym;            /* текущий символ */
-struct nlist symtab[NSYM];      /* собственно символы */
-struct nlist **symhash[NSYM];   /* указатели на хэш-таблицу */
-struct nlist *lastsym;          /* последний введенный символ */
-struct nlist *hshtab[NSYM+2];   /* хэш-таблица для символов */
-struct local local[NSYMPR];
-int symindex;                   /* следующий свободный вход таблицы символов */
-int newindex[NCONST];           /* таблица переиндексации констант */
-long basaddr = 02000;           /* base address of loading */
-
-/*
- * internal symbols
- */
+//
+// Internal symbols: _etext, _edata, _end, entry point.
+//
 struct nlist *p_etext, *p_edata, *p_end, *entrypt;
 
-/*
- * flags
- */
-int     trace;                  /* internal trace flag */
-int     xflag;                  /* discard local symbols */
-int     Xflag;                  /* discard locals starting with LOCSYM */
-int     Sflag;                  /* discard all except locals and globals*/
-int     rflag;                  /* preserve relocation bits, don't define commons */
-int     arflag;                 /* original copy of rflag */
-int     sflag;                  /* discard all symbols */
-int     dflag;                  /* define common even with rflag */
-int     alflag;                 /* const и text выровнены на границу листа */
+//
+// Flags.
+//
+int     trace;                  // internal trace flag
+int     xflag;                  // discard local symbols
+int     Xflag;                  // discard locals starting with LOCSYM
+int     Sflag;                  // discard all except locals and globals
+int     rflag;                  // preserve relocation bits, don't define commons
+int     arflag;                 // original copy of rflag
+int     sflag;                  // discard all symbols
+int     dflag;                  // define common even with rflag
 
-/*
- * Cumulative sizes set in pass 1 (in words).
- */
+//
+// Cumulative sizes set in pass 1 (in words).
+//
 long    text_size, data_size, bss_size;
 
-/*
- * symbol relocation; both passes
- */
+//
+// Symbol relocation: both passes.
+//
 long    cur_text_rel, cur_data_rel, cur_bss_rel;
 
 int     ofilfnd;
 char    *ofilename = "l.out";
-char    *filname;
 int     errlev;
 int     delarg    = 4;
 char    tfname[] = "/tmp/ldaXXXXXX";
-char    libname[] = "/usr/local/lib/besm6/libxxxxxxxxxxxxxxx";
+char    libname[256];
 
-#define LNAMLEN 17             /* originally 12 */
+const char libpattern[] = "/usr/local/lib/besm6/lib";
+const char *filname;
+const char *progname;
 
-#define ALIGN(x,y)     ((x)+(y)-1-((x)+(y)-1)%(y))
-
-/* Needed after pass 1 */
+//
+// Needed after pass 1.
+//
 long    torigin;
 long    dorigin;
 long    borigin;
@@ -124,7 +116,7 @@ void error(int n, char *fmt, ...)
 
     va_start(ap, fmt);
     if (!errlev)
-        printf("ld: ");
+        printf("%s: ", progname);
     if (filname)
         printf("%s: ", filname);
     vprintf(fmt, ap);
@@ -135,29 +127,26 @@ void error(int n, char *fmt, ...)
     errlev = n;
 }
 
-/*
- * Open object file.
- * Return 0 in case of regular file,
- * and 1 in case of archive.
- */
-int open_input(char *name)
+//
+// Open object file.
+// Return 0 in case of regular file,
+// and 1 in case of archive.
+//
+int open_input(char *name, int libflag)
 {
     int c;
 
     input = 0;
-    filname = name;
-    if (name[0] == '-' && name[1] == 'l') {
-        if (name[2] == '\0')
-            name = "-la";
+    if (libflag) {
+        strcpy(libname, libpattern);
+        strcat(libname, name);
+        strcat(libname, ".a");
         filname = libname;
-        for (c = 0; name[c+2]; c++)
-            filname[c + LNAMLEN] = name[c+2];
-        filname[c + LNAMLEN] = '.';
-        filname[c + LNAMLEN + 1] = 'a';
-        filname[c + LNAMLEN + 2] = '\0';
         input = fopen(filname, "r");
         if (! input)
             filname += 4;
+    } else {
+        filname = name;
     }
     if (! input && ! (input = fopen(filname, "r")))
         error(2, "cannot open");
@@ -167,9 +156,9 @@ int open_input(char *name)
     fseek(input, 0L, 0);
 
     if (c == BESM6_MAGIC)
-        return 0;       /* regular file */
+        return 0;       // regular file
 
-    return 1;           /* archive */
+    return 1;           // archive
 }
 
 void symreloc()
@@ -303,18 +292,18 @@ void merge_symbols(obj_image_t *obj)
     }
 }
 
-/*
- * Check whether the object file provides any symbols we need.
- */
+//
+// Check whether the object file provides any symbols we need.
+//
 int need_this_obj(obj_image_t *obj)
 {
     //TODO
     return 1;
 }
 
-/*
- * Append object structure to the single-linked list.
- */
+//
+// Append object structure to the single-linked list.
+//
 void append_to_obj_list(obj_image_t *obj)
 {
     if (!obj)
@@ -330,13 +319,13 @@ void append_to_obj_list(obj_image_t *obj)
     obj_tail = obj;
 }
 
-/*
- * Pass 1: load one object file.
- * The file can be opened as file descriptor fd,
- * or supplied as byte array of given size.
- * Return 1 in case any names have been resolved,
- * otherwise return 0.
- */
+//
+// Pass 1: load one object file.
+// The file can be opened as file descriptor fd,
+// or supplied as byte array of given size.
+// Return 1 in case any names have been resolved,
+// otherwise return 0.
+//
 int load1obj(FILE *fd, char *data, unsigned nbytes)
 {
     obj_image_t obj = {0};
@@ -348,13 +337,13 @@ int load1obj(FILE *fd, char *data, unsigned nbytes)
         if (obj_read_data(data, nbytes, &obj) < 0)
             error(2, "bad format");
 
-        /* Does this component have anything useful for us? */
+        // Does this component have anything useful for us?
         if (!need_this_obj(&obj)) {
             return 0;
         }
     }
 
-    /* Link in the object file. */
+    // Link in the object file.
     cur_text_rel = 0;
     cur_data_rel = - obj.cmd_len;
     cur_bss_rel = - obj.cmd_len - obj.const_len;
@@ -367,10 +356,10 @@ int load1obj(FILE *fd, char *data, unsigned nbytes)
     data_size += obj.const_len;
     bss_size += obj.data_len;
 
-    /* Merge symbols into a common symbol table. */
+    // Merge symbols into a common symbol table.
     merge_symbols(&obj);
 
-    /* Reallocate the object image and add to the list. */
+    // Reallocate the object image and add to the list.
     append_to_obj_list(obj_copy(&obj));
     return 1;
 }
@@ -384,9 +373,9 @@ struct nlist **slookup(char *s)
     return lookup();
 }
 
-/*
- * Read callback for archive.
- */
+//
+// Read callback for archive.
+//
 ssize_t myread(struct archive *a, void *fd, const void **pbuf)
 {
     static char buf[4096];
@@ -395,22 +384,22 @@ ssize_t myread(struct archive *a, void *fd, const void **pbuf)
     return fread(buf, 1, sizeof(buf), (FILE*)fd);
 }
 
-/*
- * Scan file to find defined symbols.
- */
-void load1name(char *fname)
+//
+// Scan file to find defined symbols.
+//
+void load1name(char *fname, int libflag)
 {
-    if (open_input(fname) == 0) {
-        /*
-         * Regular file.
-         */
+    if (open_input(fname, libflag) == 0) {
+        //
+        // Regular file.
+        //
         if (trace > 1)
             printf("%s\n", fname);
         load1obj(input, NULL, 0);
     } else {
-        /*
-         * Archive.
-         */
+        //
+        // Archive.
+        //
         struct archive *a = archive_read_new();
         struct archive_entry *entry;
 
@@ -437,120 +426,115 @@ void load1name(char *fname)
     fclose(input);
 }
 
-/*
- * scan files once to find symdefs
- */
+void usage(int retcode)
+{
+    printf("Usage:\n");
+    printf("    %s [options] file...\n", progname);
+    printf("Options:\n");
+    printf("    -d              Force common symbols to be defined\n");
+    printf("    -e symbol       Set entry address\n");
+    printf("    -llibname       Search for library `libname'\n");
+    printf("    -o filename     Set output file name\n");
+    printf("    -r              Generate relocatable output\n");
+    printf("    -s              Strip all symbols\n");
+    printf("    -S              Strip debugging symbols\n");
+    printf("    -t              Trace file opens\n");
+    printf("    -T address      Set base address\n");
+    printf("    -u symbol       Start with undefined reference to `symbol'\n");
+    printf("    -x              Discard all local symbols\n");
+    printf("    -X              Discard temporary local symbols (default)\n");
+    exit(retcode);
+}
+
+//
+// Scan files once to find symdefs.
+//
 void pass1(int argc, char **argv)
 {
-    int c, i;
-    long num;
-    char *ap, **p;
-    char save;
-
-    p = argv + 1;
-    for (c=1; c<argc; ++c) {
+    for (;;) {
         filname = 0;
-        ap = *p++;
-
-        if (*ap != '-') {
-            load1name(ap);
-            continue;
-        }
-        for (i=1; ap[i]; i++) {
-            switch (ap[i]) {
-
-                /* output file name */
-            case 'o':
-                if (++c >= argc)
-                    error(2, "-o: argument missing");
-                ofilename = *p++;
-                ofilfnd++;
-                continue;
-
-                /* 'use' */
-            case 'u':
-                if (++c >= argc)
-                    error(2, "-u: argument missing");
-                enter(slookup(*p++));
-                continue;
-
-                /* 'entry' */
-            case 'e':
-                if (++c >= argc)
-                    error (2, "-e: argument missing");
-                enter(slookup(*p++));
-                entrypt = lastsym;
-                continue;
-
-                /* set data size in words */
-            case 'D':
-                if (++c >= argc)
-                    error(2, "-D: argument missing");
-                num = atoi(*p++);
-                if (data_size > num)
-                    error(2, "-D: too small");
-                data_size = num;
-                continue;
-
-                /* base address of loading */
-            case 'T':
-                basaddr = strtoul(ap+i+1, 0, 0);
-                break;
-
-                /* library */
-            case 'l':
-                save = ap[--i];
-                ap[i] = '-';
-                load1name(&ap[i]);
-                ap[i] = save;
-                break;
-
-                /* discard local symbols */
-            case 'x':
-                xflag++;
-                continue;
-
-                /* discard locals starting with LOCSYM */
-            case 'X':
-                Xflag++;
-                continue;
-
-                /* discard all except locals and globals*/
-            case 'S':
-                Sflag++;
-                continue;
-
-                /* preserve rel. bits, don't define common */
-            case 'r':
-                rflag++;
-                arflag++;
-                continue;
-
-                /* discard all symbols */
-            case 's':
-                sflag++;
-                xflag++;
-                continue;
-
-                /* define common even with rflag */
-            case 'd':
-                dflag++;
-                continue;
-
-                /* tracing */
-            case 't':
-                trace++;
-                continue;
-
-            case 'k':
-                alflag++;
-                continue;
-
-            default:
-                error(2, "unknown flag");
-            }
+        switch (getopt(argc, argv, "-de:l:o:rsStT:u:xX")) {
+        case EOF:
             break;
+
+        case 1:
+            // Input file name.
+            load1name(optarg, 0);
+            continue;
+
+        case 'd':
+            // Force allocation of commons.
+            dflag++;
+            continue;
+
+        case 'e':
+            // Set `entry' symbol.
+            enter(slookup(optarg));
+            entrypt = lastsym;
+            continue;
+
+        case 'l':
+            // Library name.
+            load1name(optarg, 1);
+            continue;
+
+        case 'o':
+            // Output file name.
+            ofilename = optarg;
+            ofilfnd++;
+            continue;
+
+        case 'r':
+            // Generate relocatable output.
+            rflag++;
+            arflag++;
+            continue;
+
+        case 's':
+            // Strip all symbols.
+            sflag++;
+            xflag++;
+            continue;
+
+        case 'S':
+            // Strip debugging symbols.
+            Sflag++;
+            continue;
+
+        case 't':
+            // Enable tracing.
+            trace++;
+            continue;
+
+        case 'T':
+            // Set base address.
+            basaddr = strtoul(optarg, 0, 0);
+            continue;
+
+        case 'u':
+            // Mark `symbol' as undefined.
+            enter(slookup(optarg));
+            continue;
+
+        case 'x':
+            // Discard all local symbols.
+            xflag++;
+            continue;
+
+        case 'X':
+            // Discard temporary local symbols.
+            Xflag++;
+            continue;
+
+        default:
+            usage(-1);
         }
+        break;
+    }
+    argc -= optind;
+    argv += optind;
+    while (argc-- > 0) {
+        load1name(*argv++, 0);
     }
 }
 
@@ -571,16 +555,16 @@ void middle()
     struct nlist *sp, *symp;
     long t;
     long cmsize;
-    int nund;
+    int undef_count;
     long cmorigin;
 
     p_etext = *slookup("_etext");
     p_edata = *slookup("_edata");
     p_end = *slookup("_end");
 
-    /*
-     * If there are any undefined symbols, save the relocation bits.
-     */
+    //
+    // If there are any undefined symbols, save the relocation bits.
+    //
     symp = &symtab[symindex];
     if (!rflag) {
         for (sp=symtab; sp<symp; sp++)
@@ -592,11 +576,12 @@ void middle()
                 break;
             }
     }
-    if (rflag) alflag = sflag = 0;
+    if (rflag)
+        sflag = 0;
 
-    /*
-     * Assign common locations.
-     */
+    //
+    // Assign common locations.
+    //
     cmsize = 0;
     if (dflag || !rflag) {
         ldrsym(p_etext, text_size, N_EXT+N_TEXT);
@@ -610,26 +595,23 @@ void middle()
             }
     }
 
-    /*
-     * Now set symbols to their final value
-     */
+    //
+    // Now set symbols to their final value
+    //
     torigin = basaddr;
-    if (alflag)
-        torigin = ALIGN(torigin, 1024);
     dorigin = torigin + text_size;
-    if (alflag)
-        dorigin = ALIGN(dorigin, 1024);
     cmorigin = dorigin + data_size;
     borigin = cmorigin + cmsize;
-    nund = 0;
+    undef_count = 0;
     for (sp=symtab; sp<symp; sp++) {
         switch (sp->n_type) {
         case N_EXT+N_UNDF:
-            if (!arflag) errlev |= 01;
-            if (!arflag)   {
-                if (!nund)
+            if (!arflag)
+                errlev |= 1;
+            if (!arflag) {
+                if (!undef_count)
                     printf("Undefined:\n");
-                nund++;
+                undef_count++;
                 printf("\t%s\n", sp->n_name);
             }
             break;
@@ -686,7 +668,7 @@ void setupout()
     }
 #if 0
     // Write header.
-    filhdr.a_magic = alflag ? AMAGIC : FMAGIC;
+    filhdr.a_magic = FMAGIC;
     filhdr.a_text = text_size;
     filhdr.a_data = data_size;
     filhdr.a_bss = bss_size;
@@ -710,24 +692,6 @@ void setupout()
 #endif
 }
 
-struct nlist *lookloc(struct local *lp, int sn)
-{
-    struct local *clp;
-
-    for (clp=local; clp<lp; clp++)
-        if (clp->locindex == sn)
-            return clp->locsymbol;
-    if (trace) {
-        fprintf(stderr, "*** %d ***\n", sn);
-        for (clp=local; clp<lp; clp++)
-            fprintf(stderr, "%ld, ", clp->locindex);
-        fprintf(stderr, "\n");
-    }
-    error(2, "bad symbol reference");
-    /* NOTREACHED */
-    return 0;
-}
-
 int reltype(int stype)
 {
     switch (stype & N_TYPE) {
@@ -743,16 +707,14 @@ int reltype(int stype)
     }
 }
 
-void relhalf(struct local *lp, long t, long *pt)
+void relhalf(/*struct local *lp,*/ long t, long *pt)
 {
     long a, ad;
-    struct nlist *sp;
 
     if (trace > 2)
         printf("%08lx", t);
 
-    /* extract address from command */
-
+    // Extract address from command.
     switch ((int) t & RSHORT) {
     case 0:
         a = t & 0777777777;
@@ -773,9 +735,8 @@ void relhalf(struct local *lp, long t, long *pt)
         break;
      }
 
-    /* compute address shift `ad' */
-    /* update relocation word */
-
+    // Compute address shift `ad'.
+    // Update relocation word.
     ad = 0;
     switch ((int) t & REXT) {
     case RTEXT:
@@ -787,22 +748,23 @@ void relhalf(struct local *lp, long t, long *pt)
     case RBSS:
         ad = cur_bss_rel;
         break;
+#if 0
     case REXT:
-        sp = lookloc(lp, (int) RGETIX(t));
+        struct nlist *sp = lookloc(lp, (int) RGETIX(t));
         t &= RSHORT;
         if (sp->n_type == N_EXT+N_UNDF ||
             sp->n_type == N_EXT+N_COMM)
         {
-            //t |= REXT | RPUTIX(nsym + (sp - symtab));
+            t |= REXT | RPUTIX(nsym + (sp - symtab));
             break;
         }
         t |= reltype(sp->n_type);
         ad = sp->n_value;
         break;
+#endif
     }
 
-    /* add updated address to command */
-
+    // Add updated address to command.
     switch ((int) t & RSHORT) {
     case 0:
         t &= ~0777777777;
@@ -832,22 +794,23 @@ void relhalf(struct local *lp, long t, long *pt)
     *pt = t;
 }
 
-void relocate(struct local *lp, FILE *b1, FILE *b2, long len)
+void relocate(/*struct local *lp,*/ FILE *b1, FILE *b2, long len)
 {
+#if 0
     long t;
 
     len /= WSZ/2;
     while (len--) {
         t = fgeth(input);
-        relhalf(lp, t, &t);
+        relhalf(/*lp,*/ t, &t);
         fputh(t, b1);
     }
+#endif
 }
 
 void load2obj(obj_image_t *obj)
 {
     struct nlist *sp;
-    struct local *lp;
     int symno;
     int type;
     long count;
@@ -863,11 +826,10 @@ void load2obj(obj_image_t *obj)
     if (trace > 1)
         printf("cur_text_rel=%lxh, cur_data_rel=%lxh, cur_bss_rel=%lxh\n",
             cur_text_rel, cur_data_rel, cur_bss_rel);
-    /*
-     * Re-read the symbol table, recording the numbering
-     * of symbols for fixing external references.
-     */
-    lp = local;
+    //
+    // Re-read the symbol table, recording the numbering
+    // of symbols for fixing external references.
+    //
     symno = -1;
     for (;;) {
         symno++;
@@ -897,10 +859,6 @@ void load2obj(obj_image_t *obj)
         if (cursym.n_type == N_EXT+N_UNDF ||
             cursym.n_type == N_EXT+N_COMM)
         {
-            if (lp >= &local[NSYMPR])
-                error(2, "local symbol table overflow");
-            lp->locindex = symno;
-            lp++->locsymbol = sp;
             continue;
         }
         if (cursym.n_type != sp->n_type ||
@@ -913,11 +871,11 @@ void load2obj(obj_image_t *obj)
 
     if (trace > 1)
         printf("** TEXT **\n");
-    relocate(lp, toutb, troutb, obj->cmd_len);
+    relocate(toutb, troutb, obj->cmd_len);
 
     if (trace > 1)
         printf("** DATA **\n");
-    relocate(lp, doutb, droutb, obj->const_len);
+    relocate(doutb, droutb, obj->const_len);
 
     torigin += obj->cmd_len;
     dorigin += obj->const_len;
@@ -945,22 +903,8 @@ void copy(FILE *buf)
 
 void finishout()
 {
-    long n;
     struct nlist *p;
 
-    if (alflag) {
-        /* now torigin points to the end of text */
-        n = torigin;
-        while (n & 01777) {
-            n++;
-            fputh(0L, toutb);
-            fputh(0L, toutb);
-            if (rflag) {
-                fputh(0L, troutb);
-                fputh(0L, troutb);
-            }
-        }
-    }
     copy(toutb);
     copy(doutb);
     if (rflag) {
@@ -979,41 +923,44 @@ void finishout()
 
 int main(int argc, char **argv)
 {
-    if (argc == 1) {
-        printf("Usage: %s [-xXsSrndt] [-lname] [-D num] [-u name] [-e name] [-o file] file...\n",
-            argv[0]);
-        exit(4);
-    }
+    // Get program name.
+    progname = strrchr(argv[0], '/');
+    if (progname)
+        progname++;
+    else
+        progname = argv[0];
+
+    if (argc == 1)
+        usage(0);
     if (signal(SIGINT, SIG_IGN) != SIG_IGN)
         signal(SIGINT, delexit);
     if (signal(SIGTERM, SIG_IGN) != SIG_IGN)
         signal(SIGTERM, delexit);
 
-    /*
-     * Первый проход: вычисление длин сегментов и таблицы имен,
-     * а также адреса входа.
-     */
+    //
+    // First pass: compute segment sizes, symbol table and entry point.
+    //
     pass1(argc, argv);
     filname = 0;
 
-    /*
-     * Обработка таблицы имен.
-     */
+    //
+    // Relocate symbols.
+    //
     middle();
 
-    /*
-     * Создание буферных файлов и запись заголовка
-     */
+    //
+    // Create new header.
+    //
     setupout();
 
-    /*
-     * Второй проход: настройка связей.
-     */
+    //
+    // Second pass: relocate the code.
+    //
     pass2(argc, argv);
 
-    /*
-     * Сброс буферов.
-     */
+    //
+    // Copy output files.
+    //
     finishout();
 
     if (!ofilfnd) {

@@ -1,6 +1,9 @@
 #
 # Linker, archiver and other object file utilities
 #
+# To install libarchive, use:
+#       sudo apt install libarchive-dev
+#
 DESTDIR = /usr/SVSB
 CFLAGS  = -I.. -I../objdump -Werror -Wall
 LDFLAGS =
