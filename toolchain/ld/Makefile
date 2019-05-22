@@ -16,16 +16,16 @@ size    = mkb-size
 
 all:    ld #strip nm size
 
-ld:     ld.o ../objdump/stdobj.o fgetint.o fgetsym.o fputsym.o \
+ld:     ld.o ../objdump/stdobj.o fgetsym.o fputsym.o \
 		fgeth.o fputh.o
-	$(CC) $(LDFLAGS) ld.o -o ld ../objdump/stdobj.o fgetint.o \
+	$(CC) $(LDFLAGS) ld.o -o ld ../objdump/stdobj.o \
 		fgetsym.o fputsym.o fgeth.o fputh.o $(LIBS)
 
 strip:  strip.o fgeth.o fputh.o
 	$(CC) $(LDFLAGS) strip.o -o strip fgeth.o fputh.o
 
-nm:     nm.o fgetsym.o fgetint.o fgeth.o
-	$(CC) $(LDFLAGS) nm.o -o nm fgetsym.o fgetint.o fgeth.o
+nm:     nm.o fgetsym.o fgeth.o
+	$(CC) $(LDFLAGS) nm.o -o nm fgetsym.o fgeth.o
 
 size:   size.o fgeth.o
 	$(CC) $(LDFLAGS) size.o -o size fgeth.o
@@ -53,7 +53,6 @@ $(DESTDIR)/bin/$(strip): strip
 
 ###
 fgeth.o: fgeth.c ../mesm6/a.out.h
-fgetint.o: fgetint.c ../mesm6/a.out.h
 fgetsym.o: fgetsym.c ../mesm6/a.out.h
 fputh.o: fputh.c ../mesm6/a.out.h
 fputsym.o: fputsym.c ../mesm6/a.out.h

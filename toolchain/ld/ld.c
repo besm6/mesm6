@@ -55,7 +55,7 @@ struct nlist **symhash[NSYM];   // pointers to hash table
 struct nlist *lastsym;          // last symbol created
 struct nlist *hshtab[NSYM+2];   // hash table of symbols
 int symindex;                   // next free symtab index
-long basaddr = 1;               // base address of loading
+int basaddr = 1;                // base address of loading
 
 //
 // Internal symbols: _etext, _edata, _end, entry point.
@@ -77,17 +77,16 @@ int     dflag;                  // define common even with rflag
 //
 // Cumulative sizes set in pass 1 (in words).
 //
-long    text_size, data_size, bss_size;
+int     text_size, data_size, bss_size;
 
 //
 // Symbol relocation: both passes.
 //
-long    cur_text_rel, cur_data_rel, cur_bss_rel;
+int     cur_text_rel, cur_data_rel, cur_bss_rel;
 
-int     ofilfnd;
+int     o_flag;
 char    *ofilename = "l.out";
 int     errlev;
-int     delarg    = 4;
 char    tfname[] = "/tmp/ldaXXXXXX";
 char    libname[256];
 
@@ -98,16 +97,17 @@ const char *progname;
 //
 // Needed after pass 1.
 //
-long    torigin;
-long    dorigin;
-long    borigin;
+int     torigin;
+int     dorigin;
+int     borigin;
 
+//
+// Signal handler: delete temporary output file and finish.
+//
 void delexit()
 {
     unlink("l.out");
-    if (!delarg && !arflag)
-        chmod(ofilename, 0777 & ~umask(0));
-    exit(delarg);
+    exit(-1);
 }
 
 void error(int n, char *fmt, ...)
@@ -128,37 +128,57 @@ void error(int n, char *fmt, ...)
 }
 
 //
+// Read a 48-bit word at the current file position.
+//
+static uint64_t fread6(FILE *fd)
+{
+    uint64_t val = 0;
+    int i;
+
+    for (i = 0; i < 6; ++i) {
+        val <<= 8;
+        val |= getc(fd);
+    }
+    return val;
+}
+
+//
 // Open object file.
 // Return 0 in case of regular file,
 // and 1 in case of archive.
 //
 int open_input(char *name, int libflag)
 {
-    int c;
+    uint64_t magic;
 
+//printf("--- %s(name = '%s', libflag = %u)\n", __func__, name, libflag);
     input = 0;
     if (libflag) {
         strcpy(libname, libpattern);
         strcat(libname, name);
         strcat(libname, ".a");
         filname = libname;
+//printf("--- %s() open '%s'\n", __func__, filname);
         input = fopen(filname, "r");
         if (! input)
             filname += 4;
     } else {
         filname = name;
     }
+//if (! input)
+//printf("--- %s() open '%s'\n", __func__, filname);
     if (! input && ! (input = fopen(filname, "r")))
-        error(2, "cannot open");
+        error(2, "Cannot open");
 
-    if (! fgetint(input, &c))
-        error(1, "unexpected EOF");
+    magic = fread6(input);
+    if (feof(input))
+        error(1, "Unexpected EOF");
     fseek(input, 0L, 0);
 
-    if (c == BESM6_MAGIC)
+    if (magic == BESM6_MAGIC)
         return 0;       // regular file
 
-    return 1;           // archive
+    return 1;           // probably archive
 }
 
 void symreloc()
@@ -197,7 +217,7 @@ int enter(struct nlist **hp)
 
     if (! *hp) {
         if (symindex >= NSYM)
-            error(2, "symbol table overflow");
+            error(2, "Symbol table overflow");
         symhash[symindex] = hp;
         *hp = lastsym = sp = &symtab[symindex++];
         sp->n_len = cursym.n_len;
@@ -246,7 +266,7 @@ void merge_symbols(obj_image_t *obj)
     for (;;) {
         symlen = fgetsym(input, &cursym);
         if (symlen == 0)
-            error(2, "out of memory");
+            error(2, "Out of memory");
         if (symlen == 1)
             break;
         type = cursym.n_type;
@@ -307,7 +327,7 @@ int need_this_obj(obj_image_t *obj)
 void append_to_obj_list(obj_image_t *obj)
 {
     if (!obj)
-        error(2, "out of memory");
+        error(2, "Out of memory");
 
     obj->next = 0;
 
@@ -331,17 +351,21 @@ int load1obj(FILE *fd, char *data, unsigned nbytes)
     obj_image_t obj = {0};
 
     if (fd) {
+printf("--- %s(fd = %u)\n", __func__, fileno(fd));
         if (obj_read_fd(fd, &obj) < 0)
-            error(2, "bad format");
+            error(2, "Bad format");
     } else {
+printf("--- %s(nbytes = %u)\n", __func__, nbytes);
         if (obj_read_data(data, nbytes, &obj) < 0)
-            error(2, "bad format");
+            error(2, "Bad format");
 
         // Does this component have anything useful for us?
         if (!need_this_obj(&obj)) {
+printf("--- %s() ignore this module\n", __func__);
             return 0;
         }
     }
+printf("--- %s() link obj file: cmd=%u, const=%u, data=%u\n", __func__, obj.cmd_len, obj.const_len, obj.data_len);
 
     // Link in the object file.
     cur_text_rel = 0;
@@ -393,6 +417,7 @@ void load1name(char *fname, int libflag)
         //
         // Regular file.
         //
+//printf("--- %s(fname = '%s', libflag = %u) regular file\n", __func__, fname, libflag);
         if (trace > 1)
             printf("%s\n", fname);
         load1obj(input, NULL, 0);
@@ -403,10 +428,24 @@ void load1name(char *fname, int libflag)
         struct archive *a = archive_read_new();
         struct archive_entry *entry;
 
+//printf("--- %s(fname = '%s', libflag = %u) archive\n", __func__, fname, libflag);
         archive_read_support_filter_all(a);
         archive_read_support_format_all(a);
         archive_read_open(a, input, NULL, myread, NULL);
-        while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
+        for (;;) {
+            int ret = archive_read_next_header(a, &entry);
+//printf("--- %s() archive ret = %d\n", __func__, ret);
+            if (ret != ARCHIVE_OK) {
+                if (ret == ARCHIVE_EOF)
+                    break;
+                else if (ret == ARCHIVE_RETRY)
+                    continue;
+                else if (ret == ARCHIVE_WARN)
+                    error(0, "Archive warning");
+                else
+                    error(2, "Bad archive");
+            }
+
             const char *name = archive_entry_pathname(entry);
             unsigned nbytes = archive_entry_size(entry);
             static char data[MAXSZ*6];
@@ -415,10 +454,10 @@ void load1name(char *fname, int libflag)
                 printf("%s(%s):\n", fname, name);
 
             if (nbytes > sizeof(data)) {
-                error(2, "too long array entry");
+                error(2, "Too long array entry");
             }
             if (archive_read_data(a, data, nbytes) != nbytes) {
-                error(2, "read error");
+                error(2, "Read error");
             }
             load1obj(NULL, data, nbytes);
         }
@@ -481,7 +520,7 @@ void pass1(int argc, char **argv)
         case 'o':
             // Output file name.
             ofilename = optarg;
-            ofilfnd++;
+            o_flag++;
             continue;
 
         case 'r':
@@ -531,11 +570,6 @@ void pass1(int argc, char **argv)
         }
         break;
     }
-    argc -= optind;
-    argv += optind;
-    while (argc-- > 0) {
-        load1name(*argv++, 0);
-    }
 }
 
 void ldrsym(struct nlist *sp, long val, int type)
@@ -543,7 +577,7 @@ void ldrsym(struct nlist *sp, long val, int type)
     if (sp == 0) return;
     if (sp->n_type != N_EXT+N_UNDF) {
         printf("%s: ", sp->n_name);
-        error(1, "name redefined");
+        error(1, "Name redefined");
         return;
     }
     sp->n_type = type;
@@ -634,7 +668,7 @@ void middle()
             break;
         }
         if (sp->n_value & ~0777777777)
-            error(1, "long address: %s=0%lo", sp->n_name, sp->n_value);
+            error(1, "Long address: %s=0%lo", sp->n_name, sp->n_value);
     }
     bss_size += cmsize;
 }
@@ -644,8 +678,8 @@ void tcreat(FILE **buf, int tempflg)
     *buf = fopen(tempflg ? tfname : ofilename, "w+");
     if (! *buf)
         error(2, tempflg ?
-            "cannot create temporary file" :
-            "cannot create output file");
+            "Cannot create temporary file" :
+            "Cannot create output file");
     if (tempflg)
         unlink(tfname);
 }
@@ -654,7 +688,7 @@ void setupout()
 {
     int fd = mkstemp(tfname);
     if (fd == -1) {
-        error(2, "cannot create temporary file %s", tfname);
+        error(2, "Cannot create temporary file %s", tfname);
     } else {
         close(fd);
     }
@@ -676,7 +710,7 @@ void setupout()
     if (entrypt) {
         if (entrypt->n_type != N_EXT+N_TEXT &&
             entrypt->n_type != N_EXT+N_UNDF)
-            error(1, "entry out of text");
+            error(1, "Entry out of text");
         else filhdr.a_entry = entrypt->n_value;
     } else {
         filhdr.a_entry = torigin;
@@ -824,7 +858,7 @@ void load2obj(obj_image_t *obj)
     cur_bss_rel += borigin;
 
     if (trace > 1)
-        printf("cur_text_rel=%lxh, cur_data_rel=%lxh, cur_bss_rel=%lxh\n",
+        printf("cur_text_rel=%#x, cur_data_rel=%#x, cur_bss_rel=%#x\n",
             cur_text_rel, cur_data_rel, cur_bss_rel);
     //
     // Re-read the symbol table, recording the numbering
@@ -835,7 +869,7 @@ void load2obj(obj_image_t *obj)
         symno++;
         count = fgetsym(input, &cursym);
         if (count == 0)
-            error(2, "out of memory");
+            error(2, "Out of memory");
         if (count == 1)
             break;
         symreloc();
@@ -854,7 +888,7 @@ void load2obj(obj_image_t *obj)
             continue;
         }
         if (! (sp = *lookup()))
-            error(2, "internal error: symbol not found");
+            error(2, "Internal error: symbol not found");
         free(cursym.n_name);
         if (cursym.n_type == N_EXT+N_UNDF ||
             cursym.n_type == N_EXT+N_COMM)
@@ -865,7 +899,7 @@ void load2obj(obj_image_t *obj)
             cursym.n_value != sp->n_value)
         {
             printf("%s: ", cursym.n_name);
-            error(1, "name redefined");
+            error(1, "Name redefined");
         }
     }
 
@@ -963,12 +997,16 @@ int main(int argc, char **argv)
     //
     finishout();
 
-    if (!ofilfnd) {
+    if (!o_flag) {
+        // Rename a.out into l.out.
         unlink("a.out");
         link("l.out", "a.out");
         ofilename = "a.out";
     }
-    delarg = errlev;
-    delexit();
+    unlink("l.out");
+    if (errlev == 0 && !arflag) {
+        // Linking succeeded and no -r option: make output executable.
+        chmod(ofilename, 0777 & ~umask(0));
+    }
     return 0;
 }
