@@ -59,7 +59,19 @@ typedef struct _obj_image_t {
 } obj_image_t;
 
 //
-// Symbol types
+// Item of a symbol table.
+//
+typedef union {
+    uint64_t    u64;
+    struct {
+        unsigned n_addr : 15;   // address
+        unsigned n_type : 9;    // symbol type
+        unsigned n_ref  : 24;   // reference to another symbol,
+    } f;                        // or short name
+} nlist_t;
+
+//
+// Symbol types.
 //
 enum {
     SYM_OFFSET      = 0000,     // Offset from another symbol

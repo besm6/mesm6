@@ -33,10 +33,11 @@
 #include <archive_entry.h>
 #include "stdobj.h"
 
-#include "mesm6/a.out.h"
+#include "mesm6/a.out.h"        //TODO: delete
 
-#define NSYM    2000            // max number of symbols
-#define LOCSYM  'L'             // temporary symbol names start with 'L'
+#define MAXSYMBOLS      2000    // max number of symbols
+#define MAXNAMES        2000    // max number of names
+#define LOCSYM          'L'     // temporary symbol names start with 'L'
 
 //
 // Input and output files.
@@ -49,18 +50,14 @@ FILE *outb, *toutb, *doutb, *troutb, *droutb, *soutb;
 //
 obj_image_t *obj_head, *obj_tail;
 
-struct nlist cursym;            // current symbol
-struct nlist symtab[NSYM];      // symbol table
-struct nlist **symhash[NSYM];   // pointers to hash table
-struct nlist *lastsym;          // last symbol created
-struct nlist *hshtab[NSYM+2];   // hash table of symbols
-int symindex;                   // next free symtab index
-int basaddr = 1;                // base address of loading
-
 //
-// Internal symbols: _etext, _edata, _end, entry point.
+// Symbol table.
 //
-struct nlist *p_etext, *p_edata, *p_end, *entrypt;
+nlist_t symtab[MAXSYMBOLS];     // symbol table
+unsigned nsymbols;              // number of symbols
+uint64_t nametab[MAXNAMES];     // name table
+unsigned nnames;                // number of names
+nlist_t *entrypt;               // entry point
 
 //
 // Flags.
@@ -74,6 +71,8 @@ int     arflag;                 // original copy of rflag
 int     sflag;                  // discard all symbols
 int     dflag;                  // define common even with rflag
 
+unsigned basaddr = 1;           // base address of resulting image
+
 //
 // Cumulative sizes set in pass 1 (in words).
 //
@@ -84,6 +83,13 @@ int     text_size, data_size, bss_size;
 //
 int     cur_text_rel, cur_data_rel, cur_bss_rel;
 
+//
+// Needed after pass 1.
+//
+int     torigin;
+int     dorigin;
+int     borigin;
+
 int     o_flag;
 char    *ofilename = "l.out";
 int     errlev;
@@ -93,13 +99,6 @@ char    libname[256];
 const char libpattern[] = "/usr/local/lib/besm6/lib";
 const char *filname;
 const char *progname;
-
-//
-// Needed after pass 1.
-//
-int     torigin;
-int     dorigin;
-int     borigin;
 
 //
 // Signal handler: delete temporary output file and finish.
@@ -181,6 +180,7 @@ int open_input(char *name, int libflag)
     return 1;           // probably archive
 }
 
+#if 0
 void symreloc()
 {
     switch (cursym.n_type) {
@@ -210,55 +210,70 @@ void symreloc()
         break;
     }
 }
+#endif
 
-int enter(struct nlist **hp)
+//
+// Find existing symbol by name in TEXT encoding.
+//
+nlist_t *sym_find(uint64_t name)
 {
-    struct nlist *sp;
+    nlist_t *sp;
 
-    if (! *hp) {
-        if (symindex >= NSYM)
-            error(2, "Symbol table overflow");
-        symhash[symindex] = hp;
-        *hp = lastsym = sp = &symtab[symindex++];
-        sp->n_len = cursym.n_len;
-        sp->n_name = cursym.n_name;
-        sp->n_type = cursym.n_type;
-        sp->n_value = cursym.n_value;
-        return 1;
-    } else {
-        lastsym = *hp;
-        return 0;
+    for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
+        if (sym_name_equal(sp, name)) {
+            return sp;
+        }
     }
+    return 0;
 }
 
-struct nlist **lookup()
+//
+// Create new name.
+//
+unsigned create_name(uint64_t name)
 {
-    int i, clash;
-    char *cp, *cp1;
-    struct nlist **hp;
+    if (nnames >= MAXNAMES)
+        error(2, "Name table overflow");
+    nametab[nnames] = name;
+    return nnames++;
+}
 
-    i = 0;
-    for (cp = cursym.n_name; *cp; i = (i << 1) + *cp++)
-        ;
-    for (hp = &hshtab[(i & 077777) % NSYM + 2]; *hp != 0;) {
-        cp1 = (*hp)->n_name;
-        clash = 0;
-        for (cp = cursym.n_name; *cp;)
-            if (*cp++ != *cp1++) {
-                clash = 1;
-                break;
-            }
-        if (clash) {
-            if (++hp >= &hshtab[NSYM+2])
-                hp = hshtab;
-        } else
-            break;
+//
+// Create new symbol: external reference.
+// In case the symbol already exists - return a pointer.
+//
+nlist_t *create_extref(const char *str)
+{
+    uint64_t name = utf_to_text(str);
+    nlist_t *sp;
+
+    for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
+        if (sym_name_equal(sp, name)) {
+            // Name already exists.
+            return sp;
+        }
     }
-    return hp;
+
+    // Allocate new symbol: external reference.
+    if (nsymbols >= MAXSYMBOLS)
+        error(2, "Symbol table overflow");
+    sp = &symtab[nsymbols];
+    nsymbols++;
+    if (name & 077777777) {
+        // Long name.
+        sp->f.n_type = SYM_EXT_L;
+        sp->f.n_ref = create_name(name);
+    } else {
+        // Short name.
+        sp->f.n_type = SYM_EXT_S;
+        sp->f.n_ref = name >> 24;
+    }
+    return sp;
 }
 
 void merge_symbols(obj_image_t *obj)
 {
+#if 0
     struct nlist *sp;
     int type, symlen;
 
@@ -284,7 +299,7 @@ void merge_symbols(obj_image_t *obj)
             continue;
         }
         symreloc();
-        if (enter(lookup()))
+        if (enter(lookup_cursym()))
             continue;
         free(cursym.n_name);
         if (cursym.n_type == N_EXT+N_UNDF)
@@ -310,6 +325,7 @@ void merge_symbols(obj_image_t *obj)
             }
         }
     }
+#endif
 }
 
 //
@@ -317,6 +333,19 @@ void merge_symbols(obj_image_t *obj)
 //
 int need_this_obj(obj_image_t *obj)
 {
+    if (obj->nentries > 0) {
+        // Is any of proposed entries referenced by our module?
+        int i;
+        for (i = 0; i < obj->nentries; i++) {
+            uint64_t name = obj->word[2*i + 1];
+            nlist_t  *sp  = sym_find(name);
+
+            if (sp && (sp->f.n_type == SYM_EXT_L ||
+                       sp->f.n_type == SYM_EXT_S))
+                return 1;
+        }
+        return 0;
+    }
     //TODO
     return 1;
 }
@@ -386,15 +415,6 @@ printf("--- %s() link obj file: cmd=%u, const=%u, data=%u\n", __func__, obj.cmd_
     // Reallocate the object image and add to the list.
     append_to_obj_list(obj_copy(&obj));
     return 1;
-}
-
-struct nlist **slookup(char *s)
-{
-    cursym.n_len = strlen(s) + 1;
-    cursym.n_name = s;
-    cursym.n_type = N_EXT+N_UNDF;
-    cursym.n_value = 0;
-    return lookup();
 }
 
 //
@@ -508,8 +528,7 @@ void pass1(int argc, char **argv)
 
         case 'e':
             // Set `entry' symbol.
-            enter(slookup(optarg));
-            entrypt = lastsym;
+            entrypt = create_extref(optarg);
             continue;
 
         case 'l':
@@ -552,7 +571,7 @@ void pass1(int argc, char **argv)
 
         case 'u':
             // Mark `symbol' as undefined.
-            enter(slookup(optarg));
+            create_extref(optarg);
             continue;
 
         case 'x':
@@ -572,9 +591,10 @@ void pass1(int argc, char **argv)
     }
 }
 
-void ldrsym(struct nlist *sp, long val, int type)
+void ldrsym(nlist_t *sp, long val, int type)
 {
-    if (sp == 0) return;
+    if (sp == 0)
+        return;
     if (sp->n_type != N_EXT+N_UNDF) {
         printf("%s: ", sp->n_name);
         error(1, "Name redefined");
@@ -586,22 +606,23 @@ void ldrsym(struct nlist *sp, long val, int type)
 
 void middle()
 {
-    struct nlist *sp, *symp;
+    nlist_t *sp, *symlast;
+    nlist_t *p_etext, *p_edata, *p_end;
     long t;
     long cmsize;
     int undef_count;
     long cmorigin;
 
-    p_etext = *slookup("_etext");
-    p_edata = *slookup("_edata");
-    p_end = *slookup("_end");
+    p_etext = sym_find(utf_to_text("_etext"));
+    p_edata = sym_find(utf_to_text("_edata"));
+    p_end = sym_find(utf_to_text("_end"));
 
     //
     // If there are any undefined symbols, save the relocation bits.
     //
-    symp = &symtab[symindex];
+    symlast = &symtab[nsymbols];
     if (!rflag) {
-        for (sp=symtab; sp<symp; sp++)
+        for (sp=symtab; sp<symlast; sp++)
             if (sp->n_type == N_EXT+N_UNDF &&
                 sp != p_end && sp != p_edata && sp != p_etext)
             {
@@ -621,7 +642,7 @@ void middle()
         ldrsym(p_etext, text_size, N_EXT+N_TEXT);
         ldrsym(p_edata, data_size, N_EXT+N_DATA);
         ldrsym(p_end, bss_size, N_EXT+N_BSS);
-        for (sp=symtab; sp<symp; sp++)
+        for (sp=symtab; sp<symlast; sp++)
             if ((sp->n_type & N_TYPE) == N_COMM) {
                 t = sp->n_value;
                 sp->n_value = cmsize;
@@ -637,7 +658,7 @@ void middle()
     cmorigin = dorigin + data_size;
     borigin = cmorigin + cmsize;
     undef_count = 0;
-    for (sp=symtab; sp<symp; sp++) {
+    for (sp=symtab; sp<symlast; sp++) {
         switch (sp->n_type) {
         case N_EXT+N_UNDF:
             if (!arflag)
@@ -844,7 +865,6 @@ void relocate(/*struct local *lp,*/ FILE *b1, FILE *b2, long len)
 
 void load2obj(obj_image_t *obj)
 {
-    struct nlist *sp;
     int symno;
     int type;
     long count;
@@ -860,10 +880,12 @@ void load2obj(obj_image_t *obj)
     if (trace > 1)
         printf("cur_text_rel=%#x, cur_data_rel=%#x, cur_bss_rel=%#x\n",
             cur_text_rel, cur_data_rel, cur_bss_rel);
+#if 0
     //
     // Re-read the symbol table, recording the numbering
     // of symbols for fixing external references.
     //
+    nlist_t *sp;
     symno = -1;
     for (;;) {
         symno++;
@@ -887,7 +909,7 @@ void load2obj(obj_image_t *obj)
             free(cursym.n_name);
             continue;
         }
-        if (! (sp = *lookup()))
+        if (! (sp = *lookup_cursym()))
             error(2, "Internal error: symbol not found");
         free(cursym.n_name);
         if (cursym.n_type == N_EXT+N_UNDF ||
@@ -902,7 +924,7 @@ void load2obj(obj_image_t *obj)
             error(1, "Name redefined");
         }
     }
-
+#endif
     if (trace > 1)
         printf("** TEXT **\n");
     relocate(toutb, troutb, obj->cmd_len);
@@ -937,7 +959,6 @@ void copy(FILE *buf)
 
 void finishout()
 {
-    struct nlist *p;
 
     copy(toutb);
     copy(doutb);
@@ -948,8 +969,11 @@ void finishout()
     if (! sflag) {
         if (! xflag)
             copy(soutb);
-        for (p=symtab; p<&symtab[symindex]; ++p)
+#if 0
+        nlist_t *p;
+        for (p=symtab; p<&symtab[nsymbols]; ++p)
             fputsym(p, outb);
+#endif
         putc(0, outb);
     }
     fclose(outb);

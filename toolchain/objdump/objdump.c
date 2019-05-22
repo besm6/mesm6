@@ -541,24 +541,30 @@ void disassemble(const char *fname)
                 (unsigned)word & 07777,
                 getsyminfo(&obj, word, 1, 0));
         }
-        if (obj.long_len > 0) {
-            printf("\n");
-            printf("Long names:\n");
-            printf("\n");
-            for (i = 0; i < obj.long_len; i++) {
-                uint64_t word = obj.word[i + obj.long_off];
+        printf("\n");
+        printf("Names:\n");
+        printf("\n");
+        uint64_t word = obj.word[obj.table_off];
+        printf("  4000:  %04o %04o %04o %04o  ",
+            (unsigned)(word >> 36) & 07777,
+            (unsigned)(word >> 24) & 07777,
+            (unsigned)(word >> 12) & 07777,
+            (unsigned)word & 07777);
+        print_word_as_text(word);
+        printf("\n");
+        for (i = 0; i < obj.long_len; i++) {
+            uint64_t word = obj.word[i + obj.long_off];
 
-                printf("%6o:  %04o %04o %04o %04o",
-                    i + 04001 + obj.sym_len,
-                    (unsigned)(word >> 36) & 07777,
-                    (unsigned)(word >> 24) & 07777,
-                    (unsigned)(word >> 12) & 07777,
-                    (unsigned)word & 07777);
-                if ((word >> 42) != 0)
-                    printf("  ");
-                print_word_as_text(word);
-                printf("\n");
-            }
+            printf("%6o:  %04o %04o %04o %04o",
+                i + 04001 + obj.sym_len,
+                (unsigned)(word >> 36) & 07777,
+                (unsigned)(word >> 24) & 07777,
+                (unsigned)(word >> 12) & 07777,
+                (unsigned)word & 07777);
+            if ((word >> 42) != 0)
+                printf("  ");
+            print_word_as_text(word);
+            printf("\n");
         }
     }
 
