@@ -286,50 +286,20 @@ int open_input(char *name, int libflag)
     return 1;           // probably archive
 }
 
-#if 0
-void symreloc()
-{
-    switch (cursym.n_type) {
-
-    case N_TEXT:
-    case N_EXT+N_TEXT:
-        cursym.n_value += cur_text_rel;
-        break;
-
-    case N_DATA:
-    case N_EXT+N_DATA:
-        cursym.n_value += cur_data_rel;
-        break;
-
-    case N_BSS:
-    case N_EXT+N_BSS:
-        cursym.n_value += cur_bss_rel;
-        break;
-
-    case N_EXT+N_UNDF:
-    case N_EXT+N_COMM:
-        break;
-
-    default:
-        if (cursym.n_type & N_EXT)
-            cursym.n_type = N_EXT+N_ABS;
-        break;
-    }
-}
-#endif
-
 //
 // Return symbol name as printable string.
 //
 const char *sym_name(nlist_t *sp)
 {
     switch (sp->f.n_type) {
+    case SYM_ENTRY_S:
     case SYM_EXT_S:
     case SYM_PRIVATE_S:
     case SYM_COMMON_S:
         // Short name.
         return text_to_utf(sp->u64 & 07777777700000000);
 
+    case SYM_ENTRY_L:
     case SYM_EXT_L:
     case SYM_PRIVATE_L:
     case SYM_COMMON_L:
@@ -344,18 +314,19 @@ const char *sym_name(nlist_t *sp)
 //
 // Return true when a symbol name matches the given name
 // in TEXT encoding.
+// Private blocks never match by name.
 //
 int sym_name_match(nlist_t *sp, uint64_t name)
 {
     switch (sp->f.n_type) {
+    case SYM_ENTRY_S:
     case SYM_EXT_S:
-    case SYM_PRIVATE_S:
     case SYM_COMMON_S:
         // Short name.
         return (sp->u64 & 07777777700000000) == name;
 
+    case SYM_ENTRY_L:
     case SYM_EXT_L:
-    case SYM_PRIVATE_L:
     case SYM_COMMON_L:
         // Long name.
         return nametab[sp->f.n_ref] == name;
@@ -381,10 +352,17 @@ nlist_t *sym_find(uint64_t name)
 }
 
 //
-// Create new name (in TEXT encoding.
+// Create new name (in TEXT encoding).
 //
 unsigned create_name(uint64_t name)
 {
+    int i;
+
+    for (i=0; i<nnames; i++) {
+        if (nametab[i] == name) {
+            return i;
+        }
+    }
     if (nnames >= MAXNAMES)
         fatal("Name table overflow");
     nametab[nnames] = name;
@@ -420,19 +398,36 @@ uint64_t utf_to_text(const char *str)
 }
 
 //
+// Relocate address for the object file.
+//
+unsigned relocate_address(obj_image_t *obj, unsigned addr)
+{
+    if (addr < obj->cmd_len) {
+        return addr + cur_text_rel;
+    }
+    if (addr < obj->cmd_len + obj->const_len) {
+        return addr + cur_data_rel;
+    }
+    if (addr < obj->cmd_len + obj->const_len + obj->bss_len) {
+        return addr + cur_bss_rel;
+    }
+    fatal("Module %s: relocatable address %05o out of range",
+        text_to_utf(obj->word[obj->table_off]), addr);
+    return 0;
+}
+
+//
 // Create new symbol: external reference.
 // In case the symbol already exists - return a pointer.
 //
 nlist_t *create_extref(const char *str)
 {
     uint64_t name = utf_to_text(str);
-    nlist_t *sp;
+    nlist_t  *sp  = sym_find(name);
 
-    for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
-        if (sym_name_match(sp, name)) {
-            // Name already exists.
-            return sp;
-        }
+    if (sp) {
+        // Name already exists.
+        return sp;
     }
 
     // Allocate new symbol: external reference.
@@ -452,14 +447,175 @@ nlist_t *create_extref(const char *str)
     return sp;
 }
 
+//
+// Create new symbol: entry.
+//
+nlist_t *create_entry(uint64_t name, unsigned addr)
+{
+    nlist_t *sp;
+
+    for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
+        if (sym_name_match(sp, name)) {
+            // Name already exists.
+            if (sp->f.n_type != SYM_EXT_S &&
+                sp->f.n_type != SYM_EXT_L) {
+                fatal("Name %s redefined", text_to_utf(name));
+            }
+
+            // Replace the symbol
+            if (name & 077777777) {
+                // Long name.
+                sp->f.n_type = SYM_ENTRY_L;
+            } else {
+                // Short name.
+                sp->f.n_type = SYM_ENTRY_S;
+            }
+            sp->f.n_addr = addr;
+            return sp;
+        }
+    }
+
+    // Allocate new symbol.
+    if (nsymbols >= MAXSYMBOLS)
+        fatal("Symbol table overflow");
+    sp = &symtab[nsymbols];
+    nsymbols++;
+    if (name & 077777777) {
+        // Long name.
+        sp->f.n_type = SYM_ENTRY_L;
+        sp->f.n_ref = create_name(name);
+    } else {
+        // Short name.
+        sp->f.n_type = SYM_ENTRY_S;
+        sp->f.n_ref = name >> 24;
+    }
+    sp->f.n_addr = addr;
+    return sp;
+}
+
+//
+// Merge symbols from the object file into a common symbol table.
+//
 void merge_symbols(obj_image_t *obj)
 {
+    int i;
 printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
+
+    // Add entries.
+    for (i = 0; i < obj->nentries; i++) {
+        uint64_t name = obj->word[2*i + 1];
+        unsigned addr = obj->word[2*i + 2] & 077777;
+
+        create_entry(name, addr);
+    }
+
+    // Merge symbols.
+    for (i = 0; i < obj->sym_len; i++) {
+        uint64_t *wp = &obj->word[i + 1 + obj->table_off];
+        nlist_t sym;
+        unsigned old_ref;
+
+        // Store new index in place of the symbol.
+        sym.u64 = *wp;
+        *wp = nsymbols;
+
+        switch (sym.f.n_type) {
+        case SYM_ABS:
+        case SYM_CONST:
+        case SYM_PRIVATE_S:
+            // Absolute address.
+            // External reference (short name).
+            // Private block (short name).
+            break;
+
+        case SYM_EXT_S:
+            //TODO
+
+        case SYM_EXT_L:
+            //
+            // External reference (long name).
+            //
+            // Update the reference field with new name index.
+            sym.f.n_ref = 04000 | nnames;
+            //TODO
+            break;
+
+        case SYM_RELOC:
+            //
+            // Relocatable address.
+            //
+            // Update the address field.
+            sym.f.n_addr = relocate_address(obj, sym.f.n_addr);
+            break;
+
+        case SYM_OFFSET:
+            //
+            // Offset from another symbol.
+            //
+            // Update the reference field with new index.
+            old_ref = sym.f.n_ref & 03777;
+            sym.f.n_ref = 04000 | obj->word[old_ref + 1 + obj->table_off];
+            break;
+
+        case SYM_INDIRECT:
+        case SYM_EXPRESSION:
+            //
+            // Dereference or expression.
+            //
+            // Update the address field with new index.
+            old_ref = sym.f.n_addr;
+            sym.f.n_addr = obj->word[old_ref + 1 + obj->table_off];
+            break;
+
+        case SYM_ADD:
+        case SYM_SUBTRACT:
+        case SYM_MULTIPLY:
+        case SYM_DIVIDE:
+            //
+            // Add/subtract/multiply/divide two symbols.
+            //
+            // Update the reference field with new index.
+            old_ref = sym.f.n_ref & 03777;
+            sym.f.n_ref = 04000 | obj->word[old_ref + 1 + obj->table_off];
+
+            // Update the address field with new index.
+            old_ref = sym.f.n_addr;
+            sym.f.n_addr = obj->word[old_ref + 1 + obj->table_off];
+            break;
+
+//TODO
+        case SYM_ENTRY_S:
+
+        case SYM_ENTRY_L:
+
+        case SYM_COMMON_S:
+            // Common block (short name).
+            //text_to_buf(buf, word & 07777777700000000);
+            break;
+
+        case SYM_PRIVATE_L:
+            // Private block (long name).
+            //text_to_buf(buf, obj->word[ref + obj->table_off]);
+            break;
+
+        case SYM_COMMON_L:
+            // Common block (long name).
+            //text_to_buf(buf, obj->word[ref + obj->table_off]);
+            break;
+
+        default:
+            fatal("Unknown symbol type %03o", sym.f.n_type);
+        }
+
+        // Append to the symbol table.
+        if (nsymbols >= MAXSYMBOLS)
+            fatal("Symbol table overflow");
+        symtab[nsymbols++] = sym;
+    }
 #if 0
     struct nlist *sp;
     int type, symlen;
 
-    //TODO: merge symbols from the object file into a common symbol table.
     for (;;) {
         symlen = fgetsym(input, &cursym);
         if (symlen == 0)
@@ -480,7 +636,7 @@ printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
             free(cursym.n_name);
             continue;
         }
-        symreloc();
+        //symreloc();
         if (enter(lookup_cursym()))
             continue;
         free(cursym.n_name);
@@ -1093,7 +1249,7 @@ void load2obj(obj_image_t *obj)
             fatal("Out of memory");
         if (count == 1)
             break;
-        symreloc();
+        //symreloc();
         int type = cursym.n_type;
         if (Sflag && ((type & N_TYPE) == N_ABS ||
             (type & N_TYPE) > N_COMM))

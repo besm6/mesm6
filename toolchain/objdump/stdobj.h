@@ -81,12 +81,14 @@ enum {
     SYM_DIVIDE      = 0103,     // Divide two symbols
     SYM_ABS         = 0400,     // Absolute address
     SYM_RELOC       = 0410,     // Relocatable address
+    SYM_ENTRY_S     = 0414,     // Entry, relocatable (short name)
     SYM_EXT_S       = 0430,     // External reference (short name)
     SYM_PRIVATE_S   = 0460,     // Private block (short name)
     SYM_COMMON_S    = 0470,     // Common block (short name)
     SYM_INDIRECT    = 0501,     // Dereference, like *ptr
     SYM_CONST       = 0520,     // Constant value, same as SYM_ABS
     SYM_EXPRESSION  = 0521,     // Expression to compute at load time
+    SYM_ENTRY_L     = 0614,     // Entry, relocatable (long name)
     SYM_EXT_L       = 0630,     // External reference (long name)
     SYM_PRIVATE_L   = 0660,     // Private block (long name)
     SYM_COMMON_L    = 0670,     // Common block (long name)

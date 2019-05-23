@@ -236,6 +236,14 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
         text_to_buf(buf, word & 07777777700000000);
         break;
 
+    case SYM_ENTRY_S:
+        // Entry, relocatable (short name).
+        text_to_buf(buf, word & 07777777700000000);
+        sprintf(buf+strlen(buf), " = %c%o",
+            (addr < obj->cmd_len) ? 'c' :
+            transient_flag ? 't' : 'd', addr);
+        break;
+
     case SYM_PRIVATE_S:
         // Private block (short name).
         text_to_buf(buf, word & 07777777700000000);
@@ -253,6 +261,14 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
     case SYM_EXT_L:
         // External reference (long name).
         text_to_buf(buf, obj->word[ref + obj->table_off]);
+        break;
+
+    case SYM_ENTRY_L:
+        // Entry, relocatable (long name).
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
+        sprintf(buf+strlen(buf), " = %c%o",
+            (addr < obj->cmd_len) ? 'c' :
+            transient_flag ? 't' : 'd', addr);
         break;
 
     case SYM_PRIVATE_L:
