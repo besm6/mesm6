@@ -13,7 +13,8 @@ module top(
     input  wire [9:0] SW,
     input  wire [1:0] KEY,
     
-    output wire       buz
+    output wire       TXD,
+    input  wire       RXD
 );
 
 reg [31:0] cnt  = 0;
@@ -125,8 +126,6 @@ wire  [47:0] gpio_outputs;
 
 assign LEDR = gpio_outputs;
 
-assign buz  = ~KEY[0] ? cnt[15] : 1;
-
 assign HEX0 = ~(gpio_outputs[ 7: 0]);
 assign HEX1 = ~(gpio_outputs[15: 8]);
 assign HEX2 = ~(gpio_outputs[23:16]);
@@ -187,38 +186,17 @@ mesm6_timer tim(
 );
 
 // UART signals
+wire        uart_irq;
 wire [14:0] uart_addr;
 wire        uart_read;
 wire        uart_write;
 wire [47:0] uart_rdata;
 wire [47:0] uart_wdata;
 wire        uart_done;
-wire        uart_irq;
 
-wire        uart_chipselect;  //  uart.chipselect
-wire        uart_address;     //      .address
-wire        uart_read_n;      //      .read_n
-wire [31:0] uart_readdata;    //      .readdata
-wire        uart_write_n;     //      .write_n
-wire [31:0] uart_writedata;   //      .writedata
-wire        uart_waitrequest;  //      .waitrequest
 
-jtag_uart uart(
-    clk,          //   clk.clk
-    uart_irq,          //   irq.irq
-    (~reset),    // reset_n
-
-    uart_chipselect,  //  uart.chipselect
-    uart_address,     //      .address
-    uart_read_n,      //      .read_n
-    uart_readdata,    //      .readdata
-    uart_write_n,     //      .write_n
-    uart_writedata,   //      .writedata
-    uart_waitrequest  //      .waitrequest
-);
-
-mesm6_uart bridge_uart(
-    clk, reset,
+mesm6_uart uart(
+    clk, reset, uart_irq,
 
     // MESM-6 side
     uart_addr,
@@ -226,14 +204,7 @@ mesm6_uart bridge_uart(
     uart_rdata, uart_wdata,
     uart_done,
 
-    // Avalon side
-    uart_chipselect,  //  uart.chipselect
-    uart_address,     //      .address
-    uart_read_n,      //      .read_n
-    uart_readdata,    //      .readdata
-    uart_write_n,     //      .write_n
-    uart_writedata,   //      .writedata
-    uart_waitrequest  //      .waitrequest
+    TXD, RXD
 );
 
 mesm6_mmu mmu(
@@ -263,6 +234,7 @@ mesm6_mmu mmu(
     uart_read, uart_write,
     uart_rdata, uart_wdata,
     uart_done,
+    uart_irq,
 
     tim_addr,
     tim_read, tim_write,

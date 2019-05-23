@@ -200,8 +200,10 @@ set_location_assignment PIN_A14 -to SW[7]
 set_location_assignment PIN_B14 -to SW[8]
 set_location_assignment PIN_F15 -to SW[9]
 
-set_location_assignment PIN_AB5 -to buz
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to buz
+set_location_assignment PIN_AB6 -to RXD
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RXD
+set_location_assignment PIN_AB5 -to TXD
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TXD
 
 set_global_assignment -name ENABLE_OCT_DONE OFF
 set_global_assignment -name EXTERNAL_FLASH_FALLBACK_ADDRESS 00000000
@@ -225,6 +227,7 @@ set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_
 set_global_assignment -name QIP_FILE jtag_uart/synthesis/jtag_uart.qip
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_pic.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_timer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_uart2.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_mmu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_gpio.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_cpu.sv
@@ -232,7 +235,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_alu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../../rtl/mesm6_debouncer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE imemory.sv
 set_global_assignment -name SYSTEMVERILOG_FILE dmemory.sv
-set_global_assignment -name SYSTEMVERILOG_FILE mesm6_uart.sv
 set_global_assignment -name SDC_FILE "de10-lite.sdc"
 set_global_assignment -name VERILOG_FILE "de10-lite.v"
 set_global_assignment -name QIP_FILE mesm6_pll.qip

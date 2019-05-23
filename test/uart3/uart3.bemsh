@@ -1,0 +1,79 @@
+*
+* UART & GPIO test.
+*
+start   start   '1'
+* UART registers
+U0_DT   equ     '77740'   , data fifo
+U0_CT   equ     '77747'   , control and status reg
+U0_CTS  equ     '77746'   , set bits
+U0_CTC  equ     '77745'   , clear bits
+* GPIO HEX
+G0_DT   equ     '77756'
+        ntr 3
+* reset uart & gpio
+        xta     '0'
+        atx     U0_CT
+        atx     G0_DT
+* set divider
+        xta     =b'505'      , 9600
+        atx     U0_CTS
+* enable rx tx
+        xta     =b'1000'   , rxtx_en bit
+        atx     U0_CTS
+* -------------------------
+s0      vjm     getch(2)
+        aex     =b'072'
+        u1a     s0         , wait for ':'
+* ------ receive 12 4-bit nibbles
+        xta     '0'
+        a-x     =b'12'
+        ati     3
+        vjm     getch(2)   , get 1 nibble
+        vjm     atoi(2)
+        aax     =b'17'
+        atx     buf2
+* ------ shift and load next ------
+l1      asn     64-4
+        atx     buf2
+        vjm     getch(2)   , get n-th nibble
+        vjm     atoi(2)
+        aax     =b'17'
+        aox     buf2
+        vlm     l1(3)
+* ------ end
+        atx     G0_DT
+        uj s0
+* helpers
+* get_char        
+getch   xta     U0_CT
+        aax     =b'4000'
+        u1a     getch
+        xta     U0_DT
+        aax     =b'377'
+        uj      (2)
+* atoi '0'-'9''A'-'F'
+atoi    atx     buf
+        a-x     =b'060'  , 0
+        u1a     bad
+        xta     buf
+        a-x     =b'072'  , 9 +1
+        uza     n1       , letter
+        xta     buf
+        a-x     =b'060'  , -0
+        uj      (2)
+n1      xta     buf
+        a-x     =b'0101'
+        u1a     bad
+        xta     buf
+        a-x     =b'0107'
+        uza     bad
+        xta     buf
+        a-x     =b'0101'
+        a+x     =b'012'
+        uj      (2)
+bad     uj      s0 , wait for ':'
+*-------------------------
+align   адрес   start+'1777'            , данные с адреса 2000
+buf     конд    b'0'
+buf2    конд    b'0'
+        fin
