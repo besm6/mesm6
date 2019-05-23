@@ -3,7 +3,7 @@ OBJS            = main.obj abra.obj cadabra.obj
 
 all:            $(TESTS)
 
-test1:          $(OBJS) ../ld
+test1:          $(OBJS) ../ld always
 		../ld -t -t $(OBJS) -o $@
 
 clean:
@@ -13,3 +13,5 @@ clean:
 
 .madlen.obj:
 		../../objdump/test/madlen-to-obj.py $<
+
+always:

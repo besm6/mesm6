@@ -21,27 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <stdarg.h>
 #include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <archive.h>
 #include <archive_entry.h>
 #include "stdobj.h"
 
 #define MAXSYMBOLS      2000    // max number of symbols
 #define MAXNAMES        2000    // max number of names
-#define LOCSYM          'L'     // temporary symbol names start with 'L'
 
 //
-// Input and output files.
+// Input file.
 //
 FILE *input;
-FILE *outb, *toutb, *doutb, *troutb, *droutb, *soutb;
+const char *inputname;
 
 //
 // List of input object files.
@@ -60,42 +55,29 @@ nlist_t *entrypt;               // entry point
 //
 // Flags.
 //
-int     trace;                  // internal trace flag
-int     xflag;                  // discard local symbols
-int     Xflag;                  // discard locals starting with LOCSYM
-int     Sflag;                  // discard all except locals and globals
-int     rflag;                  // preserve relocation bits, don't define commons
-int     arflag;                 // original copy of rflag
-int     sflag;                  // discard all symbols
-int     dflag;                  // define common even with rflag
+int trace;                      // internal trace flag
+int r_flag;                     // option -r as requested by user
+int s_flag;                     // discard all symbols
+int d_flag;                     // force allocation of common/private blocks
+int o_flag;                     // output name specified
+char *ofilename = "l.out";      // output file name
+int emit_relocatable;           // generate relocatable output
 
 unsigned basaddr = 1;           // base address of resulting image
 
 //
 // Cumulative sizes set in pass 1 (in words).
 //
-int     text_size, data_size, bss_size;
+int text_size, data_size, bss_size;
 
 //
-// Symbol relocation: both passes.
+// Symbol relocation: passes 2 and 3.
 //
-int     cur_text_rel, cur_data_rel, cur_bss_rel;
+int offset_text, offset_data, offset_bss;
 
-//
-// Needed after pass 1.
-//
-int     torigin;
-int     dorigin;
-int     borigin;
-
-int     o_flag;
-char    *ofilename = "l.out";
-int     errlev;
-char    tfname[] = "/tmp/ldaXXXXXX";
-char    libname[256];
-
+int error_status;               // true when error found
+char libname[256];
 const char libpath[] = "/usr/local/lib/besm6/lib";
-const char *filname;
 const char *progname;
 
 //
@@ -112,11 +94,11 @@ void delexit()
 //
 void vmessage(char *fmt, va_list ap)
 {
-    if (!errlev)
+    if (!error_status)
         printf("%s: ", progname);
 
-    if (filname)
-        printf("%s: ", filname);
+    if (inputname)
+        printf("%s: ", inputname);
 
     vprintf(fmt, ap);
     printf("\n");
@@ -145,7 +127,7 @@ void error(char *fmt, ...)
     vmessage(fmt, ap);
     va_end(ap);
 
-    errlev = 1;
+    error_status = 1;
 }
 
 //
@@ -248,6 +230,31 @@ const char *text_to_utf(uint64_t word)
 }
 
 //
+// Print the symbol table.
+//
+void dump_symtab()
+{
+    int i;
+    uint64_t word;
+
+    printf("--- Symbol table:\n");
+    for (i = 0; i < nsymbols; i++) {
+        word = symtab[i].u64;
+        printf("--- %4d: %04o %04o %04o %04o\n",
+            i, (unsigned)(word >> 36) & 07777, (unsigned)(word >> 24) & 07777,
+            (unsigned)(word >> 12) & 07777, (unsigned)word & 07777);
+    }
+    printf("--- Names:\n");
+    for (i = 0; i < nnames; i++) {
+        word = nametab[i];
+        printf("--- %4d: %04o %04o %04o %04o %s\n",
+            i, (unsigned)(word >> 36) & 07777, (unsigned)(word >> 24) & 07777,
+            (unsigned)(word >> 12) & 07777, (unsigned)word & 07777,
+            text_to_utf(word));
+    }
+}
+
+//
 // Open object file.
 // Return 0 in case of regular file,
 // and 1 in case of archive.
@@ -262,17 +269,17 @@ int open_input(char *name, int libflag)
         strcpy(libname, libpath);
         strcat(libname, name);
         strcat(libname, ".a");
-        filname = libname;
-//printf("--- %s() open '%s'\n", __func__, filname);
-        input = fopen(filname, "r");
+        inputname = libname;
+//printf("--- %s() open '%s'\n", __func__, inputname);
+        input = fopen(inputname, "r");
         if (! input)
-            filname += 4;
+            inputname += 4;
     } else {
-        filname = name;
+        inputname = name;
     }
 //if (! input)
-//printf("--- %s() open '%s'\n", __func__, filname);
-    if (! input && ! (input = fopen(filname, "r")))
+//printf("--- %s() open '%s'\n", __func__, inputname);
+    if (! input && ! (input = fopen(inputname, "r")))
         fatal("Cannot open");
 
     magic = fread6(input);
@@ -318,6 +325,8 @@ const char *sym_name(nlist_t *sp)
 //
 int sym_name_match(nlist_t *sp, uint64_t name)
 {
+    uint64_t sp_name;
+
     switch (sp->f.n_type) {
     case SYM_ENTRY_S:
     case SYM_EXT_S:
@@ -329,7 +338,10 @@ int sym_name_match(nlist_t *sp, uint64_t name)
     case SYM_EXT_L:
     case SYM_COMMON_L:
         // Long name.
-        return nametab[sp->f.n_ref] == name;
+        sp_name = nametab[sp->f.n_ref & 03777];
+//printf("--- Sym %lu name %s", sp - symtab, text_to_utf(sp_name));
+//printf(" against %s - %s\n", text_to_utf(name), sp_name == name ? "match" : "mismatch");
+        return sp_name == name;
 
     default:
         return 0;
@@ -363,6 +375,8 @@ unsigned create_name(uint64_t name)
             return i;
         }
     }
+    if (trace > 1)
+        printf("--- Add name[%u] %s\n", nnames, text_to_utf(name));
     if (nnames >= MAXNAMES)
         fatal("Name table overflow");
     nametab[nnames] = name;
@@ -378,8 +392,10 @@ uint64_t utf_to_text(const char *str)
     uint64_t name = 0;
     int i;
 
-    for (i=42; *str && i>=0; i-=6) {
-        uint16_t c = (uint8_t) *str++;
+    for (i=42; i>=0; i-=6) {
+        uint16_t c = (uint8_t) *str;
+        if (c)
+            str++;
 
         // Decode utf8 into 16-bit character code.
         if (c & 0x80) {
@@ -392,7 +408,7 @@ uint64_t utf_to_text(const char *str)
             }
         }
 
-        name |= unicode_to_text(c) << i;
+        name |= (uint64_t) unicode_to_text(c) << i;
     }
     return name;
 }
@@ -403,13 +419,13 @@ uint64_t utf_to_text(const char *str)
 unsigned relocate_address(obj_image_t *obj, unsigned addr)
 {
     if (addr < obj->cmd_len) {
-        return addr + cur_text_rel;
+        return addr + offset_text;
     }
     if (addr < obj->cmd_len + obj->const_len) {
-        return addr + cur_data_rel;
+        return addr + offset_data;
     }
     if (addr < obj->cmd_len + obj->const_len + obj->bss_len) {
-        return addr + cur_bss_rel;
+        return addr + offset_bss;
     }
     fatal("Module %s: relocatable address %05o out of range",
         text_to_utf(obj->word[obj->table_off]), addr);
@@ -429,6 +445,8 @@ nlist_t *create_extref(const char *str)
         // Name already exists.
         return sp;
     }
+    if (trace > 1)
+        printf("--- Add extref[%u] %s\n", nsymbols, text_to_utf(name));
 
     // Allocate new symbol: external reference.
     if (nsymbols >= MAXSYMBOLS)
@@ -471,9 +489,14 @@ nlist_t *create_entry(uint64_t name, unsigned addr)
                 sp->f.n_type = SYM_ENTRY_S;
             }
             sp->f.n_addr = addr;
+            if (trace > 1)
+                printf("--- Convert extref[%lu] %s into entry\n",
+                    sp - symtab, text_to_utf(name));
             return sp;
         }
     }
+    if (trace > 1)
+        printf("--- Add entry[%u] %s\n", nsymbols, text_to_utf(name));
 
     // Allocate new symbol.
     if (nsymbols >= MAXSYMBOLS)
@@ -498,14 +521,20 @@ nlist_t *create_entry(uint64_t name, unsigned addr)
 //
 void merge_symbols(obj_image_t *obj)
 {
+    nlist_t *sp;
+    uint64_t name;
+    unsigned addr;
     int i;
-printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
+
+    if (trace > 1)
+        printf("--- Merge %u entries and %u symbols from %s\n",
+            obj->nentries, obj->sym_len, text_to_utf(obj->word[obj->table_off]));
 
     // Add entries.
     for (i = 0; i < obj->nentries; i++) {
-        uint64_t name = obj->word[2*i + 1];
-        unsigned addr = obj->word[2*i + 2] & 077777;
-
+        name = obj->word[2*i + 1];
+        addr = obj->word[2*i + 2] & 077777;
+        addr = relocate_address(obj, addr);
         create_entry(name, addr);
     }
 
@@ -521,23 +550,15 @@ printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
 
         switch (sym.f.n_type) {
         case SYM_ABS:
-        case SYM_CONST:
-        case SYM_PRIVATE_S:
             // Absolute address.
-            // External reference (short name).
-            // Private block (short name).
+            if (trace > 1)
+                printf("--- Add absolute address[%u] %05o\n", nsymbols, sym.f.n_addr);
             break;
 
-        case SYM_EXT_S:
-            //TODO
-
-        case SYM_EXT_L:
-            //
-            // External reference (long name).
-            //
-            // Update the reference field with new name index.
-            sym.f.n_ref = 04000 | nnames;
-            //TODO
+        case SYM_CONST:
+            // Constant value.
+            if (trace > 1)
+                printf("--- Add constant[%u] %05o\n", nsymbols, sym.f.n_addr);
             break;
 
         case SYM_RELOC:
@@ -546,6 +567,8 @@ printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
             //
             // Update the address field.
             sym.f.n_addr = relocate_address(obj, sym.f.n_addr);
+            if (trace > 1)
+                printf("--- Relocate address[%u] %05o\n", nsymbols, sym.f.n_addr);
             break;
 
         case SYM_OFFSET:
@@ -555,6 +578,8 @@ printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
             // Update the reference field with new index.
             old_ref = sym.f.n_ref & 03777;
             sym.f.n_ref = 04000 | obj->word[old_ref + 1 + obj->table_off];
+            if (trace > 1)
+                printf("--- Add offset[%u] %05o\n", nsymbols, sym.f.n_addr);
             break;
 
         case SYM_INDIRECT:
@@ -565,6 +590,9 @@ printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
             // Update the address field with new index.
             old_ref = sym.f.n_addr;
             sym.f.n_addr = obj->word[old_ref + 1 + obj->table_off];
+            if (trace > 1)
+                printf("--- Add %s[%u] %05o\n", sym.f.n_type==SYM_INDIRECT ?
+                    "indirect" : "expression", nsymbols, sym.f.n_addr);
             break;
 
         case SYM_ADD:
@@ -581,26 +609,173 @@ printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
             // Update the address field with new index.
             old_ref = sym.f.n_addr;
             sym.f.n_addr = obj->word[old_ref + 1 + obj->table_off];
+            if (trace > 1)
+                printf("--- Add arith op[%u]\n", nsymbols);
             break;
 
-//TODO
-        case SYM_ENTRY_S:
-
-        case SYM_ENTRY_L:
-
-        case SYM_COMMON_S:
-            // Common block (short name).
-            //text_to_buf(buf, word & 07777777700000000);
+        case SYM_PRIVATE_S:
+            // Private block (short name).
+            if (trace > 1)
+                printf("--- Add private block[%u] %s size %u words\n",
+                    nsymbols, text_to_utf(sym.u64 & 07777777700000000), sym.f.n_addr);
             break;
 
         case SYM_PRIVATE_L:
+            //
             // Private block (long name).
-            //text_to_buf(buf, obj->word[ref + obj->table_off]);
+            //
+            // Update the reference field with new name index.
+            old_ref = sym.f.n_ref & 03777;
+            name = obj->word[old_ref + obj->table_off];
+            sym.f.n_ref = 04000 | create_name(name);
+            if (trace > 1)
+                printf("--- Add private block[%u] %s size %u words\n",
+                    nsymbols, text_to_utf(name), sym.f.n_addr);
+            break;
+
+        case SYM_EXT_S:
+            //
+            // External reference (short name).
+            //
+            name = sym.u64 & 07777777700000000;
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                // Redirect to it.
+                *wp = sp - symtab;
+                continue;
+            }
+            if (trace > 1)
+                printf("--- Add extref[%u] %s\n", nsymbols, text_to_utf(name));
+            break;
+
+        case SYM_EXT_L:
+            //
+            // External reference (long name).
+            //
+            old_ref = sym.f.n_ref & 03777;
+            name = obj->word[old_ref + obj->table_off];
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                // Redirect to it.
+                *wp = sp - symtab;
+                continue;
+            }
+            // Update the reference field with new name index.
+            sym.f.n_ref = 04000 | create_name(name);
+            if (trace > 1)
+                printf("--- Add extref[%u] %s\n", nsymbols, text_to_utf(name));
+            break;
+
+        case SYM_ENTRY_S:
+            //
+            // Entry, relocatable (short name)
+            //
+            // Update the address field.
+            sym.f.n_addr = relocate_address(obj, sym.f.n_addr);
+            name = sym.u64 & 07777777700000000;
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                if (sp->f.n_type != SYM_EXT_S)
+                    fatal("Name %s redefined", text_to_utf(name));
+
+                // Convert extref into entry.
+                sp->f.n_type = SYM_ENTRY_S;
+                sp->f.n_addr = sym.f.n_addr;
+
+                // Redirect to it.
+                *wp = sp - symtab;
+                continue;
+            }
+            if (trace > 1)
+                printf("--- Add entry[%u] %s address %05o\n",
+                    nsymbols, text_to_utf(name), sym.f.n_addr);
+            break;
+
+        case SYM_ENTRY_L:
+            //
+            // Entry, relocatable (long name)
+            //
+            // Update the address field.
+            sym.f.n_addr = relocate_address(obj, sym.f.n_addr);
+            old_ref = sym.f.n_ref & 03777;
+            name = obj->word[old_ref + obj->table_off];
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                if (sp->f.n_type != SYM_EXT_L)
+                    fatal("Name %s redefined", text_to_utf(name));
+
+                // Convert extref into entry.
+                sp->f.n_type = SYM_ENTRY_L;
+                sp->f.n_addr = sym.f.n_addr;
+
+                // Redirect to it.
+                *wp = sp - symtab;
+                continue;
+            }
+            // Update the reference field with new name index.
+            sym.f.n_ref = 04000 | create_name(name);
+            if (trace > 1)
+                printf("--- Add entry[%u] %s address %05o\n",
+                    nsymbols, text_to_utf(name), sym.f.n_addr);
+            break;
+
+        case SYM_COMMON_S:
+            //
+            // Common block (short name).
+            //
+            name = sym.u64 & 07777777700000000;
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                if (sp->f.n_type == SYM_EXT_S) {
+                    // Convert extref into common block.
+                    sp->f.n_type = SYM_COMMON_S;
+                    sp->f.n_addr = sym.f.n_addr;
+                } else if (sp->f.n_type == SYM_COMMON_S) {
+                    // Common block size is max of two sizes.
+                    if (sym.f.n_addr > sp->f.n_addr)
+                        sp->f.n_addr = sym.f.n_addr;
+                }
+                // Redirect to old symbol.
+                *wp = sp - symtab;
+                continue;
+            }
+            if (trace > 1)
+                printf("--- Add common block[%u] %s size %u words\n",
+                    nsymbols, text_to_utf(sym.u64 & 07777777700000000), sym.f.n_addr);
             break;
 
         case SYM_COMMON_L:
+            //
             // Common block (long name).
-            //text_to_buf(buf, obj->word[ref + obj->table_off]);
+            //
+            old_ref = sym.f.n_ref & 03777;
+            name = obj->word[old_ref + obj->table_off];
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                if (sp->f.n_type == SYM_EXT_S) {
+                    // Convert extref into common block.
+                    sp->f.n_type = SYM_COMMON_S;
+                    sp->f.n_addr = sym.f.n_addr;
+                } else if (sp->f.n_type == SYM_COMMON_S) {
+                    // Common block size is max of two sizes.
+                    if (sym.f.n_addr > sp->f.n_addr)
+                        sp->f.n_addr = sym.f.n_addr;
+                }
+                // Redirect to old symbol.
+                *wp = sp - symtab;
+                continue;
+            }
+            // Update the reference field with new name index.
+            sym.f.n_ref = 04000 | create_name(name);
+            if (trace > 1)
+                printf("--- Add common block[%u] %s size %u words\n",
+                    nsymbols, text_to_utf(name), sym.f.n_addr);
             break;
 
         default:
@@ -612,58 +787,8 @@ printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
             fatal("Symbol table overflow");
         symtab[nsymbols++] = sym;
     }
-#if 0
-    struct nlist *sp;
-    int type, symlen;
-
-    for (;;) {
-        symlen = fgetsym(input, &cursym);
-        if (symlen == 0)
-            fatal("Out of memory");
-        if (symlen == 1)
-            break;
-        type = cursym.n_type;
-        if (Sflag && ((type & N_TYPE) == N_ABS ||
-            (type & N_TYPE) > N_COMM))
-        {
-            free(cursym.n_name);
-            continue;
-        }
-        if (! (type & N_EXT)) {
-            if (!sflag && !xflag && (!Xflag || cursym.n_name[0] != LOCSYM)) {
-                //nsym++;
-            }
-            free(cursym.n_name);
-            continue;
-        }
-        //symreloc();
-        if (enter(lookup_cursym()))
-            continue;
-        free(cursym.n_name);
-        if (cursym.n_type == N_EXT+N_UNDF)
-            continue;
-        sp = lastsym;
-        if (sp->n_type == N_EXT+N_UNDF ||
-            sp->n_type == N_EXT+N_COMM)
-        {
-            if (cursym.n_type == N_EXT+N_COMM)
-            {
-                // Common block: update type and size.
-                sp->n_type = cursym.n_type;
-                if (cursym.n_value > sp->n_value)
-                    sp->n_value = cursym.n_value;
-            }
-            else if (sp->n_type == N_EXT+N_UNDF ||
-                cursym.n_type == N_EXT+N_DATA ||
-                cursym.n_type == N_EXT+N_BSS)
-            {
-                // Resolve undefined symbol.
-                sp->n_type = cursym.n_type;
-                sp->n_value = cursym.n_value;
-            }
-        }
-    }
-#endif
+    if (trace > 1 && nsymbols > 0)
+        dump_symtab();
 }
 
 //
@@ -671,21 +796,44 @@ printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
 //
 int need_this_obj(obj_image_t *obj)
 {
+    int i;
+    uint64_t name;
+    nlist_t *sp;
+
     if (obj->nentries > 0) {
         // Is any of proposed entries referenced by our module?
-        int i;
         for (i = 0; i < obj->nentries; i++) {
-            uint64_t name = obj->word[2*i + 1];
-            nlist_t  *sp  = sym_find(name);
-
+            name = obj->word[2*i + 1];
+            sp = sym_find(name);
             if (sp && (sp->f.n_type == SYM_EXT_L ||
                        sp->f.n_type == SYM_EXT_S))
+            {
                 return 1;
+            }
         }
         return 0;
     }
-    //TODO: No entries in standard array; search for symbols of Entry type.
-    return 1;
+
+    // No entries in standard array; search for symbols of Entry type.
+    for (i = 0; i < obj->sym_len; i++) {
+        nlist_t sym;
+
+        sym.u64 = obj->word[i + 1 + obj->table_off];
+        if (sym.f.n_type == SYM_ENTRY_S)
+            name = sym.u64 & 07777777700000000;
+        else if (sym.f.n_type == SYM_ENTRY_L)
+            name = obj->word[(sym.f.n_ref & 03777) + obj->table_off];
+        else
+            continue;
+
+        sp = sym_find(name);
+        if (sp && (sp->f.n_type == SYM_EXT_L ||
+                   sp->f.n_type == SYM_EXT_S))
+        {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 //
@@ -710,6 +858,7 @@ void append_to_obj_list(obj_image_t *obj)
 // Pass 1: load one object file.
 // The file can be opened as file descriptor fd,
 // or supplied as byte array of given size.
+// Accumulate the final image sizes: code, data and bss.
 // Return 1 in case any names have been resolved,
 // otherwise return 0.
 //
@@ -732,25 +881,15 @@ int load1obj(FILE *fd, char *data, unsigned nbytes)
             return 0;
         }
     }
-//printf("--- %s() link obj file: cmd=%u, const=%u, data=%u\n", __func__, obj.cmd_len, obj.const_len, obj.data_len);
-
-    // Link in the object file.
-    cur_text_rel = 0;
-    cur_data_rel = - obj.cmd_len;
-    cur_bss_rel = - obj.cmd_len - obj.const_len;
-
-    cur_text_rel += text_size;
-    cur_data_rel += data_size;
-    cur_bss_rel += bss_size;
+    if (trace > 1)
+        printf("--- Size: cmd=%u, const=%u, bss=%u words\n",
+            obj.cmd_len, obj.const_len, obj.bss_len);
 
     text_size += obj.cmd_len;
     data_size += obj.const_len;
-    bss_size += obj.data_len;
+    bss_size += obj.bss_len;
 
-    // Merge symbols into a common symbol table.
-    merge_symbols(&obj);
-
-    // Reallocate the object image and add to the list.
+    // Add image to the list.
     append_to_obj_list(obj_copy(&obj));
     return 1;
 }
@@ -776,7 +915,7 @@ void load1name(char *fname, int libflag)
         // Regular file.
         //
 //printf("--- %s(fname = '%s', libflag = %u) regular file\n", __func__, fname, libflag);
-        if (trace > 1)
+        if (trace)
             printf("%s\n", fname);
         load1obj(input, NULL, 0);
     } else {
@@ -808,8 +947,8 @@ void load1name(char *fname, int libflag)
             unsigned nbytes = archive_entry_size(entry);
             char data[MAXSZ*6];
 
-            if (trace > 1)
-                printf("%s(%s):\n", fname, name);
+            if (trace)
+                printf("%s(%s)\n", fname, name);
 
             if (nbytes > sizeof(data)) {
                 fatal("Too long array entry");
@@ -830,16 +969,13 @@ void usage(int retcode)
     printf("Options:\n");
     printf("    -d              Force common symbols to be defined\n");
     printf("    -e symbol       Set entry address\n");
-    printf("    -llibname       Search for library `libname'\n");
+    printf("    -l libname      Search for library `libname'\n");
     printf("    -o filename     Set output file name\n");
     printf("    -r              Generate relocatable output\n");
-    printf("    -s              Strip all symbols\n");
-    printf("    -S              Strip debugging symbols\n");
-    printf("    -t              Trace file opens\n");
-    printf("    -T address      Set base address\n");
+    printf("    -s              Strip all symbol information\n");
+    printf("    -t              Trace names of linked files\n");
+    printf("    -T address      Set base address (default 1)\n");
     printf("    -u symbol       Start with undefined reference to `symbol'\n");
-    printf("    -x              Discard all local symbols\n");
-    printf("    -X              Discard temporary local symbols (default)\n");
     exit(retcode);
 }
 
@@ -849,8 +985,8 @@ void usage(int retcode)
 void pass1(int argc, char **argv)
 {
     for (;;) {
-        filname = 0;
-        switch (getopt(argc, argv, "-de:l:o:rsStT:u:xX")) {
+        inputname = 0;
+        switch (getopt(argc, argv, "-de:l:o:rstT:u:")) {
         case EOF:
             break;
 
@@ -861,7 +997,7 @@ void pass1(int argc, char **argv)
 
         case 'd':
             // Force allocation of commons.
-            dflag++;
+            d_flag++;
             continue;
 
         case 'e':
@@ -882,24 +1018,20 @@ void pass1(int argc, char **argv)
 
         case 'r':
             // Generate relocatable output.
-            rflag++;
-            arflag++;
+            emit_relocatable++;
+            r_flag++;
             continue;
 
         case 's':
             // Strip all symbols.
-            sflag++;
-            xflag++;
-            continue;
-
-        case 'S':
-            // Strip debugging symbols.
-            Sflag++;
+            s_flag++;
             continue;
 
         case 't':
             // Enable tracing.
             trace++;
+            if (trace == 2)
+                printf("First pass:\n");
             continue;
 
         case 'T':
@@ -912,170 +1044,175 @@ void pass1(int argc, char **argv)
             create_extref(optarg);
             continue;
 
-        case 'x':
-            // Discard all local symbols.
-            xflag++;
-            continue;
-
-        case 'X':
-            // Discard temporary local symbols.
-            Xflag++;
-            continue;
-
         default:
             usage(-1);
         }
         break;
     }
+    if (trace > 1)
+        printf("--- Total size: text=%u, data=%u, bss=%u words\n",
+            text_size, data_size, bss_size);
 }
 
 //
-// Allocate a symbol _etext, _edata or _ebss.
+// Pass 2: build the symbol table.
 //
-void ldrsym(uint64_t name, long val)
+void pass2()
 {
-#if 0
-    //TODO: allocate symbol like _text
-    if (sp == 0)
-        return;
-    if (sp->f.n_type != N_EXT+N_UNDF) {
-        printf("%s: ", sp->n_name);
-        error("Name redefined");
-        return;
-    }
-    sp->n_type = type;
-    sp->n_value = val;
-#endif
-}
-
-void middle()
-{
-    nlist_t *sp, *symlast;
+    obj_image_t *obj;
+    nlist_t *sp;
     uint64_t name_etext, name_edata, name_end;
-    long t;
-    long cmsize;
-    int undef_count;
-    long cmorigin;
+    int text_origin, data_origin, bss_origin, cblock_origin;
 
-    name_etext = utf_to_text("_etext");
-    name_edata = utf_to_text("_edata");
-    name_end = utf_to_text("_end");
+    if (trace > 1)
+        printf("Second pass:\n");
+    text_origin = basaddr;
+    data_origin = text_origin + text_size;
+    bss_origin = data_origin + data_size;
+    cblock_origin = bss_origin + bss_size;
 
     //
-    // If there are any undefined symbols, save the relocation bits.
+    // Now set symbols to their final value.
     //
-    symlast = &symtab[nsymbols];
-    if (!rflag) {
-        for (sp=symtab; sp<symlast; sp++) {
+    for (obj = obj_head; obj; obj = obj->next) {
+        if (trace > 1)
+            printf("%s\n", text_to_utf(obj->word[obj->table_off]));
+
+        // Compute offsets for symbol relocation.
+        offset_text = text_origin;
+        offset_data = data_origin - obj->cmd_len;
+        offset_bss = bss_origin - obj->cmd_len - obj->const_len;
+
+        if (trace > 1)
+            printf("--- Offsets: text %+d, data %+d, bss %+d words\n",
+                offset_text, offset_data, offset_bss);
+
+        // Merge symbols into a common symbol table.
+        merge_symbols(obj);
+
+        text_origin += obj->cmd_len;
+        data_origin += obj->const_len;
+        bss_origin += obj->bss_len;
+    }
+
+    //
+    // If there are any undefined symbols, preserve the relocation info.
+    //
+    if (!emit_relocatable) {
+        name_etext = utf_to_text("_etext");
+        name_edata = utf_to_text("_edata");
+        name_end = utf_to_text("_end");
+
+        for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
             if ((sp->f.n_type == SYM_EXT_S ||
                  sp->f.n_type == SYM_EXT_L) &&
                 !sym_name_match(sp, name_end) &&
                 !sym_name_match(sp, name_edata) &&
                 !sym_name_match(sp, name_etext))
             {
-                rflag++;
-                dflag = 0;
+                // Undefined symbols found.
+                // Switch to relocatable output.
+                emit_relocatable++;
+                d_flag = 0;
                 break;
             }
         }
     }
-    if (rflag)
-        sflag = 0;
+    if (emit_relocatable)
+        s_flag = 0;
 
     //
-    // Assign common locations.
+    // Allocate common and private blocks.
     //
-    cmsize = 0;
-    if (dflag || !rflag) {
-        ldrsym(name_etext, text_size);
-        ldrsym(name_edata, data_size);
-        ldrsym(name_end, bss_size);
-
-        // Allocate common-blocks.
-        for (sp=symtab; sp<symlast; sp++) {
+    if (d_flag || !emit_relocatable) {
+        for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
             if ((sp->f.n_type == SYM_COMMON_S ||
-                 sp->f.n_type == SYM_COMMON_L))
+                 sp->f.n_type == SYM_COMMON_L ||
+                 sp->f.n_type == SYM_PRIVATE_S ||
+                 sp->f.n_type == SYM_PRIVATE_L))
             {
-                t = sp->f.n_addr;
-                sp->f.n_addr = cmsize;
-                cmsize += t;
+                // Allocate common and private blocks.
+                unsigned size = sp->f.n_addr;
+
+                sp->f.n_addr = cblock_origin;
+                cblock_origin += size;
+                bss_size += size;
             }
         }
     }
 
-    //
-    // Now set symbols to their final value
-    //
-    torigin = basaddr;
-    dorigin = torigin + text_size;
-    cmorigin = dorigin + data_size;
-    borigin = cmorigin + cmsize;
-    undef_count = 0;
-    for (sp=symtab; sp<symlast; sp++) {
-        switch (sp->f.n_type) {
-        case SYM_EXT_S:
-        case SYM_EXT_L:
-            if (!arflag)
-                errlev |= 1;
-            if (!arflag) {
+    if (!emit_relocatable) {
+        // Allocate _etext, _edata, _end symbols.
+        create_entry(name_etext, basaddr + text_size);
+        create_entry(name_edata, basaddr + text_size + data_size);
+        create_entry(name_end, basaddr + text_size + data_size + bss_size);
+    }
+
+    if (!r_flag) {
+        // Print undefined symbols, if any.
+        unsigned undef_count = 0;
+
+        for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
+            switch (sp->f.n_type) {
+            case SYM_EXT_S:
+            case SYM_EXT_L:
                 if (!undef_count)
                     printf("Undefined:\n");
                 undef_count++;
                 printf("\t%s\n", sym_name(sp));
+                error_status = 1;
+                break;
             }
-            break;
-#if 0
-        //TODO: update other symbols
-        default:
-        case N_EXT+N_ABS:
-            break;
-        case N_EXT+N_TEXT:
-            sp->n_value += torigin;
-            break;
-        case N_EXT+N_DATA:
-            sp->n_value += dorigin;
-            break;
-        case N_EXT+N_BSS:
-            sp->n_value += borigin;
-            break;
-        case N_COMM:
-        case N_EXT+N_COMM:
-            sp->n_type = N_EXT+N_BSS;
-            sp->n_value += cmorigin;
-            break;
-#endif
         }
     }
-    bss_size += cmsize;
+    if (trace > 1 && (d_flag || !emit_relocatable))
+        dump_symtab();
 }
 
-void tcreat(FILE **buf, int tempflg)
+void pass3()
 {
-    *buf = fopen(tempflg ? tfname : ofilename, "w+");
-    if (! *buf)
-        fatal(tempflg ?
-            "Cannot create temporary file" :
-            "Cannot create output file");
-    if (tempflg)
-        unlink(tfname);
+    int text_origin, data_origin, bss_origin;
+    obj_image_t *obj;
+
+    if (trace > 1) {
+        printf("Third pass:\n");
+    }
+    text_origin = basaddr;
+    data_origin = text_origin + text_size;
+    bss_origin = data_origin + data_size;
+    for (obj = obj_head; obj; obj = obj->next) {
+        if (trace > 1)
+            printf("%s\n", text_to_utf(obj->word[obj->table_off]));
+
+        // Compute offsets for symbol relocation.
+        offset_text = text_origin;
+        offset_data = data_origin - obj->cmd_len;
+        offset_bss = bss_origin - obj->cmd_len - obj->const_len;
+
+        if (trace > 1)
+            printf("--- Offsets: text %+d, data %+d, bss %+d words\n",
+                offset_text, offset_data, offset_bss);
+
+        if (trace > 1)
+            printf("--- text\n");
+        //TODO: relocate obj->cmd_len
+
+        if (trace > 1)
+            printf("--- data\n");
+        //TODO: relocate obj->const_len
+
+        text_origin += obj->cmd_len;
+        data_origin += obj->const_len;
+        bss_origin += obj->bss_len;
+    }
 }
 
-void setupout()
+void emit()
 {
-    int fd = mkstemp(tfname);
-    if (fd == -1) {
-        fatal("Cannot create temporary file %s", tfname);
-    } else {
-        close(fd);
-    }
-    tcreat(&outb, 0);
-    tcreat(&toutb, 1);
-    tcreat(&doutb, 1);
-    if (!sflag || !xflag) tcreat(&soutb, 1);
-    if (rflag) {
-        tcreat(&troutb, 1);
-        tcreat(&droutb, 1);
-    }
+    FILE *output = fopen(ofilename, "wb");
+    if (! output)
+        fatal("Cannot create output file");
+
 #if 0
     //TODO: Write header.
     filhdr.a_magic = FMAGIC;
@@ -1085,254 +1222,45 @@ void setupout()
     filhdr.a_syms = ALIGN(symtab_size, WSZ);
     if (entrypt) {
         if (entrypt->n_type != N_EXT+N_TEXT &&
-            entrypt->n_type != N_EXT+N_UNDF)
-            error("Entry out of text");
-        else
+            entrypt->n_type != N_EXT+N_UNDF) {
+            error("Entry out of text segment");
+        } else {
             filhdr.a_entry = entrypt->n_value;
+        }
     } else {
-        filhdr.a_entry = torigin;
+        filhdr.a_entry = basaddr;
     }
 
-    if (rflag) {
+    if (emit_relocatable) {
         filhdr.a_flag &= ~RELFLG;
     } else {
         filhdr.a_flag |= RELFLG;
     }
 
-    fputhdr(&filhdr, outb);
-#endif
-}
-
-#if 0
-int reltype(int stype)
-{
-    switch (stype & N_TYPE) {
-    case N_UNDF:    return 0;
-    case N_ABS:     return RABS;
-    case N_TEXT:    return RTEXT;
-    case N_DATA:    return RDATA;
-    case N_BSS:     return RBSS;
-    case N_STRNG:   return RDATA;
-    case N_COMM:    return RBSS;
-    case N_FN:      return 0;
-    default:        return 0;
-    }
-}
-
-void relhalf(/*struct local *lp,*/ long t, long *pt)
-{
-    long a, ad;
-
-    if (trace > 2)
-        printf("%08lx", t);
-
-    // Extract address from command.
-    switch ((int) t & RSHORT) {
-    case 0:
-        a = t & 0777777777;
-        break;
-    case RLONG:
-    case RTRUNC:
-        a = t & 03777777;
-        break;
-    case RSHORT:
-        a = t & 07777;
-        break;
-    case RSHIFT:
-        a = t & 077777;
-        a <<= 12;
-        break;
-    default:
-        a = 0;
-        break;
-     }
-
-    // Compute address shift `ad'.
-    // Update relocation word.
-    ad = 0;
-    switch ((int) t & REXT) {
-    case RTEXT:
-        ad = cur_text_rel;
-        break;
-    case RDATA:
-        ad = cur_data_rel;
-        break;
-    case RBSS:
-        ad = cur_bss_rel;
-        break;
-#if 0
-    case REXT:
-        struct nlist *sp = lookloc(lp, (int) RGETIX(t));
-        t &= RSHORT;
-        if (sp->n_type == N_EXT+N_UNDF ||
-            sp->n_type == N_EXT+N_COMM)
-        {
-            t |= REXT | RPUTIX(nsym + (sp - symtab));
-            break;
-        }
-        t |= reltype(sp->n_type);
-        ad = sp->n_value;
-        break;
-#endif
-    }
-
-    // Add updated address to command.
-    switch ((int) t & RSHORT) {
-    case 0:
-        t &= ~0777777777;
-        t |= (a + ad) & 0777777777;
-        break;
-    case RSHORT:
-        t &= ~07777;
-        t |= (a + ad) & 07777;
-        break;
-    case RLONG:
-        t &= ~03777777;
-        t |= (a + ad) & 03777777;
-        break;
-    case RSHIFT:
-        t &= ~03777777;
-        t |= (a + ad) >> 12 & 03777777;
-        break;
-    case RTRUNC:
-        t &= ~03777777;
-        t |= (a + (ad & 07777)) & 03777777;
-        break;
-    }
-
-    if (trace > 2)
-        printf(" -> %08lx\n", t);
-
-    *pt = t;
-}
+    fputhdr(&filhdr, output);
 #endif
 
-void relocate(/*struct local *lp,*/ FILE *b1, FILE *b2, long len)
-{
-#if 0
-    //TODO: relocate a section.
-    long t;
-
-    len /= WSZ/2;
-    while (len--) {
-        t = fgeth(input);
-        relhalf(/*lp,*/ t, &t);
-        fputh(t, b1);
-    }
-#endif
-}
-
-void load2obj(obj_image_t *obj)
-{
-    cur_text_rel = 0;
-    cur_data_rel = - obj->cmd_len;
-    cur_bss_rel = - obj->cmd_len - obj->const_len;
-
-    cur_text_rel += torigin;
-    cur_data_rel += dorigin;
-    cur_bss_rel += borigin;
-
-    if (trace > 1)
-        printf("cur_text_rel=%#x, cur_data_rel=%#x, cur_bss_rel=%#x\n",
-            cur_text_rel, cur_data_rel, cur_bss_rel);
-#if 0
-    //
-    //TODO: Re-read the symbol table, recording the numbering
-    // of symbols for fixing external references.
-    //
-    nlist_t *sp;
-    int symno = -1;
-    for (;;) {
-        symno++;
-        long count = fgetsym(input, &cursym);
-        if (count == 0)
-            fatal("Out of memory");
-        if (count == 1)
-            break;
-        //symreloc();
-        int type = cursym.n_type;
-        if (Sflag && ((type & N_TYPE) == N_ABS ||
-            (type & N_TYPE) > N_COMM))
-        {
-            free(cursym.n_name);
-            continue;
-        }
-        if (! (type & N_EXT)) {
-            if (!sflag && !xflag &&
-                (!Xflag || cursym.n_name[0] != LOCSYM))
-                fputsym(&cursym, soutb);
-            free(cursym.n_name);
-            continue;
-        }
-        if (! (sp = *lookup_cursym()))
-            fatal("Internal error: symbol not found");
-        free(cursym.n_name);
-        if (cursym.n_type == N_EXT+N_UNDF ||
-            cursym.n_type == N_EXT+N_COMM)
-        {
-            continue;
-        }
-        if (cursym.n_type != sp->n_type ||
-            cursym.n_value != sp->n_value)
-        {
-            printf("%s: ", cursym.n_name);
-            error("Name redefined");
-        }
-    }
-#endif
-    if (trace > 1)
-        printf("** TEXT **\n");
-    relocate(toutb, troutb, obj->cmd_len);
-
-    if (trace > 1)
-        printf("** DATA **\n");
-    relocate(doutb, droutb, obj->const_len);
-
-    torigin += obj->cmd_len;
-    dorigin += obj->const_len;
-    borigin += obj->data_len;
-}
-
-void pass2(int argc, char **argv)
-{
-    obj_image_t *obj;
-
-    for (obj = obj_head; obj; obj = obj->next) {
-        load2obj(obj);
-    }
-}
-
-void copy(FILE *buf)
-{
-    int c;
-
-    rewind(buf);
-    while ((c = getc(buf)) != EOF)
-        putc(c, outb);
-    fclose(buf);
-}
-
-void finishout()
-{
-
-    copy(toutb);
-    copy(doutb);
-    if (rflag) {
-        copy(troutb);
-        copy(droutb);
-    }
-    if (! sflag) {
-        if (! xflag)
-            copy(soutb);
+    if (! s_flag) {
 #if 0
         //TODO: write a symbol table.
         nlist_t *p;
         for (p=symtab; p<&symtab[nsymbols]; ++p)
-            fputsym(p, outb);
+            fputsym(p, output);
 #endif
-        putc(0, outb);
     }
-    fclose(outb);
+    fclose(output);
+
+    if (!o_flag) {
+        // Rename a.out into l.out.
+        unlink("a.out");
+        link("l.out", "a.out");
+        ofilename = "a.out";
+    }
+    unlink("l.out");
+    if (!error_status && !r_flag) {
+        // No undefined symbols and no -r option: make output executable.
+        chmod(ofilename, 0777 & ~umask(0));
+    }
 }
 
 int main(int argc, char **argv)
@@ -1352,41 +1280,24 @@ int main(int argc, char **argv)
         signal(SIGTERM, delexit);
 
     //
-    // First pass: compute segment sizes, symbol table and entry point.
+    // First pass: compute segment sizes and entry point.
     //
     pass1(argc, argv);
-    filname = 0;
+    inputname = 0;
 
     //
-    // Relocate symbols.
+    // Second pass: relocate symbols.
     //
-    middle();
+    pass2();
 
     //
-    // Create new header.
+    // Third pass: relocate the code.
     //
-    setupout();
+    pass3();
 
     //
-    // Second pass: relocate the code.
+    // Emit output file.
     //
-    pass2(argc, argv);
-
-    //
-    // Copy output files.
-    //
-    finishout();
-
-    if (!o_flag) {
-        // Rename a.out into l.out.
-        unlink("a.out");
-        link("l.out", "a.out");
-        ofilename = "a.out";
-    }
-    unlink("l.out");
-    if (errlev == 0 && !arflag) {
-        // Linking succeeded and no -r option: make output executable.
-        chmod(ofilename, 0777 & ~umask(0));
-    }
+    emit();
     return 0;
 }
