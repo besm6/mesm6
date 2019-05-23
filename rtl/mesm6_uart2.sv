@@ -26,11 +26,11 @@
 `default_nettype none
 
 // register addresses
-`define REG_CTRL    'o7
-`define REG_CTRLSET 'o6
-`define REG_CTRLCLR 'o5
+`define REG_CTRL    3'o7
+`define REG_CTRLSET 3'o6
+`define REG_CTRLCLR 3'o5
 
-`define REG_DATA    'o0
+`define REG_DATA    3'o0
 
 module mesm6_uart(
     input   wire        clk,
@@ -50,29 +50,62 @@ module mesm6_uart(
     input  wire         rx_pin
 );
 
-// UART control register
-// | self_test | tx_finish | rx_empty | tx_empty | rxtx_en | rxtx_divider |
-// +-----------+-----------+----------+----------+---------+--------------+
-// | 13        | 12        | 11       | 10       | 9       |  8:0         |
+/*
+
+UART control & status register
+
+| field       | mode | offset |
+|-------------+------+--------|
+| divider     | RW   |    8:0 |
+| rxtx_enable | RW   |      9 |
+| tx_empty    | RO   |     10 |
+| rx_empty    | RO   |     11 |
+| tx_finish   | RO   |     12 |
+| rx_frm_err  | RW   |     13 |
+| tx_irq      | RW   |     14 |
+| rx_irq      | RW   |     15 |
+| tx_irq_mode | RW   |  17:16 |
+| rx_irq_mode | RW   |  19:18 |
+| parity_bit  | RW   |     20 |
+| stop_bits   | RW   |     21 |
+| data_bits   | RW   |  23:22 |
+| loopback    | RW   |     24 |
+
+baud_rate = F_CPU / (16 * divider)
+
+rx_frm_err - sets to HIGH if bad stop bit received
+
+*/
+
+`define BITS_DIVIDER   8:0
+`define BIT_RXTX_ENABLE 9
+`define BIT_RX_FRM_ERR 13
+`define BIT_LOOPBACK   24
+
 reg     [47:0] UART_CTRL;
 
-wire        rxtx_en        = UART_CTRL[9];
-wire [12:0] rxtx_divider   = {UART_CTRL[8:0], 4'b1111};
-wire        self_test      = UART_CTRL[12];
+wire        rxtx_en            = UART_CTRL[`BIT_RXTX_ENABLE];
+wire [12:0] rxtx_divider       = {UART_CTRL[`BITS_DIVIDER], 4'b1111};
+wire        loopback           = UART_CTRL[`BIT_LOOPBACK];
+wire        rx_frm_err_latched = UART_CTRL[`BIT_RX_FRM_ERR];
+
+wire        rx_frm_err;
 
 always @(posedge clk) begin
     if (reset)
-        UART_CTRL <= 1'b1;
+        UART_CTRL <= '0;
     else if (i_wr)
         case (i_addr[2:0])
             `REG_CTRL:    UART_CTRL <= i_wdata;
             `REG_CTRLCLR: UART_CTRL <= UART_CTRL & ~i_wdata;
             `REG_CTRLSET: UART_CTRL <= UART_CTRL |  i_wdata;
         endcase
+    else if (rx_frm_err)
+        UART_CTRL[`BIT_RX_FRM_ERR] <= UART_CTRL[`BIT_RX_FRM_ERR] | rx_frm_err;
 end
 
 // transmit clock divisor
-reg [31:0] tx_cnt;
+reg [12:0] tx_cnt;
 reg        tx_active;
 
 always @(posedge clk) begin
@@ -175,11 +208,11 @@ wire       rx_empty =  rx_w_ptr         == rx_r_ptr;
 wire       rx_full  = (rx_w_ptr + 1'b1) == rx_r_ptr;
 
 
-wire rx_in = self_test ? tx_pin : rx_pin;
+wire rx_in = loopback ? tx_pin : rx_pin;
 
 reg  rx_active;
 // rx clock
-reg [31:0] rx_cnt;
+reg [12:0] rx_cnt;
 
 
 // start bit edge detection
@@ -199,7 +232,7 @@ end
 
 always @(posedge clk) begin
     rx_cnt <= ~rxtx_en                   ? rxtx_divider :
-               ~rx_active & rx_start_bit ? 1'b1 :          // start_bit resets counter
+               ~rx_active & rx_start_bit ? rxtx_divider[12:1] : // shift rx_pulse to middle of rx_bit
                rx_cnt == 0               ? rxtx_divider :
                                            rx_cnt - 1'b1;
 end
@@ -212,6 +245,7 @@ always @(posedge clk) begin
 end
 
 wire rx_pulse = ~rx_active ? 0 : rx_cnt == '0;
+wire stop_bit_valid = rx_in & ~|rx_bit_count & rx_pulse;
 
 // after start bit received start receiving process
 always @(posedge clk) begin
@@ -241,7 +275,7 @@ always @(posedge clk) begin
 end
 
 // rx_w_ptr logic
-wire rx_fifo_wr = ~rx_full & rxtx_en & ~|rx_bit_count & rx_cnt == '0;
+wire rx_fifo_wr     = ~rx_full & rxtx_en & stop_bit_valid;
 
 always @(posedge clk) begin
     rx_w_ptr <= reset      ? 0 :
@@ -249,14 +283,27 @@ always @(posedge clk) begin
                            : rx_w_ptr;
 end
 
+// rx framing error detection
+assign rx_frm_err = rx_active & ~|rx_bit_count & rx_pulse & ~rx_in;
+
 always @(posedge clk) begin
-    if (rx_fifo_wr) rx_fifo[rx_w_ptr] <= rx_data;
+    if (rx_fifo_wr)
+        rx_fifo[rx_w_ptr] <= rx_data;
 end
 
 always @(posedge clk) begin
     if (i_rd)
         case (i_addr[2:0])
-            `REG_CTRL: o_rdata <= {self_test, tx_finish, rx_empty, tx_empty, rxtx_en, rxtx_divider[12:4]};
+            `REG_CTRL:
+                o_rdata <= {  loopback, // BIT_24
+                              /*23 22 21 20 19 18 17 16 15 14*/
+                              10'b0, // reserved bits
+                              UART_CTRL[`BIT_RX_FRM_ERR], // bit 13
+                              tx_finish, // bit 12
+                              rx_empty,  // bit 11
+                              tx_empty,  // bit 10
+                              rxtx_en,   // bit 9
+                              rxtx_divider[12:4] };
             `REG_DATA: o_rdata <= {39'b0, rx_empty,  rx_fifo[rx_r_ptr]};
         endcase
 end
