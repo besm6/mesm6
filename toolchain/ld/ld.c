@@ -33,8 +33,6 @@
 #include <archive_entry.h>
 #include "stdobj.h"
 
-#include "mesm6/a.out.h"        //TODO: delete
-
 #define MAXSYMBOLS      2000    // max number of symbols
 #define MAXNAMES        2000    // max number of names
 #define LOCSYM          'L'     // temporary symbol names start with 'L'
@@ -96,7 +94,7 @@ int     errlev;
 char    tfname[] = "/tmp/ldaXXXXXX";
 char    libname[256];
 
-const char libpattern[] = "/usr/local/lib/besm6/lib";
+const char libpath[] = "/usr/local/lib/besm6/lib";
 const char *filname;
 const char *progname;
 
@@ -109,27 +107,65 @@ void delexit()
     exit(-1);
 }
 
-void error(int n, char *fmt, ...)
+//
+// Print message, including program name and input file name.
+//
+void vmessage(char *fmt, va_list ap)
+{
+    if (!errlev)
+        printf("%s: ", progname);
+
+    if (filname)
+        printf("%s: ", filname);
+
+    vprintf(fmt, ap);
+    printf("\n");
+}
+
+//
+// Print warning message.
+//
+void warning(char *fmt, ...)
 {
     va_list ap;
 
     va_start(ap, fmt);
-    if (!errlev)
-        printf("%s: ", progname);
-    if (filname)
-        printf("%s: ", filname);
-    vprintf(fmt, ap);
+    vmessage(fmt, ap);
     va_end(ap);
-    printf("\n");
-    if (n > 1)
-        delexit();
-    errlev = n;
+}
+
+//
+// Print error message and set error level.
+//
+void error(char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vmessage(fmt, ap);
+    va_end(ap);
+
+    errlev = 1;
+}
+
+//
+// Print error message and terminate.
+//
+void fatal(char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vmessage(fmt, ap);
+    va_end(ap);
+
+    delexit();
 }
 
 //
 // Read a 48-bit word at the current file position.
 //
-static uint64_t fread6(FILE *fd)
+uint64_t fread6(FILE *fd)
 {
     uint64_t val = 0;
     int i;
@@ -139,6 +175,76 @@ static uint64_t fread6(FILE *fd)
         val |= getc(fd);
     }
     return val;
+}
+
+uint8_t unicode_to_text(uint16_t uc)
+{
+    static const uint8_t tab0[256] = {
+        /* 00 -- 07 */  0,    0,    0,    0,    0,    0,    0,    0,
+        /* 08 -- 0f */  0,    0,    0,    0,    0,    0,    0,    0,
+        /* 10 -- 17 */  0,    0,    0,    0,    0,    0,    0,    0,
+        /* 18 -- 1f */  0,    0,    0,    0,    0,    0,    0,    0,
+        /* 20 -- 27 */  0,    0,    0,    0,    0,    0,    0,    0,
+        /* ()*+,-./ */  0x08, 0x09, 0x0a, 0x1e, 0x1b, 0x1d, 0x01, 0x0f,
+        /* 01234567 */  0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        /* 89       */  0x18, 0x19, 0,    0,    0,    0,    0,    0,
+        /*  ABCDEFG */  0,    0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+        /* HIJKLMNO */  0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+        /* PQRSTUVW */  0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+        /* XYZ    / */  0x38, 0x39, 0x3a, 0,    0,    0,    0,    0x0f,
+        /*  abcdefg */  0,    0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+        /* hijklmno */  0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+        /* pqrstuvw */  0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+        /* xyz      */  0x38, 0x39, 0x3a, 0,    0,    0,    0,    0,
+    };
+    static const uint8_t tab4[256] = {
+        /* 00 -- 07 */  0,    0,    0,    0,    0,    0,    0,    0,
+        /* 08 -- 0f */  0,    0,    0,    0,    0,    0,    0,    0,
+        /* АБВГДЕЖЗ */  0x21, 0x02, 0x22, 0x06, 0x04, 0x25, 0x0e, 0x20,
+        /* ИЙКЛМНОП */  0x07, 0x0b, 0x2b, 0x0c, 0x2d, 0x28, 0x2f, 0x1c,
+        /* РСТУФХЦЧ */  0x30, 0x23, 0x34, 0x39, 0x05, 0x38, 0x03, 0x3e,
+        /* ШЩЪЫЬЭЮЯ */  0x3b, 0x3d, 0x1a, 0x1f, 0x1a, 0x3c, 0x3f, 0x0d,
+        /* абвгдежз */  0x21, 0x02, 0x22, 0x06, 0x04, 0x25, 0x0e, 0x20,
+        /* ийклмноп */  0x07, 0x0b, 0x2b, 0x0c, 0x2d, 0x28, 0x2f, 0x1c,
+        /* рстуфхцч */  0x30, 0x23, 0x34, 0x39, 0x05, 0x38, 0x03, 0x3e,
+        /* шщъыьэюя */  0x3b, 0x3d, 0x1a, 0x1f, 0x1a, 0x3c, 0x3f, 0x0d,
+    };
+
+    switch (uc >> 8) {
+    case 0x00:
+        return tab0[uc];
+    case 0x04:
+        return tab4[(uint8_t) uc];
+    }
+    return 0;
+}
+
+//
+// Convert a name in TEXT format to utf8 string.
+//
+const char *text_to_utf(uint64_t word)
+{
+    static const char *text[64] = {
+        " ", ".", "Б", "Ц", "Д", "Ф", "Г", "И",
+        "(", ")", "*", "Й", "Л", "Я", "Ж", "/",
+        "0", "1", "2", "3", "4", "5", "6", "7",
+        "8", "9", "Ь", ",", "П", "-", "+", "Ы",
+        "З", "A", "B", "C", "D", "E", "F", "G",
+        "H", "I", "J", "K", "L", "M", "N", "O",
+        "P", "Q", "R", "S", "T", "U", "V", "W",
+        "X", "Y", "Z", "Ш", "Э", "Щ", "Ч", "Ю",
+    };
+    static char buf[64];
+    int i, c;
+
+    buf[0] = 0;
+    for (i = 42; i >= 0; i -= 6) {
+        c = (word >> i) & 077;
+        if (c == 0)
+            break;
+        strcat(buf, text[c]);
+    }
+    return buf;
 }
 
 //
@@ -153,7 +259,7 @@ int open_input(char *name, int libflag)
 //printf("--- %s(name = '%s', libflag = %u)\n", __func__, name, libflag);
     input = 0;
     if (libflag) {
-        strcpy(libname, libpattern);
+        strcpy(libname, libpath);
         strcat(libname, name);
         strcat(libname, ".a");
         filname = libname;
@@ -167,11 +273,11 @@ int open_input(char *name, int libflag)
 //if (! input)
 //printf("--- %s() open '%s'\n", __func__, filname);
     if (! input && ! (input = fopen(filname, "r")))
-        error(2, "Cannot open");
+        fatal("Cannot open");
 
     magic = fread6(input);
     if (feof(input))
-        error(1, "Unexpected EOF");
+        error("Unexpected EOF");
     fseek(input, 0L, 0);
 
     if (magic == BESM6_MAGIC)
@@ -213,6 +319,53 @@ void symreloc()
 #endif
 
 //
+// Return symbol name as printable string.
+//
+const char *sym_name(nlist_t *sp)
+{
+    switch (sp->f.n_type) {
+    case SYM_EXT_S:
+    case SYM_PRIVATE_S:
+    case SYM_COMMON_S:
+        // Short name.
+        return text_to_utf(sp->u64 & 07777777700000000);
+
+    case SYM_EXT_L:
+    case SYM_PRIVATE_L:
+    case SYM_COMMON_L:
+        // Long name.
+        return text_to_utf(nametab[sp->f.n_ref]);
+
+    default:
+        return "<Unknown>";
+    }
+}
+
+//
+// Return true when a symbol name matches the given name
+// in TEXT encoding.
+//
+int sym_name_match(nlist_t *sp, uint64_t name)
+{
+    switch (sp->f.n_type) {
+    case SYM_EXT_S:
+    case SYM_PRIVATE_S:
+    case SYM_COMMON_S:
+        // Short name.
+        return (sp->u64 & 07777777700000000) == name;
+
+    case SYM_EXT_L:
+    case SYM_PRIVATE_L:
+    case SYM_COMMON_L:
+        // Long name.
+        return nametab[sp->f.n_ref] == name;
+
+    default:
+        return 0;
+    }
+}
+
+//
 // Find existing symbol by name in TEXT encoding.
 //
 nlist_t *sym_find(uint64_t name)
@@ -220,7 +373,7 @@ nlist_t *sym_find(uint64_t name)
     nlist_t *sp;
 
     for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
-        if (sym_name_equal(sp, name)) {
+        if (sym_name_match(sp, name)) {
             return sp;
         }
     }
@@ -228,14 +381,42 @@ nlist_t *sym_find(uint64_t name)
 }
 
 //
-// Create new name.
+// Create new name (in TEXT encoding.
 //
 unsigned create_name(uint64_t name)
 {
     if (nnames >= MAXNAMES)
-        error(2, "Name table overflow");
+        fatal("Name table overflow");
     nametab[nnames] = name;
     return nnames++;
+}
+
+//
+// Convert a name from UTF-8 string into TEXT encoding.
+// Length is limited by 8 symbols.
+//
+uint64_t utf_to_text(const char *str)
+{
+    uint64_t name = 0;
+    int i;
+
+    for (i=42; *str && i>=0; i-=6) {
+        uint16_t c = (uint8_t) *str++;
+
+        // Decode utf8 into 16-bit character code.
+        if (c & 0x80) {
+            uint8_t c2 = *str++;
+            if (! (c & 0x20)) {
+                c = (c & 0x1f) << 6 | (c2 & 0x3f);
+            } else {
+                uint8_t c3 = *str++;
+                c = (c & 0x0f) << 12 | (c2 & 0x3f) << 6 | (c3 & 0x3f);
+            }
+        }
+
+        name |= unicode_to_text(c) << i;
+    }
+    return name;
 }
 
 //
@@ -248,7 +429,7 @@ nlist_t *create_extref(const char *str)
     nlist_t *sp;
 
     for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
-        if (sym_name_equal(sp, name)) {
+        if (sym_name_match(sp, name)) {
             // Name already exists.
             return sp;
         }
@@ -256,7 +437,7 @@ nlist_t *create_extref(const char *str)
 
     // Allocate new symbol: external reference.
     if (nsymbols >= MAXSYMBOLS)
-        error(2, "Symbol table overflow");
+        fatal("Symbol table overflow");
     sp = &symtab[nsymbols];
     nsymbols++;
     if (name & 077777777) {
@@ -273,6 +454,7 @@ nlist_t *create_extref(const char *str)
 
 void merge_symbols(obj_image_t *obj)
 {
+printf("--- %s() symtab length = %u\n", __func__, obj->sym_len);
 #if 0
     struct nlist *sp;
     int type, symlen;
@@ -281,7 +463,7 @@ void merge_symbols(obj_image_t *obj)
     for (;;) {
         symlen = fgetsym(input, &cursym);
         if (symlen == 0)
-            error(2, "Out of memory");
+            fatal("Out of memory");
         if (symlen == 1)
             break;
         type = cursym.n_type;
@@ -346,7 +528,7 @@ int need_this_obj(obj_image_t *obj)
         }
         return 0;
     }
-    //TODO
+    //TODO: No entries in standard array; search for symbols of Entry type.
     return 1;
 }
 
@@ -356,7 +538,7 @@ int need_this_obj(obj_image_t *obj)
 void append_to_obj_list(obj_image_t *obj)
 {
     if (!obj)
-        error(2, "Out of memory");
+        fatal("Out of memory");
 
     obj->next = 0;
 
@@ -380,21 +562,21 @@ int load1obj(FILE *fd, char *data, unsigned nbytes)
     obj_image_t obj = {0};
 
     if (fd) {
-printf("--- %s(fd = %u)\n", __func__, fileno(fd));
+//printf("--- %s(fd = %u)\n", __func__, fileno(fd));
         if (obj_read_fd(fd, &obj) < 0)
-            error(2, "Bad format");
+            fatal("Bad format");
     } else {
-printf("--- %s(nbytes = %u)\n", __func__, nbytes);
+//printf("--- %s(nbytes = %u)\n", __func__, nbytes);
         if (obj_read_data(data, nbytes, &obj) < 0)
-            error(2, "Bad format");
+            fatal( "Bad format");
 
         // Does this component have anything useful for us?
         if (!need_this_obj(&obj)) {
-printf("--- %s() ignore this module\n", __func__);
+//printf("--- %s() ignore this module\n", __func__);
             return 0;
         }
     }
-printf("--- %s() link obj file: cmd=%u, const=%u, data=%u\n", __func__, obj.cmd_len, obj.const_len, obj.data_len);
+//printf("--- %s() link obj file: cmd=%u, const=%u, data=%u\n", __func__, obj.cmd_len, obj.const_len, obj.data_len);
 
     // Link in the object file.
     cur_text_rel = 0;
@@ -461,23 +643,23 @@ void load1name(char *fname, int libflag)
                 else if (ret == ARCHIVE_RETRY)
                     continue;
                 else if (ret == ARCHIVE_WARN)
-                    error(0, "Archive warning");
+                    warning("Archive warning");
                 else
-                    error(2, "Bad archive");
+                    fatal("Bad archive");
             }
 
             const char *name = archive_entry_pathname(entry);
             unsigned nbytes = archive_entry_size(entry);
-            static char data[MAXSZ*6];
+            char data[MAXSZ*6];
 
             if (trace > 1)
                 printf("%s(%s):\n", fname, name);
 
             if (nbytes > sizeof(data)) {
-                error(2, "Too long array entry");
+                fatal("Too long array entry");
             }
             if (archive_read_data(a, data, nbytes) != nbytes) {
-                error(2, "Read error");
+                fatal("Read error");
             }
             load1obj(NULL, data, nbytes);
         }
@@ -591,45 +773,55 @@ void pass1(int argc, char **argv)
     }
 }
 
-void ldrsym(nlist_t *sp, long val, int type)
+//
+// Allocate a symbol _etext, _edata or _ebss.
+//
+void ldrsym(uint64_t name, long val)
 {
+#if 0
+    //TODO: allocate symbol like _text
     if (sp == 0)
         return;
-    if (sp->n_type != N_EXT+N_UNDF) {
+    if (sp->f.n_type != N_EXT+N_UNDF) {
         printf("%s: ", sp->n_name);
-        error(1, "Name redefined");
+        error("Name redefined");
         return;
     }
     sp->n_type = type;
     sp->n_value = val;
+#endif
 }
 
 void middle()
 {
     nlist_t *sp, *symlast;
-    nlist_t *p_etext, *p_edata, *p_end;
+    uint64_t name_etext, name_edata, name_end;
     long t;
     long cmsize;
     int undef_count;
     long cmorigin;
 
-    p_etext = sym_find(utf_to_text("_etext"));
-    p_edata = sym_find(utf_to_text("_edata"));
-    p_end = sym_find(utf_to_text("_end"));
+    name_etext = utf_to_text("_etext");
+    name_edata = utf_to_text("_edata");
+    name_end = utf_to_text("_end");
 
     //
     // If there are any undefined symbols, save the relocation bits.
     //
     symlast = &symtab[nsymbols];
     if (!rflag) {
-        for (sp=symtab; sp<symlast; sp++)
-            if (sp->n_type == N_EXT+N_UNDF &&
-                sp != p_end && sp != p_edata && sp != p_etext)
+        for (sp=symtab; sp<symlast; sp++) {
+            if ((sp->f.n_type == SYM_EXT_S ||
+                 sp->f.n_type == SYM_EXT_L) &&
+                !sym_name_match(sp, name_end) &&
+                !sym_name_match(sp, name_edata) &&
+                !sym_name_match(sp, name_etext))
             {
                 rflag++;
                 dflag = 0;
                 break;
             }
+        }
     }
     if (rflag)
         sflag = 0;
@@ -639,15 +831,20 @@ void middle()
     //
     cmsize = 0;
     if (dflag || !rflag) {
-        ldrsym(p_etext, text_size, N_EXT+N_TEXT);
-        ldrsym(p_edata, data_size, N_EXT+N_DATA);
-        ldrsym(p_end, bss_size, N_EXT+N_BSS);
-        for (sp=symtab; sp<symlast; sp++)
-            if ((sp->n_type & N_TYPE) == N_COMM) {
-                t = sp->n_value;
-                sp->n_value = cmsize;
+        ldrsym(name_etext, text_size);
+        ldrsym(name_edata, data_size);
+        ldrsym(name_end, bss_size);
+
+        // Allocate common-blocks.
+        for (sp=symtab; sp<symlast; sp++) {
+            if ((sp->f.n_type == SYM_COMMON_S ||
+                 sp->f.n_type == SYM_COMMON_L))
+            {
+                t = sp->f.n_addr;
+                sp->f.n_addr = cmsize;
                 cmsize += t;
             }
+        }
     }
 
     //
@@ -659,17 +856,20 @@ void middle()
     borigin = cmorigin + cmsize;
     undef_count = 0;
     for (sp=symtab; sp<symlast; sp++) {
-        switch (sp->n_type) {
-        case N_EXT+N_UNDF:
+        switch (sp->f.n_type) {
+        case SYM_EXT_S:
+        case SYM_EXT_L:
             if (!arflag)
                 errlev |= 1;
             if (!arflag) {
                 if (!undef_count)
                     printf("Undefined:\n");
                 undef_count++;
-                printf("\t%s\n", sp->n_name);
+                printf("\t%s\n", sym_name(sp));
             }
             break;
+#if 0
+        //TODO: update other symbols
         default:
         case N_EXT+N_ABS:
             break;
@@ -687,9 +887,8 @@ void middle()
             sp->n_type = N_EXT+N_BSS;
             sp->n_value += cmorigin;
             break;
+#endif
         }
-        if (sp->n_value & ~0777777777)
-            error(1, "Long address: %s=0%lo", sp->n_name, sp->n_value);
     }
     bss_size += cmsize;
 }
@@ -698,7 +897,7 @@ void tcreat(FILE **buf, int tempflg)
 {
     *buf = fopen(tempflg ? tfname : ofilename, "w+");
     if (! *buf)
-        error(2, tempflg ?
+        fatal(tempflg ?
             "Cannot create temporary file" :
             "Cannot create output file");
     if (tempflg)
@@ -709,7 +908,7 @@ void setupout()
 {
     int fd = mkstemp(tfname);
     if (fd == -1) {
-        error(2, "Cannot create temporary file %s", tfname);
+        fatal("Cannot create temporary file %s", tfname);
     } else {
         close(fd);
     }
@@ -722,7 +921,7 @@ void setupout()
         tcreat(&droutb, 1);
     }
 #if 0
-    // Write header.
+    //TODO: Write header.
     filhdr.a_magic = FMAGIC;
     filhdr.a_text = text_size;
     filhdr.a_data = data_size;
@@ -731,8 +930,9 @@ void setupout()
     if (entrypt) {
         if (entrypt->n_type != N_EXT+N_TEXT &&
             entrypt->n_type != N_EXT+N_UNDF)
-            error(1, "Entry out of text");
-        else filhdr.a_entry = entrypt->n_value;
+            error("Entry out of text");
+        else
+            filhdr.a_entry = entrypt->n_value;
     } else {
         filhdr.a_entry = torigin;
     }
@@ -747,6 +947,7 @@ void setupout()
 #endif
 }
 
+#if 0
 int reltype(int stype)
 {
     switch (stype & N_TYPE) {
@@ -848,10 +1049,12 @@ void relhalf(/*struct local *lp,*/ long t, long *pt)
 
     *pt = t;
 }
+#endif
 
 void relocate(/*struct local *lp,*/ FILE *b1, FILE *b2, long len)
 {
 #if 0
+    //TODO: relocate a section.
     long t;
 
     len /= WSZ/2;
@@ -865,10 +1068,6 @@ void relocate(/*struct local *lp,*/ FILE *b1, FILE *b2, long len)
 
 void load2obj(obj_image_t *obj)
 {
-    int symno;
-    int type;
-    long count;
-
     cur_text_rel = 0;
     cur_data_rel = - obj->cmd_len;
     cur_bss_rel = - obj->cmd_len - obj->const_len;
@@ -882,20 +1081,20 @@ void load2obj(obj_image_t *obj)
             cur_text_rel, cur_data_rel, cur_bss_rel);
 #if 0
     //
-    // Re-read the symbol table, recording the numbering
+    //TODO: Re-read the symbol table, recording the numbering
     // of symbols for fixing external references.
     //
     nlist_t *sp;
-    symno = -1;
+    int symno = -1;
     for (;;) {
         symno++;
-        count = fgetsym(input, &cursym);
+        long count = fgetsym(input, &cursym);
         if (count == 0)
-            error(2, "Out of memory");
+            fatal("Out of memory");
         if (count == 1)
             break;
         symreloc();
-        type = cursym.n_type;
+        int type = cursym.n_type;
         if (Sflag && ((type & N_TYPE) == N_ABS ||
             (type & N_TYPE) > N_COMM))
         {
@@ -910,7 +1109,7 @@ void load2obj(obj_image_t *obj)
             continue;
         }
         if (! (sp = *lookup_cursym()))
-            error(2, "Internal error: symbol not found");
+            fatal("Internal error: symbol not found");
         free(cursym.n_name);
         if (cursym.n_type == N_EXT+N_UNDF ||
             cursym.n_type == N_EXT+N_COMM)
@@ -921,7 +1120,7 @@ void load2obj(obj_image_t *obj)
             cursym.n_value != sp->n_value)
         {
             printf("%s: ", cursym.n_name);
-            error(1, "Name redefined");
+            error("Name redefined");
         }
     }
 #endif
@@ -970,6 +1169,7 @@ void finishout()
         if (! xflag)
             copy(soutb);
 #if 0
+        //TODO: write a symbol table.
         nlist_t *p;
         for (p=symtab; p<&symtab[nsymbols]; ++p)
             fputsym(p, outb);
