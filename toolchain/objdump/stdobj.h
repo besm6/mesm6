@@ -40,13 +40,13 @@ typedef struct _obj_image_t {
     unsigned cmd_len;           // length of code section
     unsigned bss_len;           // length of bss section
     unsigned const_len;         // length of const section
+    unsigned entry;             // entry address
 
     unsigned head_off;          // offset of header
     unsigned cmd_off;           // offset of code section
     unsigned table_off;         // offset of symhdr section
     unsigned long_off;          // offset of longsym section
     unsigned debug_off;         // offset of debug section
-    unsigned comment_off;       // offset of comment section
 
     unsigned nwords;
     unsigned nentries;
@@ -116,3 +116,9 @@ extern int obj_read_data(char *data, unsigned nbytes, obj_image_t *obj);
 // Return NULL when failed.
 //
 extern obj_image_t *obj_copy(obj_image_t *from);
+
+//
+// Write object image to a file.
+// Return negative in case of failure.
+//
+extern int obj_write(FILE *fd, obj_image_t *obj);

@@ -44,6 +44,11 @@ const char *inputname;
 obj_image_t *obj_head, *obj_tail;
 
 //
+// Output object image.
+//
+obj_image_t aout;
+
+//
 // Symbol table.
 //
 nlist_t symtab[MAXSYMBOLS];     // symbol table
@@ -69,6 +74,7 @@ unsigned basaddr = 1;           // base address of resulting image
 // Cumulative sizes set in pass 1 (in words).
 //
 int text_size, data_size, bss_size;
+int tdata_size, set_size, debug_size;
 
 //
 // Symbol relocation: passes 2 and 3.
@@ -1167,6 +1173,53 @@ void pass2()
     }
     if (trace > 1 && (d_flag || !emit_relocatable))
         dump_symtab();
+
+    //
+    // Fill output header.
+    //
+    aout.head_len  = 1;
+    aout.sym_len   = s_flag ? 0 : nsymbols;
+    aout.debug_len = s_flag ? 0 : debug_size;
+    aout.set_len   = emit_relocatable ? set_size : 0;
+    aout.data_len  = emit_relocatable ? tdata_size : 0;
+    aout.long_len  = s_flag ? 0 : nnames;
+    aout.cmd_len   = text_size;
+    aout.bss_len   = bss_size;
+    aout.const_len = data_size;
+    if (emit_relocatable) {
+        aout.entry = 0;
+    } else if (entrypt) {
+        aout.entry = entrypt->f.n_addr;
+        if (aout.entry < basaddr || aout.entry >= basaddr + text_size)
+            error("Entry out of text segment");
+    } else {
+        aout.entry = basaddr;
+    }
+
+    aout.nwords = 1 + 10 + text_size + data_size + 1;
+    if (!s_flag)
+        aout.nwords += nsymbols + nnames + debug_size;
+    if (emit_relocatable)
+        aout.nwords += set_size + tdata_size;
+
+    aout.head_off = 1;
+    aout.cmd_off  = aout.head_off + 10;
+    aout.table_off = aout.cmd_off + aout.cmd_len + aout.const_len + aout.data_len + aout.set_len;
+    aout.long_off = aout.table_off + aout.head_len + aout.sym_len;
+    aout.debug_off = aout.long_off + aout.long_len;
+
+    // Set module name.
+    aout.word[aout.table_off] = obj_head->word[obj_head->table_off];
+
+    // Copy symbol table and name table.
+    if (!s_flag) {
+        if (nsymbols > 0)
+            memcpy(&aout.word[1 + aout.table_off], &symtab[0],
+                nsymbols * sizeof(uint64_t));
+        if (nnames > 0)
+            memcpy(&aout.word[aout.long_off], &nametab[0],
+                nnames * sizeof(uint64_t));
+    }
 }
 
 void pass3()
@@ -1204,51 +1257,21 @@ void pass3()
         text_origin += obj->cmd_len;
         data_origin += obj->const_len;
         bss_origin += obj->bss_len;
+
+        //TODO: copy obj->data_len, increase tdata_size
+        //TODO: copy obj->set_len, increase set_size
+        //TODO: copy obj->debug_len, increase debug_size
     }
 }
 
 void emit()
 {
-    FILE *output = fopen(ofilename, "wb");
-    if (! output)
+    FILE *fd = fopen(ofilename, "wb");
+    if (! fd)
         fatal("Cannot create output file");
-
-#if 0
-    //TODO: Write header.
-    filhdr.a_magic = FMAGIC;
-    filhdr.a_text = text_size;
-    filhdr.a_data = data_size;
-    filhdr.a_bss = bss_size;
-    filhdr.a_syms = ALIGN(symtab_size, WSZ);
-    if (entrypt) {
-        if (entrypt->n_type != N_EXT+N_TEXT &&
-            entrypt->n_type != N_EXT+N_UNDF) {
-            error("Entry out of text segment");
-        } else {
-            filhdr.a_entry = entrypt->n_value;
-        }
-    } else {
-        filhdr.a_entry = basaddr;
-    }
-
-    if (emit_relocatable) {
-        filhdr.a_flag &= ~RELFLG;
-    } else {
-        filhdr.a_flag |= RELFLG;
-    }
-
-    fputhdr(&filhdr, output);
-#endif
-
-    if (! s_flag) {
-#if 0
-        //TODO: write a symbol table.
-        nlist_t *p;
-        for (p=symtab; p<&symtab[nsymbols]; ++p)
-            fputsym(p, output);
-#endif
-    }
-    fclose(output);
+    if (obj_write(fd, &aout) < 0)
+        error("Write error");
+    fclose(fd);
 
     if (!o_flag) {
         // Rename a.out into l.out.

@@ -19,6 +19,23 @@ static uint64_t fread6(FILE *fd)
 }
 
 //
+// Write a 48-bit word to a file.
+// Return negative in case of failure.
+//
+static int fwrite6(FILE *fd, uint64_t val)
+{
+    int i;
+    uint8_t c;
+
+    for (i = 40; i >= 0; i -= 8) {
+        c = val >> i;
+        if (putc(c, fd) < 0)
+            return -1;
+    }
+    return 0;
+}
+
+//
 // Read a 48-bit word from data buffer.
 //
 static uint64_t data_read6(char **pdata, unsigned *pnbytes)
@@ -52,7 +69,7 @@ static int obj_decode(obj_image_t *obj)
 
     // Detect packed or unpacked header.
     obj->head_off = 1;
-    if ((obj->word[2] >> 45) != 0) {
+    if ((obj->word[2] >> 45) != 0 || obj->word[1] == 1) {
 
         // Skip entry table.
         while ((obj->word[obj->head_off + 1] >> 45) != 0) {
@@ -63,7 +80,7 @@ static int obj_decode(obj_image_t *obj)
         // Unpacked header.
         obj->head_len  = obj->word[obj->head_off];
         obj->sym_len   = obj->word[obj->head_off + 1];
-        // Unknown: obj->word[obj->head_off + 2]
+        obj->entry     = obj->word[obj->head_off + 2]; // mesm6 extension
         obj->debug_len = obj->word[obj->head_off + 3];
         obj->long_len  = obj->word[obj->head_off + 4];
         obj->cmd_len   = obj->word[obj->head_off + 5];
@@ -93,7 +110,6 @@ static int obj_decode(obj_image_t *obj)
     obj->table_off = obj->cmd_off + obj->cmd_len + obj->const_len + obj->data_len + obj->set_len;
     obj->long_off = obj->table_off + obj->head_len + obj->sym_len;
     obj->debug_off = obj->long_off + obj->long_len;
-    obj->comment_off = obj->debug_off + obj->debug_len;
     return 0;
 }
 
@@ -153,4 +169,38 @@ obj_image_t *obj_copy(obj_image_t *from)
     if (to)
         memcpy(to, from, nbytes);
     return to;
+}
+
+//
+// Write object image to a file.
+// Return negative in case of failure.
+//
+int obj_write(FILE *fd, obj_image_t *obj)
+{
+    int i;
+
+    if (obj->cmd_off == 11) {
+        // Unpacked header.
+        obj->word[obj->head_off] = obj->head_len;
+        obj->word[obj->head_off + 1] = obj->sym_len;
+        obj->word[obj->head_off + 2] = obj->entry; // mesm6 extension
+        obj->word[obj->head_off + 3] = obj->debug_len;
+        obj->word[obj->head_off + 4] = obj->long_len;
+        obj->word[obj->head_off + 5] = obj->cmd_len;
+        obj->word[obj->head_off + 6] = obj->bss_len;
+        obj->word[obj->head_off + 7] = obj->const_len;
+        obj->word[obj->head_off + 8] = obj->data_len;
+        obj->word[obj->head_off + 9] = obj->set_len;
+    } else {
+        // Wrong header offset.
+        return -1;
+    }
+    obj->word[0] = BESM6_MAGIC;
+
+    // Write file contents.
+    for (i = 0; i < obj->nwords; i++) {
+        if (fwrite6(fd, obj->word[i]) < 0)
+            return -1;
+    }
+    return 0;
 }
