@@ -40,6 +40,7 @@ typedef struct _obj_image_t {
     unsigned cmd_len;           // length of code section
     unsigned bss_len;           // length of bss section
     unsigned const_len;         // length of const section
+    unsigned base_addr;         // base address
     unsigned entry;             // entry address
 
     unsigned head_off;          // offset of header

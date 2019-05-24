@@ -1,5 +1,6 @@
 fortran.obj: file format besm6
 
+        Module: MAIN
      Code size: 64 words
     Const size: 6 words
      Data size: 0 words
@@ -17,7 +18,6 @@ Entries:
 
 Disassembly of code:
 
-MAIN:
     c0:  16 24 40001  vtm c1(14)
          00 30 40070  uj c70
     c1:  07 010 0002  xta 2(7)
@@ -171,7 +171,6 @@ Symbol table:
 
 Names:
 
-  4000:  5541 5156 0000 0000  MAIN
   4007:  4664 1220 2022 0000  FT*002
   4010:  4664 1220 2023 0000  FT*003
   4011:  4664 1225 2721 0000  FT*571

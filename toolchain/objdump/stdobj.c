@@ -80,7 +80,6 @@ static int obj_decode(obj_image_t *obj)
         // Unpacked header.
         obj->head_len  = obj->word[obj->head_off];
         obj->sym_len   = obj->word[obj->head_off + 1];
-        obj->entry     = obj->word[obj->head_off + 2]; // mesm6 extension
         obj->debug_len = obj->word[obj->head_off + 3];
         obj->long_len  = obj->word[obj->head_off + 4];
         obj->cmd_len   = obj->word[obj->head_off + 5];
@@ -88,6 +87,10 @@ static int obj_decode(obj_image_t *obj)
         obj->const_len = obj->word[obj->head_off + 7];
         obj->data_len  = obj->word[obj->head_off + 8];
         obj->set_len   = obj->word[obj->head_off + 9];
+
+        // Extension for MESM-6 linker.
+        obj->entry     = obj->word[obj->head_off + 2] & 077777;
+        obj->base_addr = (obj->word[obj->head_off + 2] >> 24) & 077777;
 
         obj->cmd_off = obj->head_off + 10;
     } else {
@@ -103,6 +106,10 @@ static int obj_decode(obj_image_t *obj)
         obj->cmd_len   = obj->word[obj->head_off + 2] & 077777;
         obj->bss_len   = (obj->word[obj->head_off + 2] >> 15) & 077777;
         obj->const_len = (obj->word[obj->head_off + 2] >> 30) & 077777;
+
+        // Extension for MESM-6 linker: relocatable module only.
+        obj->entry     = 0;
+        obj->base_addr = 0;
 
         obj->cmd_off = obj->head_off + 3;
     }
@@ -183,7 +190,6 @@ int obj_write(FILE *fd, obj_image_t *obj)
         // Unpacked header.
         obj->word[obj->head_off] = obj->head_len;
         obj->word[obj->head_off + 1] = obj->sym_len;
-        obj->word[obj->head_off + 2] = obj->entry; // mesm6 extension
         obj->word[obj->head_off + 3] = obj->debug_len;
         obj->word[obj->head_off + 4] = obj->long_len;
         obj->word[obj->head_off + 5] = obj->cmd_len;
@@ -191,6 +197,10 @@ int obj_write(FILE *fd, obj_image_t *obj)
         obj->word[obj->head_off + 7] = obj->const_len;
         obj->word[obj->head_off + 8] = obj->data_len;
         obj->word[obj->head_off + 9] = obj->set_len;
+
+        // Extension for MESM-6 linker.
+        obj->word[obj->head_off + 2] = obj->entry |
+                            (uint64_t) obj->base_addr << 24;
     } else {
         // Wrong header offset.
         return -1;

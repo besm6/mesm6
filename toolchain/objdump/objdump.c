@@ -392,6 +392,9 @@ void disassemble(const char *fname)
 
     printf("%s: file format besm6\n", fname);
     printf("\n");
+    printf("        Module: ");
+    print_word_as_text(obj.word[obj.table_off]);
+    printf("\n");
     printf("     Code size: %u words\n", obj.cmd_len);
     printf("    Const size: %u words\n", obj.const_len);
     printf("     Data size: %u words\n", obj.data_len);
@@ -407,6 +410,10 @@ void disassemble(const char *fname)
     printf("  Debug offset: %#o words\n", obj.debug_off);
     printf("Comment offset: %#o words\n", obj.comment_off);
 #endif
+    if (obj.base_addr != 0 || obj.entry != 0) {
+        printf("  Base address: %05o\n", obj.base_addr);
+        printf("         Entry: %05o\n", obj.entry);
+    }
 
     //
     // Print entries.
@@ -431,12 +438,10 @@ void disassemble(const char *fname)
     printf("\n");
     printf("Disassembly of code:\n");
     printf("\n");
-    print_word_as_text(obj.word[obj.table_off]);
-    printf(":\n");
     for (i = 0; i < obj.cmd_len; i++) {
         uint64_t word = obj.word[i + obj.cmd_off];
 
-        printf("%6s:  ", getlabel('c', i));
+        printf("%6s:  ", getlabel('c', i + obj.base_addr));
         print_insn(&obj, word >> 24);
         printf("\n         ");
         print_insn(&obj, word & 077777777);
@@ -454,7 +459,7 @@ void disassemble(const char *fname)
             uint64_t word = obj.word[i + obj.cmd_off + obj.cmd_len];
 
             printf("%6s:  %04o %04o %04o %04o",
-                getlabel('d', i + obj.cmd_len),
+                getlabel('d', i + obj.cmd_len + obj.base_addr),
                 (unsigned)(word >> 36) & 07777,
                 (unsigned)(word >> 24) & 07777,
                 (unsigned)(word >> 12) & 07777,
@@ -478,10 +483,10 @@ void disassemble(const char *fname)
         printf("\n");
         printf("Uninitialized data:\n");
         printf("\n");
-        printf("%6s", getlabel('d', obj.cmd_len + obj.const_len));
+        printf("%6s", getlabel('d', obj.cmd_len + obj.const_len + obj.base_addr));
         if (obj.bss_len > 1)
             printf("-%s",
-                getlabel('d', obj.cmd_len + obj.const_len + obj.bss_len - 1));
+                getlabel('d', obj.cmd_len + obj.const_len + obj.base_addr + obj.bss_len - 1));
         printf(":  %d word%s\n", obj.bss_len, obj.bss_len<2 ? "" : "s");
     }
 
@@ -559,14 +564,6 @@ void disassemble(const char *fname)
         }
         printf("\n");
         printf("Names:\n");
-        printf("\n");
-        uint64_t word = obj.word[obj.table_off];
-        printf("  4000:  %04o %04o %04o %04o  ",
-            (unsigned)(word >> 36) & 07777,
-            (unsigned)(word >> 24) & 07777,
-            (unsigned)(word >> 12) & 07777,
-            (unsigned)word & 07777);
-        print_word_as_text(word);
         printf("\n");
         for (i = 0; i < obj.long_len; i++) {
             uint64_t word = obj.word[i + obj.long_off];

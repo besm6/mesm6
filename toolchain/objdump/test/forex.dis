@@ -1,5 +1,6 @@
 forex.obj: file format besm6
 
+        Module: MAIN
      Code size: 55 words
     Const size: 8 words
      Data size: 0 words
@@ -17,7 +18,6 @@ Entries:
 
 Disassembly of code:
 
-MAIN:
     c0:  07 044 0010  mtj 010(7)
          11 31 40063  vjm c63(9)
     c1:  07 110 0005  xta 70005(7)
@@ -155,7 +155,6 @@ Symbol table:
 
 Names:
 
-  4000:  5541 5156 0000 0000  MAIN
   4007:  6364 5760 1200 0000  STOP*
   4010:  4664 1220 2023 0000  FT*003
   4011:  4664 1220 2022 0000  FT*002

@@ -1,5 +1,6 @@
 pascompl.obj: file format besm6
 
+        Module: PASCOMPL
      Code size: 10349 words
     Const size: 576 words
      Data size: 185 words
@@ -17,7 +18,6 @@ Entries:
 
 Disassembly of code:
 
-PASCOMPL:
     c0:  10 24 74001  vtm d24155(8)
          00 30 74002  uj c24146
     c1:  00 043 0015  its 015
@@ -21883,7 +21883,6 @@ Symbol table:
 
 Names:
 
-  4000:  6041 6343 5755 6054  PASCOMPL
   4462:  1257 6564 6065 6412  *OUTPUT*
   4463:  6041 6351 5660 6564  PASINPUT
   4464:  1243 5051 5444 1200  *CHILD*

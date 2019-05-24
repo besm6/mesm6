@@ -1,5 +1,6 @@
 madlen.obj: file format besm6
 
+        Module: OBJFMT
      Code size: 15 words
     Const size: 1 words
      Data size: 1 words
@@ -17,7 +18,6 @@ Entries:
 
 Disassembly of code:
 
-OBJFMT:
     c0:  00 23 40020  wtc d20
          00 22 40017  utc d17
     c1:  00 23 40021  wtc d21
@@ -98,7 +98,6 @@ Symbol table:
 
 Names:
 
-  4000:  5742 5246 5564 0000  OBJFMT
   4035:  5457 4354 5756 4700  LOCLONG
   4036:  4570 6446 6556 4300  EXTFUNC
   4037:  4570 6466 4162 0000  EXTVAR

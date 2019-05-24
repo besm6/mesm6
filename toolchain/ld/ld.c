@@ -269,22 +269,18 @@ int open_input(char *name, int libflag)
 {
     uint64_t magic;
 
-//printf("--- %s(name = '%s', libflag = %u)\n", __func__, name, libflag);
     input = 0;
     if (libflag) {
         strcpy(libname, libpath);
         strcat(libname, name);
         strcat(libname, ".a");
         inputname = libname;
-//printf("--- %s() open '%s'\n", __func__, inputname);
         input = fopen(inputname, "r");
         if (! input)
             inputname += 4;
     } else {
         inputname = name;
     }
-//if (! input)
-//printf("--- %s() open '%s'\n", __func__, inputname);
     if (! input && ! (input = fopen(inputname, "r")))
         fatal("Cannot open");
 
@@ -345,8 +341,6 @@ int sym_name_match(nlist_t *sp, uint64_t name)
     case SYM_COMMON_L:
         // Long name.
         sp_name = nametab[sp->f.n_ref & 03777];
-//printf("--- Sym %lu name %s", sp - symtab, text_to_utf(sp_name));
-//printf(" against %s - %s\n", text_to_utf(name), sp_name == name ? "match" : "mismatch");
         return sp_name == name;
 
     default:
@@ -873,17 +867,14 @@ int load1obj(FILE *fd, char *data, unsigned nbytes)
     obj_image_t obj = {0};
 
     if (fd) {
-//printf("--- %s(fd = %u)\n", __func__, fileno(fd));
         if (obj_read_fd(fd, &obj) < 0)
             fatal("Bad format");
     } else {
-//printf("--- %s(nbytes = %u)\n", __func__, nbytes);
         if (obj_read_data(data, nbytes, &obj) < 0)
             fatal( "Bad format");
 
         // Does this component have anything useful for us?
         if (!need_this_obj(&obj)) {
-//printf("--- %s() ignore this module\n", __func__);
             return 0;
         }
     }
@@ -920,7 +911,6 @@ void load1name(char *fname, int libflag)
         //
         // Regular file.
         //
-//printf("--- %s(fname = '%s', libflag = %u) regular file\n", __func__, fname, libflag);
         if (trace)
             printf("%s\n", fname);
         load1obj(input, NULL, 0);
@@ -931,13 +921,11 @@ void load1name(char *fname, int libflag)
         struct archive *a = archive_read_new();
         struct archive_entry *entry;
 
-//printf("--- %s(fname = '%s', libflag = %u) archive\n", __func__, fname, libflag);
         archive_read_support_filter_all(a);
         archive_read_support_format_all(a);
         archive_read_open(a, input, NULL, myread, NULL);
         for (;;) {
             int ret = archive_read_next_header(a, &entry);
-//printf("--- %s() archive ret = %d\n", __func__, ret);
             if (ret != ARCHIVE_OK) {
                 if (ret == ARCHIVE_EOF)
                     break;
@@ -995,61 +983,49 @@ void pass1(int argc, char **argv)
         switch (getopt(argc, argv, "-de:l:o:rstT:u:")) {
         case EOF:
             break;
-
         case 1:
             // Input file name.
             load1name(optarg, 0);
             continue;
-
         case 'd':
             // Force allocation of commons.
             d_flag++;
             continue;
-
         case 'e':
             // Set `entry' symbol.
             entrypt = create_extref(optarg);
             continue;
-
         case 'l':
             // Library name.
             load1name(optarg, 1);
             continue;
-
         case 'o':
             // Output file name.
             ofilename = optarg;
             o_flag++;
             continue;
-
         case 'r':
             // Generate relocatable output.
-            emit_relocatable++;
             r_flag++;
             continue;
-
         case 's':
             // Strip all symbols.
             s_flag++;
             continue;
-
         case 't':
             // Enable tracing.
             trace++;
             if (trace == 2)
                 printf("First pass:\n");
             continue;
-
         case 'T':
             // Set base address.
             basaddr = strtoul(optarg, 0, 0);
             continue;
-
         case 'u':
             // Mark `symbol' as undefined.
             create_extref(optarg);
             continue;
-
         default:
             usage(-1);
         }
@@ -1104,6 +1080,8 @@ void pass2()
     //
     // If there are any undefined symbols, preserve the relocation info.
     //
+    if (r_flag)
+        emit_relocatable = 1;
     if (!emit_relocatable) {
         name_etext = utf_to_text("_etext");
         name_edata = utf_to_text("_edata");
@@ -1118,14 +1096,18 @@ void pass2()
             {
                 // Undefined symbols found.
                 // Switch to relocatable output.
-                emit_relocatable++;
+                emit_relocatable = 1;
+
+                // Don't allocate commons in this case.
                 d_flag = 0;
                 break;
             }
         }
     }
-    if (emit_relocatable)
+    if (emit_relocatable) {
+        // Don't strip symbols.
         s_flag = 0;
+    }
 
     //
     // Allocate common and private blocks.
@@ -1146,9 +1128,12 @@ void pass2()
             }
         }
     }
+    if (basaddr + text_size + data_size + bss_size > 077777)
+        fatal("Program size %u words: memory overflow",
+            basaddr + text_size + data_size + bss_size);
 
     if (!emit_relocatable) {
-        // Allocate _etext, _edata, _end symbols.
+        // Define _etext, _edata and _end symbols.
         create_entry(name_etext, basaddr + text_size);
         create_entry(name_edata, basaddr + text_size + data_size);
         create_entry(name_end, basaddr + text_size + data_size + bss_size);
@@ -1173,6 +1158,8 @@ void pass2()
     }
     if (trace > 1 && (d_flag || !emit_relocatable))
         dump_symtab();
+    if (nsymbols + nnames >= 03777)
+        fatal("Total %u symbols: symbol table overflow", nsymbols + nnames);
 
     //
     // Fill output header.
@@ -1186,6 +1173,7 @@ void pass2()
     aout.cmd_len   = text_size;
     aout.bss_len   = bss_size;
     aout.const_len = data_size;
+    aout.base_addr = emit_relocatable ? 0 : basaddr;
     if (emit_relocatable) {
         aout.entry = 0;
     } else if (entrypt) {
@@ -1222,6 +1210,59 @@ void pass2()
     }
 }
 
+//
+// Compute address of symbol.
+//
+unsigned sym_get_addr(obj_image_t *obj, unsigned index)
+{
+    //TODO
+    return obj->word[index + obj->table_off];
+}
+
+//
+// Relocate an instruction.
+//
+unsigned relocate_cmd(obj_image_t *obj, unsigned cmd)
+{
+    unsigned addr;
+
+    if (cmd & 02000000) {
+        // Long address.
+        addr = cmd & 077777;
+        if ((addr & 074000) == 074000) {
+            addr = sym_get_addr(obj, cmd & 03777);
+            cmd = (cmd & ~077777) | addr;
+            //TODO: if (emit_relocatable)
+        } else if (cmd & 040000) {
+            addr = relocate_address(obj, addr & 037777);
+            cmd = (cmd & ~077777) | addr;
+            //TODO: if (emit_relocatable)
+        }
+    } else {
+        // Short address.
+        if (cmd & 04000) {
+            addr = sym_get_addr(obj, cmd & 03777);
+            cmd = (cmd & ~07777) | addr;
+            //TODO: if (emit_relocatable)
+        }
+    }
+    return cmd;
+}
+
+//
+// Relocate a section of code.
+//
+void relocate_code(obj_image_t *obj, uint64_t *to, uint64_t *from, unsigned nwords)
+{
+    unsigned a, b;
+
+    for (; nwords > 0; nwords--, to++, from++) {
+        a = relocate_cmd(obj, (*from >> 24) & 077777777);
+        b = relocate_cmd(obj, *from & 077777777);
+        *to = (uint64_t)a << 24 | b;
+    }
+}
+
 void pass3()
 {
     int text_origin, data_origin, bss_origin;
@@ -1246,14 +1287,21 @@ void pass3()
             printf("--- Offsets: text %+d, data %+d, bss %+d words\n",
                 offset_text, offset_data, offset_bss);
 
-        if (trace > 1)
-            printf("--- text\n");
-        //TODO: relocate obj->cmd_len
-
-        if (trace > 1)
-            printf("--- data\n");
-        //TODO: relocate obj->const_len
-
+        // Relocate text section.
+        if (obj->cmd_len > 0) {
+            if (trace > 1)
+                printf("--- text %u words\n", obj->cmd_len);
+            relocate_code(obj, &aout.word[aout.cmd_off + text_origin - basaddr],
+                &obj->word[obj->cmd_off], obj->cmd_len);
+        }
+        // Copy data section.
+        if (obj->const_len > 0) {
+            if (trace > 1)
+                printf("--- data %u words\n", obj->const_len);
+            memcpy(&aout.word[aout.cmd_off + data_origin - basaddr],
+                &obj->word[obj->cmd_off + obj->cmd_len],
+                obj->const_len * sizeof(uint64_t));
+        }
         text_origin += obj->cmd_len;
         data_origin += obj->const_len;
         bss_origin += obj->bss_len;

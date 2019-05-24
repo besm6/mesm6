@@ -5,7 +5,7 @@
 #       sudo apt install libarchive-dev
 #
 DESTDIR = /usr/SVSB
-CFLAGS  = -I.. -I../objdump -Werror -Wall
+CFLAGS  = -I../objdump -Werror -Wall
 LDFLAGS =
 LIBS    = -larchive
 
@@ -16,19 +16,17 @@ size    = mkb-size
 
 all:    ld #strip nm size
 
-ld:     ld.o ../objdump/stdobj.o fgetsym.o fputsym.o \
-		fgeth.o fputh.o
-	$(CC) $(LDFLAGS) ld.o -o ld ../objdump/stdobj.o \
-		fgetsym.o fputsym.o fgeth.o fputh.o $(LIBS)
+ld:     ld.o stdobj.o
+	$(CC) $(LDFLAGS) ld.o -o ld stdobj.o $(LIBS)
 
-strip:  strip.o fgeth.o fputh.o
-	$(CC) $(LDFLAGS) strip.o -o strip fgeth.o fputh.o
+strip:  strip.o
+	$(CC) $(LDFLAGS) strip.o -o strip
 
-nm:     nm.o fgetsym.o fgeth.o
-	$(CC) $(LDFLAGS) nm.o -o nm fgetsym.o fgeth.o
+nm:     nm.o
+	$(CC) $(LDFLAGS) nm.o -o nm
 
-size:   size.o fgeth.o
-	$(CC) $(LDFLAGS) size.o -o size fgeth.o
+size:   size.o
+	$(CC) $(LDFLAGS) size.o -o size
 
 install: $(DESTDIR)/bin/$(ld) $(DESTDIR)/bin/$(nm)\
 		$(DESTDIR)/bin/$(size) $(DESTDIR)/bin/$(strip)\
@@ -36,8 +34,8 @@ install: $(DESTDIR)/bin/$(ld) $(DESTDIR)/bin/$(nm)\
 clean:
 	rm -f *.o *.b a.out core ot ld strip nm size
 
-../objdump/stdobj.o:
-	$(MAKE) -C ../objdump stdobj.o
+stdobj.o: ../objdump/stdobj.c ../objdump/stdobj.h
+	$(CC) $(CFLAGS) -c ../objdump/stdobj.c -o $@
 
 $(DESTDIR)/bin/$(ld): ld
 	install -s ld $(DESTDIR)/bin/$(ld)
@@ -52,8 +50,4 @@ $(DESTDIR)/bin/$(strip): strip
 	install -s strip $(DESTDIR)/bin/$(strip)
 
 ###
-fgeth.o: fgeth.c ../mesm6/a.out.h
-fgetsym.o: fgetsym.c ../mesm6/a.out.h
-fputh.o: fputh.c ../mesm6/a.out.h
-fputsym.o: fputsym.c ../mesm6/a.out.h
 ld.o: ld.c ../mesm6/a.out.h

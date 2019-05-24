@@ -1,5 +1,6 @@
 algol.obj: file format besm6
 
+        Module: PROGRAM
      Code size: 45 words
     Const size: 11 words
      Data size: 0 words
@@ -16,7 +17,6 @@ Entries:
 
 Disassembly of code:
 
-PROGRAM:
     c0:  07 24 40055  vtm d55(7)
          15 31 74001  vjm A/START(13)
     c1:  17 25 00152  utm 0152(15)
@@ -133,7 +133,6 @@ Symbol table:
 
 Names:
 
-  4000:  6062 5747 6241 5500  PROGRAM
   4007:  4117 6364 4162 6400  A/START
   4010:  4117 4162 6244 1753  A/ARRD/K
   4011:  4117 6654 5521 0000  A/VLM1

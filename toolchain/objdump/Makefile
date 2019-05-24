@@ -2,7 +2,7 @@
 # objdump: show contents of object files for BESM-6
 #
 DESTDIR = /usr/local
-CFLAGS  = -I.. -O0 -Werror -Wall
+CFLAGS  = -O -g -Werror -Wall
 LDFLAGS =
 OBJ     = objdump.o stdobj.o
 
@@ -22,4 +22,5 @@ $(DESTDIR)/bin/$(objdump): objdump
 	install -s objdump $(DESTDIR)/bin/$(objdump)
 
 ###
-objdump.o: objdump.c ../mesm6/a.out.h
+objdump.o: objdump.c stdobj.h
+stdobj.o: stdobj.c stdobj.h

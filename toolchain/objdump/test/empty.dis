@@ -1,5 +1,6 @@
 empty.obj: file format besm6
 
+        Module: EMPTY
      Code size: 0 words
     Const size: 0 words
      Data size: 0 words
@@ -16,4 +17,3 @@ Entries:
 
 Disassembly of code:
 
-EMPTY:
