@@ -8,9 +8,8 @@ OBJ             = p_1.obj \
 all:            $(OBJ)
 
 clean:
-		rm -f *.b6 *.punch *.obj
+		rm -f *.b6 *.punch *.obj *.lst *.dis
 
-.SUFFIXES:      .obj .madlen
-
-.madlen.obj:
-		../objdump/test/madlen-to-obj.py $<
+%.obj:
+		./perso-to-obj.py $* 410440 $(subst _,/,$*)
+		besm6-objdump $@ > $*.dis

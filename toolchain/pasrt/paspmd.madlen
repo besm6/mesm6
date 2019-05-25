@@ -1,0 +1,180 @@
+ paspmd  :      , name,         . dtran  /01.06.84/
+ paspmdad:      , lc  , 1
+ p/wxd   :      , subp,
+ p/wo    :      , subp,
+ p/wr    :      , subp,
+ p/wi    :      , subp,
+ p/print :      , subp,
+ p/woln  :      , subp,
+ stop*   :      , subp,
+ p/7a    :      , subp,
+ p/wl    :      , subp,
+ p/cw    :      , subp,
+ *0000b  :      , ntr , 3
+                , ita , 15
+                , its , 13
+                , its , 1
+                , its , 2
+                , its , 3
+                , its , 6
+            15  , atx ,
+            3   , vtm , *0132b  . =i7
+            13  , vjm , p/woln
+            10  , vtm , *0112b  . =6h pasca
+            13  , vjm , *0110b
+            14  , vtm , 76030b
+            7   , mtj , 13
+ *0007b  :      , ita , 13
+            15  , aex , -4
+                , uza , *0014b
+            13  , xta ,
+                , ati , 13
+            14  , vlm , *0007b
+            10  , vtm , *0115b  . =6h stack
+            13  , vjm , *0110b
+            13  , vjm , stop*
+
+ *0014b  :  7   , mtj , 6
+
+ *0015b  :  3   , xta ,
+                , its , 6
+            15  , x-a , -7
+            13  , vjm , p/wi
+            11  , vtm , *0120b  . =6h stack
+            10  , vtm , 17b
+            13  , vjm , p/7a
+
+            6   , xta , 1
+                , asn , 64+30
+                , u1a , *0036b
+            11  , vtm , *0123b  . =6h witho
+            10  , vtm , 14b
+            13  , vjm , p/7a
+ *0024b  :  13  , vjm , p/wl
+
+                , ita , 6
+            15  , atx , -6
+            15  , aex , -4
+                , uza , *0064b
+            6   , xta ,
+                , ati , 6
+                , uj  , *0015b
+
+ *0031b  :  15  , atx , 2
+            3   , xta , 1
+            15  , xts , 1
+                , uj  , p/wxd
+c===========================================
+ p/pmdset:      ,entry,
+c===========================================
+            14  , vtm , *0000b
+                , ita , 14
+                , utc , paspmdad
+                , atx ,
+            13  , uj  ,
+
+ *0036b  :      , ati , 2
+            11  , vtm , *0125b  . =6h name=
+            10  , vtm , 6
+            13  , vjm , p/7a
+            2   , xta ,
+            13  , vjm , *0031b
+            11  , vtm , *0126b  . =6h.line=
+            10  , vtm , 6
+            13  , vjm , p/7a
+
+            3   , xta , 1
+            2   , xts , 1
+            13  , vjm , p/wi
+
+            13  , vjm , p/wl
+
+ *0046b  :  2   , utm , 2
+            2   , xta ,
+                , uza , *0024b
+            13  , vjm , *0031b
+            3   , xta , 2
+            13  , vjm , p/cw
+            2   , xta , 1
+                , asn , 64+15
+            3   , aax , 6
+                , ati , 14
+            13  , vtm , *0061b
+            14  , vzm , *0071b
+            14  , utm , -1
+            14  , vzm , *0073b
+            14  , utm , -1
+            14  , vzm , *0075b
+            14  , utm , -1
+            14  , vzm , *0077b
+            14  , utm , -1
+            14  , vzm , *0105b
+                , uj  , *0105b
+
+ *0061b  :  3   , xta , 5
+            13  , vjm , p/cw
+                , uj  , *0046b
+            13  , vjm , p/wl
+                , uj  , *0046b
+
+ *0064b  :  10  , vtm , *0127b  . =6h pasca
+            13  , vjm , *0110b
+            15  , xta ,
+                , sti , 6
+                , sti , 3
+                , sti , 2
+            15  , utm , -2
+            15  , wtc , 1
+                , uj  ,
+
+ *0071b  :  14  , vtm , p/wr
+            3   , xta , 1
+            3   , xts , 3
+                , uj  , *0106b
+ *0073b  :  14  , vtm , p/wi
+            3   , xta , 1
+                , uj  , *0106b
+
+ *0075b  :  2   , wtc , 1
+            6   , xta ,
+                , uj  , p/cw
+
+ *0077b  :  2   , xta , 1
+                , asn , 64+18
+                , its , 8
+            15  , arx ,
+                , ati , 14
+            2   , wtc , 1
+            6   , wtc ,
+            14  , xta ,
+            13  , vjm , *0031b
+
+            13  , vtm , *0061b
+                , uj  , *0105b
+ *0105b  :  3   , xta , 3
+            14  , vtm , p/wo
+ *0106b  :  2   , wtc , 1
+            6   , xts ,
+            14  , uj  ,
+
+ *0110b  :  10  , utc ,
+            11  , vtm , 2
+                , uj  , p/print
+
+ *0112b  :      , iso , 12h pascal pm d
+                , oct , 2524 6520 1000 144
+ *0115b  :      , iso , 18h stack is spoiled
+ *0120b  :      , iso , 18h stack length.
+ *0123b  :      , iso , 12h without pmd
+ *0125b  :      , iso , 6h name=
+ *0126b  :      , iso , 6h.line=
+ *0127b  :      , iso , 12h pascal pmd
+                , log , 2124 7104 1002 0003
+ *0132b  :      , int , 7
+                , int , 0
+                , log , 75
+                , int , 16
+                , log , 124
+                , log , 56
+                , log , 7
+                , end ,

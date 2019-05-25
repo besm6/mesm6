@@ -1,0 +1,41 @@
+ p/ef    :      , name,         . dtran  /01.06.84/
+ paseolsy:      , lc  , 1
+ paszero*:      , lc  , 1
+ pasmins*:      , lc  , 1
+ space*  :      , lc  , 1
+ paseofcd:      , lc  , 1
+ pasends*:      , lc  , 1
+            7   , xta , 1
+                , asn , 64+15
+                , ati , 14
+            14  , utc ,
+            13  , vjm ,
+c===========================================
+
+ p/e     :      ,entry,
+c===========================================
+                , ntr , 3
+            7   , mtj , 15
+            7   , xta ,
+                , ati , 7
+            15  , wtc , 1
+                , uj  ,
+                , data,
+ /0006b  :      , log , 60
+ /0007b  :      , log , 55
+ /0010b  :      , log , 40
+ /0011b  :      , iso , 6h/*
+ /0012b  :      , log , 12
+            1   , set , /0012b
+            1   ,     , paseolsy
+            1   , set , /0006b
+            1   ,     , paszero*
+            1   , set , /0007b
+            1   ,     , pasmins*
+            1   , set , /0010b
+            1   ,     , space*
+            1   , set , /0011b
+            1   ,     , paseofcd
+            1   , set , /0012b
+            1   ,     , pasends*
+                , end ,

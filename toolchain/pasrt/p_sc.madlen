@@ -1,0 +1,17 @@
+ p/sc    :      , name,         . dtran  /01.06.84/
+ pascelup:      , lc  , 1
+ p/er    :      , subp,
+                , ita , 15
+                , utc , pascelup
+                , a-x ,
+            13  , u1a ,
+            11  , vtm , *0004b  . =6h stack
+            10  , vtm , 30b
+                , uj  , p/er
+
+ *0004b  :      , iso , 24h stack overrange. line
+                , data,
+ /0010b  :      , log , 7 5360
+            1   , set , /0010b
+            1   ,     , pascelup
+                , end ,

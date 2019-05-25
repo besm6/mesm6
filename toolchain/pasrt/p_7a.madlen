@@ -1,0 +1,34 @@
+ p/7a    :      , name,         . dtran  /01.06.84/
+ p/pf    :      , subp,
+ p/hide  :      , subp,
+ p/edih  :      , subp,
+            14  , vjm ,p/hide
+
+            11  , mtj ,8
+            10  , mtj ,7
+c===========================================
+ p/7ad   :      ,entry,
+c===========================================
+ *0002b  :  6   , vtm ,-5
+            8   , xta ,
+            1   , atx ,5
+
+ *0004b  :  1   , xta ,5
+                , asn ,64-8
+            1   , atx ,5
+                , yta ,
+            12  , wtc ,
+                , atx ,
+            13  , vjm ,p/pf
+
+            7   , utm ,-1
+            7   , vzm ,*0013b
+            6   , vlm ,*0004b
+            8   , utm ,1
+                , uj  ,*0002b
+
+ *0013b  :  14  , vjm ,p/edih
+
+            13  , uj  ,
+
+                , end ,
