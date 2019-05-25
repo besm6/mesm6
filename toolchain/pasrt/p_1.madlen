@@ -1,0 +1,13 @@
+ p/1     :      , name,         . dtran  /01.06.84/
+ p/trpage:      , subp,
+ p/bx    :      , subp,
+ p/en    :      , subp,
+            11  , vjm , p/bx
+
+            13  , vjm , p/en
+
+            14  , mtj , 13
+            10  , xta , 2
+            13  , u1a ,
+                , uj  , p/trpage
+                , end ,

@@ -1,0 +1,94 @@
+﻿                                                      24.05.19 M1
+
+  M O H И T O P-8 0  (3.7)   25.09.84*       (  MC " Д Y Б H A " ИAЭ  )             ШИФP    419999000000
+
+
+
+
+
+
+
+                     ЖЖЖ  ЖЖЖЖЖ  ЖЖЖ  ЖЖЖЖ
+                    Ж       Ж   Ж   Ж Ж   Ж
+                     ЖЖЖ    Ж   Ж   Ж Ж   Ж  Ж Ж
+                        Ж   Ж   Ж   Ж Ж   Ж Ж Ж Ж
+                        Ж   Ж   Ж   Ж ЖЖЖЖ   Ж Ж
+                    Ж   Ж   Ж   Ж   Ж Ж
+                     ЖЖЖ    Ж    ЖЖЖ  Ж
+
+
+
+
+
+
+
+
+*NAME STOP*
+           *PERSO: 401350, CONT
+ 04.10.84 M1
+           *CALL DTRAN(STOP*)
+                 DTRAN  /01.06.84/
+           *CALL PUTFLAG*
+ 40
+           *ASSEM
+           *READ: 1
+                                                      24.05.19 M1
+ ABTOKOД  MADLEN
+   (1.10.72)
+                    STOP*   :  , NAME,        DTRAN  /01.06.84/
+                    IODCB*  :  , LC  ,0
+                    STOP**  :  , SUBP,
+                    RESTOP* :  , LC  ,1
+                    TAPELIST:  , LC  ,25
+                   C     TAPELIST:LC,BLOCK,GAK/4(24)
+                    GAK/5   :  , EQU ,TAPELIST+24
+                   C     ,CONT,GAK/5
+                    RM*     :  , LC  ,5
+                   C     RM*:LC,BLOCK,GAK/6
+                    GAK/7   :  , EQU ,RM*+1
+                   C     ,CONT,GAK/7
+                    GAL/0   :  , EQU ,RM*+2
+                   C     ,CONT,GAL/0(3)
+                    RFMRTFLG:  , LC  ,1
+                    INFLOAD*:  , LC  ,1
+                    LOADANGO:  , SUBP,
+ 0000 0000          *0000B  :12, VTM ,*0000B
+  -                            , WTC ,GAL/0   .RM*+2
+ 0001                        15, VTM ,
+  -                          12, *67 ,20B
+ 0002               *0002B  :  , ITA ,13
+  -                            , XTS ,
+ 0003                          , WTC ,RESTOP*
+  -                          13, VTM ,
+ 0004 0010                   13, V1M ,*0010B
+  -                          13, VTM ,STOP**
+ 0005                          , XTS ,RM*
+  -                            , ATX ,16B
+ 0006                          , XTA ,772B
+  -                            , ATX ,17B
+ 0007                          , XTA ,
+  -                            , STX ,INFLOAD*
+ 0010               *0010B  :  , ATX ,RESTOP*
+  -                            , XTA ,RFMRTFLG
+ 0011 0013                     , UZA ,*0013B
+  -                            , ASN ,64-8
+ 0012                          , ARX ,
+  -   0016                     , U1A ,*0016B
+ 0013               *0013B  :  , XTA ,GAK/5   .TAPELIST+24
+  -                            , ASN ,64-47
+ 0014                          , ARX ,
+  -   0016                     , UZA ,*0016B
+ 0015                          , STX ,
+  -                          13, UJ  ,
+ 0016               *0016B  :12, XTS ,17B
+  -                            , UJ  ,LOADANGO
+ 0017                        10, 157 ,7056B
+  -                          12, 36  ,74160B
+ 0020                          , Z00 ,*0002B
+  -                           9, ATX ,
+                               , END ,
+ ЧИCЛO ПEPФ. 0052      ЧИCЛO OШИБ. OПEPATOPOB  0000
+           *READ OLD
+           *END FILE
+ КОНЕЦ ЗАДАЧИ
+ 00411: 00 074 0000	*74

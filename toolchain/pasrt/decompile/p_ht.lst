@@ -1,0 +1,68 @@
+﻿                                                      24.05.19 M1
+
+  M O H И T O P-8 0  (3.7)   25.09.84*       (  MC " Д Y Б H A " ИAЭ  )             ШИФP    419999000000
+
+
+
+
+
+
+
+                    ЖЖЖЖ        Ж   Ж ЖЖЖЖЖ
+                    Ж   Ж       Ж   Ж   Ж
+                    Ж   Ж    Ж  ЖЖЖЖЖ   Ж
+                    Ж   Ж   Ж   Ж   Ж   Ж
+                    ЖЖЖЖ   Ж    Ж   Ж   Ж
+                    Ж           Ж   Ж   Ж
+                    Ж           Ж   Ж   Ж
+
+
+
+
+
+
+
+
+*NAME P/HT
+           *PERSO: 401350, CONT
+ 04.10.84 M1
+           *CALL DTRAN:410440(P/HT)
+                 DTRAN  /01.06.84/
+           *CALL PUTFLAG*
+ 40
+           *ASSEM
+           *READ: 1
+                                                      24.05.19 M1
+ ABTOKOД  MADLEN
+   (1.10.72)
+                    P/HT    :  , NAME,        DTRAN  /01.06.84/
+                    STOP*   :  , SUBP,
+                    P/E     :  , SUBP,
+                    P/RC    :  , SUBP,
+                    P/EF    :  , SUBP,
+                    PASPMDAD:  , LC  ,1
+ 0000                        14, VTM ,PASPMDAD
+  -                          14, XTA ,
+ 0001 0003                     , UZA ,*0003B
+  -   0003                   13, VTM ,*0003B
+ 0002                        14, WTC ,
+  -                            , UJ  ,
+ 0003               *0003B  : 1, MTJ ,13
+  -                          14, VJM ,P/RC
+ 0004                         7, XTA ,1
+  -   0011                     , UTC ,*0011B  .=77 7770 0000
+ 0005                          , AAX ,
+  -                          14, VTM ,STOP*
+ 0006                          , ITS ,14
+  -                          15, AOX ,-1
+ 0007                         7, STX ,1
+  -                            , UZA ,P/E
+ 0010                          , UJ  ,P/EF
+  -
+ 0011               *0011B  :  , LOG ,77 7770 0000
+                               , END ,
+ ЧИCЛO ПEPФ. 0025      ЧИCЛO OШИБ. OПEPATOPOB  0000
+           *READ OLD
+           *END FILE
+ КОНЕЦ ЗАДАЧИ
+ 00411: 00 074 0000	*74

@@ -316,7 +316,7 @@ const char *sym_name(nlist_t *sp)
     case SYM_PRIVATE_L:
     case SYM_COMMON_L:
         // Long name.
-        return text_to_utf(nametab[sp->f.n_ref]);
+        return text_to_utf(nametab[sp->f.n_ref & 03777]);
 
     default:
         return "<Unknown>";
@@ -1177,7 +1177,7 @@ void pass2()
                 if (!undef_count)
                     printf("Undefined:\n");
                 undef_count++;
-                printf("\t%s\n", sym_name(sp));
+                printf("    %s\n", sym_name(sp));
                 error_status = 1;
                 break;
             }

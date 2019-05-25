@@ -1,0 +1,83 @@
+﻿                                                      24.05.19 M1
+
+  M O H И T O P-8 0  (3.7)   25.09.84*       (  MC " Д Y Б H A " ИAЭ  )             ШИФP    419999000000
+
+
+
+
+
+
+
+                    ЖЖЖЖ        ЖЖЖЖ  ЖЖЖЖЖ
+                    Ж   Ж       Ж     Ж
+                    Ж   Ж    Ж  ЖЖЖ   ЖЖЖЖ
+                    Ж   Ж   Ж   Ж     Ж
+                    ЖЖЖЖ   Ж    Ж     Ж
+                    Ж           Ж     Ж
+                    Ж           ЖЖЖЖЖ Ж
+
+
+
+
+
+
+
+
+*NAME P/EF
+           *PERSO: 401350, CONT
+ 04.10.84 M1
+           *CALL DTRAN:410440(P/EF)
+                 DTRAN  /01.06.84/
+           *CALL PUTFLAG*
+ 40
+           *ASSEM
+           *READ: 1
+                                                      24.05.19 M1
+ ABTOKOД  MADLEN
+   (1.10.72)
+                    P/EF    :  , NAME,        DTRAN  /01.06.84/
+                    PASEOLSY:  , LC  ,1
+                    PASZERO*:  , LC  ,1
+                    PASMINS*:  , LC  ,1
+                    SPACE*  :  , LC  ,1
+                    PASEOFCD:  , LC  ,1
+                    PASENDS*:  , LC  ,1
+ 0000                         7, XTA ,1
+  -                            , ASN ,64+15
+ 0001                          , ATI ,14
+  -                          14, UTC ,
+ 0002                        13, VJM ,
+                   C===========================================
+  -
+ 0003               P/E     :  ,ENTRY,
+                   C===========================================
+ 0003                          , NTR ,3
+  -                           7, MTJ ,15
+ 0004                         7, XTA ,
+  -                            , ATI ,7
+ 0005                        15, WTC ,1
+  -                            , UJ  ,
+                               , DATA,
+ 0006               /0006B  :  , LOG ,60
+ 0007               /0007B  :  , LOG ,55
+ 0010               /0010B  :  , LOG ,40
+ 0011               /0011B  :  , ISO ,6H/*
+ 0012               /0012B  :  , LOG ,12
+                              1, SET ,/0012B
+ 0013                         1,     ,PASEOLSY
+                              1, SET ,/0006B
+ 0014                         1,     ,PASZERO*
+                              1, SET ,/0007B
+ 0015                         1,     ,PASMINS*
+                              1, SET ,/0010B
+ 0016                         1,     ,SPACE*
+                              1, SET ,/0011B
+ 0017                         1,     ,PASEOFCD
+                              1, SET ,/0012B
+ 0020                         1,     ,PASENDS*
+                               , END ,
+ ЧИCЛO ПEPФ. 0040      ЧИCЛO OШИБ. OПEPATOPOB  0000
+           *READ OLD
+           *END FILE
+ КОНЕЦ ЗАДАЧИ
+ 00411: 00 074 0000	*74

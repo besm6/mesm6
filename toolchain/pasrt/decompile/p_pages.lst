@@ -1,0 +1,60 @@
+﻿                                                      24.05.19 M1
+
+  M O H И T O P-8 0  (3.7)   25.09.84*       (  MC " Д Y Б H A " ИAЭ  )             ШИФP    419999000000
+
+
+
+
+
+
+
+                    ЖЖЖЖ        ЖЖЖЖ   ЖЖЖ   ЖЖЖ  ЖЖЖЖ   ЖЖЖ
+                    Ж   Ж       Ж   Ж Ж   Ж Ж   Ж Ж     Ж
+                    Ж   Ж    Ж  Ж   Ж Ж   Ж Ж     ЖЖЖ    ЖЖЖ
+                    Ж   Ж   Ж   Ж   Ж Ж   Ж Ж     Ж         Ж
+                    ЖЖЖЖ   Ж    ЖЖЖЖ  Ж   Ж Ж  ЖЖ Ж         Ж
+                    Ж           Ж     ЖЖЖЖЖ Ж   Ж Ж     Ж   Ж
+                    Ж           Ж     Ж   Ж  ЖЖЖ  ЖЖЖЖЖ  ЖЖЖ
+
+
+
+
+
+
+
+
+*NAME P/PAGES
+           *PERSO: 401350, CONT
+ 04.10.84 M1
+           *CALL DTRAN:410440(P/PAGES)
+                 DTRAN  /01.06.84/
+           *CALL PUTFLAG*
+ 40
+           *ASSEM
+           *READ: 1
+                                                      24.05.19 M1
+ ABTOKOД  MADLEN
+   (1.10.72)
+                    P/PAGES :  , NAME,        DTRAN  /01.06.84/
+                    PASDRUM*:  , LC  ,1
+                    PASDRN* :  , LC  ,1
+                    PASPAGN*:  , LC  ,1
+                    P/FIRP  :  , PC  ,1024
+ 0000                         9, VTM ,P/FIRP
+  -                          14, UJ  ,
+                               , DATA,
+ 0001               /0001B  :  , LOG ,1
+ 0002               /0002B  :  , LOG ,20
+ 0003               /0003B  :  , LOG ,25 0000
+                              1, SET ,/0003B
+ 0004                         1,     ,PASDRUM*
+                              1, SET ,/0001B
+ 0005                         1,     ,PASPAGN*
+                              1, SET ,/0002B
+ 0006                         1,     ,PASDRN*
+                               , END ,
+ ЧИCЛO ПEPФ. 0018      ЧИCЛO OШИБ. OПEPATOPOB  0000
+           *READ OLD
+           *END FILE
+ КОНЕЦ ЗАДАЧИ
+ 00411: 00 074 0000	*74

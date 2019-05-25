@@ -1,0 +1,67 @@
+﻿                                                      24.05.19 M1
+
+  M O H И T O P-8 0  (3.7)   25.09.84*       (  MC " Д Y Б H A " ИAЭ  )             ШИФP    419999000000
+
+
+
+
+
+
+
+                    ЖЖЖЖ        ЖЖЖ    ЖЖЖ
+                    Ж   Ж       Ж  Ж  Ж   Ж
+                    Ж   Ж    Ж  Ж   Ж Ж   Ж
+                    Ж   Ж   Ж   Ж   Ж Ж   Ж
+                    ЖЖЖЖ   Ж    Ж   Ж Ж   Ж
+                    Ж           Ж   Ж ЖЖЖЖЖ
+                    Ж           ЖЖЖЖ  Ж   Ж
+
+
+
+
+
+
+
+
+*NAME P/DA
+           *PERSO: 401350, CONT
+ 04.10.84 M1
+           *CALL DTRAN:410440(P/DA)
+                 DTRAN  /01.06.84/
+           *CALL PUTFLAG*
+ 40
+           *ASSEM
+           *READ: 1
+                                                      24.05.19 M1
+ ABTOKOД  MADLEN
+   (1.10.72)
+                    P/DA    :  , NAME,        DTRAN  /01.06.84/
+                    *OUTPUT*:  , LC  ,1
+                    P/7A    :  , SUBP,
+                    P/WI    :  , SUBP,
+                    P/WL    :  , SUBP,
+                    P/HT    :  , SUBP,
+ 0000 0012                     , UTC ,*0012B  .=I6
+  -                            , XTA ,
+ 0001                          , ITS ,14
+  -                           1, AOX ,11B
+ 0002                        15, ATX ,
+  -                          12, VTM ,*OUTPUT*
+ 0003                        10, VTM ,14B
+  -   0010                   11, VTM ,*0010B  .=6H OVERA
+ 0004                        13, VJM ,P/7A
+  -
+ 0005                        15, XTA ,
+  -                          13, VJM ,P/WI
+ 0006                        13, VJM ,P/WL
+  -
+ 0007                        13, VJM ,P/HT
+  -
+ 0010               *0010B  :  , ISO ,12H OVERANGE IN
+ 0012               *0012B  :  , INT ,6
+                               , END ,
+ ЧИCЛO ПEPФ. 0022      ЧИCЛO OШИБ. OПEPATOPOB  0000
+           *READ OLD
+           *END FILE
+ КОНЕЦ ЗАДАЧИ
+ 00411: 00 074 0000	*74

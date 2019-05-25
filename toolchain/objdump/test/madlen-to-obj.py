@@ -41,6 +41,8 @@ task_file.write("""шифр 419999 зс5^
 лен 67(2148)^
 eeв1а3
 *name %s
+*call putflag*
+41
 *debug
 *punch
 *assem
