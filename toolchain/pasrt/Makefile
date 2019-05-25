@@ -8,7 +8,7 @@ OBJ             = p_1.obj \
 all:            $(OBJ)
 
 clean:
-		rm -f *.b6 *.punch *.obj
+		rm -f *.b6 *.punch *.obj *.lst
 
 .SUFFIXES:      .obj .madlen
 

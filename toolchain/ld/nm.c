@@ -130,6 +130,16 @@ int in_bss(unsigned addr)
            (addr < obj.base_addr + obj.cmd_len + obj.const_len + obj.bss_len);
 }
 
+//
+// Does the symbol belong to transient data segment?
+//
+int in_tdata(nlist_t *sp)
+{
+    return (sp->f.n_ref == 00200000) &&
+           (sp->f.n_addr >= obj.base_addr + obj.cmd_len + obj.const_len) &&
+           (sp->f.n_addr < obj.base_addr + obj.cmd_len + obj.const_len + obj.data_len);
+}
+
 void add_symbol(const char *fname, uint64_t tname, int type, unsigned value)
 {
     symtab_t sym;
@@ -251,6 +261,14 @@ void nm(const char *fname, int narg)
         add_symbol(fname, tname, type, sp->f.n_addr);
     }
 
+    // Add entries.
+    for (i = 0; i < obj.nentries; i++) {
+        uint64_t addr = obj.word[2*i + 2] & 077777;
+
+        tname = obj.word[2*i + 1];
+        add_symbol(fname, tname, 'T', addr);
+    }
+
     // Add local symbols.
     if (!undef_flg && !globl_flg) {
         for (i = 0; i < obj.debug_len; i += 2) {
@@ -268,8 +286,8 @@ void nm(const char *fname, int narg)
                 // Local label: Madlen, Fortran-Dubna.
                 type = in_text(sp->f.n_addr) ? 't' :
                        in_data(sp->f.n_addr) ? 'd' :
-                       !in_bss(sp->f.n_addr) ? '?' :
-                       sp->f.n_ref==00200000 ? 's' : 'b';
+                       in_tdata(sp) ?          's' :
+                       in_bss(sp->f.n_addr)  ? 'b' : '?';
                 break;
 
             case 0000:
