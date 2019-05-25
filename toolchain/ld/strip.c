@@ -1,142 +1,121 @@
+/*
+ * Discard symbols from object files.
+ *
+ * Copyright (c) 2019 Serge Vakulenko
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+#include <unistd.h>
+#include <getopt.h>
+#include "stdobj.h"
 
-# include <signal.h>
-# include <stdio.h>
+#define WORDSZ 6
 
-# ifdef CROSS
-#    include "../h/a.out.h"
-# else
-#    include <a.out.h>
-# endif
+const char *progname;
+int status = 0;
 
-# ifndef BUFSIZ
-# define BUFSIZ 512
-# endif
-
-char * tname;
-char * mktemp();
-struct exec head;
-int status;
-FILE * tf;
-
-# define MSG(l,r) (msg ? (r) : (l))
-
-char msg;
-
-initmsg ()
+void strip(char *fname)
 {
-	register char *p;
-	extern char *getenv ();
+    FILE *fd;
+    obj_image_t obj = {0};
+    unsigned size;
 
-	msg = (p = getenv ("MSG")) && *p == 'r';
+    fd = fopen(fname, "r+");
+    if (!fd) {
+        printf("%s: %s not found\n", progname, fname);
+        status = 1;
+        return;
+    }
+    if (obj_read_header(fd, &obj) < 0) {
+        fclose(fd);
+        printf("%s: %s not an object file\n", progname, fname);
+        status = 1;
+        return;
+    }
+    if (!obj.sym_len && !obj.long_len) {
+        fclose(fd);
+        printf("%s already stripped\n", fname);
+        return;
+    }
+    if (!obj.base_addr || !obj.entry || obj.cmd_off != 11) {
+        fclose(fd);
+        printf("%s: cannot strip relocatable file %s\n", progname, fname);
+        return;
+    }
+
+    size = (obj.table_off + 1) * WORDSZ;
+    obj.sym_len = 0;
+    obj.long_len = 0;
+
+    if (obj_write_header(fd, &obj) < 0) {
+        fclose(fd);
+        printf("%s: cannot rewrite header\n", fname);
+        status = 1;
+        return;
+    }
+    fclose(fd);
+
+    if (truncate(fname, size) < 0) {
+        printf("%s: cannot truncate\n", fname);
+        status = 1;
+        return;
+    }
 }
 
-main (argc, argv)
-char *argv[];
+void usage(int retcode)
 {
-	register i;
-
-	initmsg ();
-	signal (SIGHUP, SIG_IGN);
-	signal (SIGINT, SIG_IGN);
-	signal (SIGQUIT, SIG_IGN);
-	tname = mktemp ("/tmp/sXXXXX");
-	close (creat(tname, 0600));
-	tf = fopen (tname, "w+");
-	if (! tf) {
-		printf (MSG ("cannot create temp file\n",
-			"не могу создать временный файл\n"));
-		exit (2);
-	}
-	for (i=1; i<argc; i++) {
-		strip (argv[i]);
-		if (status > 1)
-			break;
-	}
-	fclose (tf);
-	unlink (tname);
-	exit (status);
+    printf("Strip symbols from BESM-6 object files\n");
+    printf("Usage:\n");
+    printf("    %s file...\n", progname);
+    exit(retcode);
 }
 
-strip (name)
-char * name;
+int main(int argc, char **argv)
 {
-	register FILE * f;
-	long size;
+    // Get program name.
+    progname = strrchr(argv[0], '/');
+    if (progname)
+        progname++;
+    else
+        progname = argv[0];
 
-	f = fopen (name, "r");
-	if (! f) {
-		printf (MSG ("cannot open %s\n", "не могу открыть %s\n"),
-			name);
-		status = 1;
-		goto out;
-	}
-	fgethdr (f, &head);
-	if (N_BADMAG (head)) {
-		printf (MSG ("%s not in a.out format\n",
-				"%s не в формате a.out\n"),
-			name);
-		status = 1;
-		goto out;
-	}
-	if (! head.a_syms && (head.a_flag & RELFLG)) {
-		printf (MSG ("%s already stripped\n",
-				"%s уже обрезано\n"),
-			name);
-		goto out;
-	}
-	size = head.a_const + head.a_text + head.a_data;
-	head.a_syms = 0;
-	head.a_flag |= RELFLG;
-	fseek (tf, 0l, 0);
-	fputhdr (&head, tf);
-	if (copy (name, f, tf, size)) {
-		status = 1;
-		goto out;
-	}
-	size += HDRSZ;
-	fclose (f);
-	f = fopen (name, "w");
-	if (! f) {
-		printf (MSG ("%s cannot recreate\n",
-				"не могу переоткрыть %s\n"),
-			name);
-		status = 1;
-		goto out;
-	}
-	fseek (tf, 0l, 0);
-	if (copy (name, tf, f, size))
-		status = 2;
-out:
-	fclose (f);
-}
+    if (argc == 1)
+        usage(0);
 
-copy (name, fr, to, size)
-char *name;
-FILE * fr, * to;
-long size;
-{
-	register s, n;
-	char buf [BUFSIZ];
-
-	while (size != 0) {
-		s = BUFSIZ;
-		if (size < s)
-			s = size;
-		n = fread (buf, 1, s, fr);
-		if (n != s) {
-			printf (MSG ("%s unexpected eof\n",
-					"%s преждевременный конец файла\n"),
-				name);
-			return (1);
-		}
-		n = fwrite (buf, 1, s, to);
-		if (n != s) {
-			printf (MSG ("%s unexpected write eof\n",
-					"%s ошибка при записи\n"),
-				name);
-			return (1);
-		}
-		size -= s;
-	}
-	return (0);
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGINT, SIG_IGN);
+    signal(SIGQUIT, SIG_IGN);
+    for (;;) {
+        switch (getopt(argc, argv, "-")) {
+        case EOF:
+            break;
+        case 1:
+            strip(optarg);
+            continue;
+        default:
+            usage(-1);
+        }
+        break;
+    }
+    return status;
 }

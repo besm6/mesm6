@@ -1,102 +1,127 @@
 /*
- *      ОС ДЕМОС СВС-Б.
+ * Print section sizes and total size of object files.
  *
- *      size [-w] [file ...]    - выдать размеры сегментов объектного файла.
- *                                Если задан флаг "-w", размеры выдаются
- *                                в словах, иначе - в байтах.
+ * Copyright (c) 2019 Serge Vakulenko
  *
- *      Автор: Вакуленко С.В. (МФТИ).
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <getopt.h>
+#include "stdobj.h"
 
-# include <stdio.h>
+int format = 'd';
+const char *progname;
 
-# ifdef CROSS
-#    include "../h/a.out.h"
-# else
-#    include <a.out.h>
-# endif
-
-# define W 8            /* длина слова в байтах */
-
-int header;             /* был ли уже напечатан заголовок */
-int wflag;              /* выдавать длину в словах */
-
-# define MSG(l,r) (msg ? (r) : (l))
-
-char msg;
-
-initmsg ()
+void size(char *fname)
 {
-	register char *p;
-	extern char *getenv ();
+    FILE *fd;
+    obj_image_t obj = {0};
+    static int header_printed;
+    unsigned sum;
 
-	msg = (p = getenv ("MSG")) && *p == 'r';
+    fd = fopen(fname, "r");
+    if (!fd) {
+        fprintf(stderr, "%s: %s not found\n", progname, fname);
+        return;
+    }
+    if (obj_read_header(fd, &obj) < 0) {
+        fclose(fd);
+        fprintf(stderr, "%s: %s not an object file\n", progname, fname);
+        return;
+    }
+    fclose(fd);
+
+    sum = obj.cmd_len + obj.const_len + obj.bss_len;
+    if (!header_printed) {
+        if (format == 'o')
+            printf("   text    data     bss     oct     hex filename\n");
+        else
+            printf("   text    data     bss     dec     hex filename\n");
+        header_printed = 1;
+    }
+    switch (format) {
+    default:
+        printf("%7d %7d %7d %7d %7x %s\n",
+            obj.cmd_len, obj.const_len, obj.bss_len, sum, sum, fname);
+        break;
+    case 'x':
+        printf("%#7x %#7x %#7x %#7x %7x %s\n",
+            obj.cmd_len, obj.const_len, obj.bss_len, sum, sum, fname);
+        break;
+    case 'o':
+        printf("%#7o %#7o %#7o %#7o %7x %s\n",
+            obj.cmd_len, obj.const_len, obj.bss_len, sum, sum, fname);
+        break;
+    }
 }
 
-main (argc, argv)
-register char **argv;
+void usage(int retcode)
 {
-	int yesarg;     /* были ли параметры - имена файлов */
-
-	initmsg ();
-	while(--argc) {
-		++argv;
-		if (**argv == '-') {
-			while (*++*argv) switch (**argv) {
-			case 'w':
-				wflag++;
-				break;
-			default:
-				fprintf (stderr,
-					MSG ("size: bad flag %c\n",
-						"size: неизвестный флаг %c\n"),
-					**argv);
-				exit (1);
-			}
-			continue;
-		}
-		size (*argv);
-		yesarg = 1;
-	}
-	if (! yesarg) size ("a.out");
+    printf("Show section sizes of BESM-6 object files\n");
+    printf("Usage:\n");
+    printf("    %s [options] file...\n", progname);
+    printf("Options:\n");
+    printf("    -d      Print sizes in decimal (default)\n");
+    printf("    -o      Print sizes in octal\n");
+    printf("    -x      Print sizes in hexadecimal\n");
+    exit(retcode);
 }
 
-size (fname)
-register char *fname;
+int main(int argc, char **argv)
 {
-	struct exec buf;
-	long sum;
-	register FILE *f;
+    int yesarg = 0;
 
-	if ((f = fopen(fname, "r"))==NULL) {
-		printf (MSG ("size: %s not found\n",
-				"size: %s не найден\n"),
-			fname);
-		return;
-	}
-	if (! fgethdr (f, &buf) || N_BADMAG(buf)) {
-		printf (MSG ("size: %s not an object file\n",
-				"size: %s не объектный файл\n"),
-			fname);
-		fclose(f);
-		return;
-	}
-	if (header == 0) {
-		printf("const\ttext\tdata\tbss\tabss\tdec\thex\n");
-		header = 1;
-	}
-	sum = buf.a_const + buf.a_text + buf.a_data + buf.a_bss + buf.a_abss;
-	if (wflag) {
-		sum /= W;
-		printf("%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%lx\t%s\n",
-			buf.a_const/W, buf.a_text/W,
-			buf.a_data/W, buf.a_bss/W, buf.a_abss/W,
-			sum, sum, fname);
-	} else {
-		printf("%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%lx\t%s\n",
-			buf.a_const, buf.a_text,
-			buf.a_data, buf.a_bss, buf.a_abss,
-			sum, sum, fname);
-	}
-	fclose(f);
+    // Get program name.
+    progname = strrchr(argv[0], '/');
+    if (progname)
+        progname++;
+    else
+        progname = argv[0];
+
+    if (argc == 1)
+        usage(0);
+    for (;;) {
+        switch (getopt(argc, argv, "-dox")) {
+        case EOF:
+            break;
+        case 1:
+            size(optarg);
+            yesarg = 1;
+            continue;
+        case 'd':
+            format = 'd';
+            continue;
+        case 'o':
+            format = 'o';
+            continue;
+        case 'x':
+            format = 'x';
+            continue;
+        default:
+            usage(-1);
+        }
+        break;
+    }
+
+    if (! yesarg)
+        size("a.out");
+    return 0;
 }

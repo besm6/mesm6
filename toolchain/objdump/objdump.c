@@ -65,6 +65,7 @@ const char *scmd_madlen[64] = {
 const char **long_name = lcmd_madlen, **short_name = scmd_madlen;
 int debug_flag;
 int raw_flag;
+const char *progname;
 
 static const char *text_to_utf[] = {
     " ", ".", "Б", "Ц", "Д", "Ф", "Г", "И",
@@ -363,12 +364,12 @@ void disassemble(const char *fname)
 
     fd = fopen(fname, "r");
     if (!fd) {
-        fprintf(stderr, "dis: %s not found\n", fname);
+        fprintf(stderr, "%s: %s not found\n", progname, fname);
         return;
     }
     if (obj_read_fd(fd, &obj) < 0) {
         fclose(fd);
-        fprintf(stderr, "dis: %s not an object file\n", fname);
+        fprintf(stderr, "%s: %s not an object file\n", progname, fname);
         return;
     }
     fclose(fd);
@@ -562,22 +563,24 @@ void disassemble(const char *fname)
                 (unsigned)word & 07777,
                 getsyminfo(&obj, word, 1, 0));
         }
-        printf("\n");
-        printf("Names:\n");
-        printf("\n");
-        for (i = 0; i < obj.long_len; i++) {
-            uint64_t word = obj.word[i + obj.long_off];
-
-            printf("%6o:  %04o %04o %04o %04o",
-                i + 04001 + obj.sym_len,
-                (unsigned)(word >> 36) & 07777,
-                (unsigned)(word >> 24) & 07777,
-                (unsigned)(word >> 12) & 07777,
-                (unsigned)word & 07777);
-            if ((word >> 42) != 0)
-                printf("  ");
-            print_word_as_text(word);
+        if (obj.long_len > 0) {
             printf("\n");
+            printf("Names:\n");
+            printf("\n");
+            for (i = 0; i < obj.long_len; i++) {
+                uint64_t word = obj.word[i + obj.long_off];
+
+                printf("%6o:  %04o %04o %04o %04o",
+                    i + 04001 + obj.sym_len,
+                    (unsigned)(word >> 36) & 07777,
+                    (unsigned)(word >> 24) & 07777,
+                    (unsigned)(word >> 12) & 07777,
+                    (unsigned)word & 07777);
+                if ((word >> 42) != 0)
+                    printf("  ");
+                print_word_as_text(word);
+                printf("\n");
+            }
         }
     }
 
@@ -607,7 +610,7 @@ void usage()
 {
     printf("BESM6 Disassembler\n");
     printf("Usage:\n");
-    printf("    besm6-dis [option...] infile...\n");
+    printf("    %s [option...] infile...\n", progname);
     printf("Options:\n");
     printf("    -b      Use BEMSH mnemonics\n");
     printf("    -d      Print Debug section\n");
@@ -617,6 +620,13 @@ void usage()
 
 int main(int argc, char **argv)
 {
+    // Get program name.
+    progname = strrchr(argv[0], '/');
+    if (progname)
+        progname++;
+    else
+        progname = argv[0];
+
     for (;;) {
         switch (getopt(argc, argv, "bdr")) {
         case EOF:

@@ -107,6 +107,11 @@ static const uint64_t BESM6_MAGIC = 0x4245534d3600;
 extern int obj_read_fd(FILE *fd, obj_image_t *obj);
 
 //
+// Read object header only.
+//
+extern int obj_read_header(FILE *fd, obj_image_t *obj);
+
+//
 // Read object image from a data buffer.
 // Return negative in case of failure.
 //
@@ -123,3 +128,8 @@ extern obj_image_t *obj_copy(obj_image_t *from);
 // Return negative in case of failure.
 //
 extern int obj_write(FILE *fd, obj_image_t *obj);
+
+//
+// Write object header only.
+//
+extern int obj_write_header(FILE *fd, obj_image_t *obj);

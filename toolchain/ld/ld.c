@@ -165,6 +165,9 @@ uint64_t fread6(FILE *fd)
     return val;
 }
 
+//
+// Convert a 16-bit unicode character to 6-bit TEXT encoding.
+//
 uint8_t unicode_to_text(uint16_t uc)
 {
     static const uint8_t tab0[256] = {
@@ -517,6 +520,27 @@ nlist_t *create_entry(uint64_t name, unsigned addr)
 }
 
 //
+// Create new symbol: relocatable address.
+// Return index in symtab.
+//
+unsigned create_reloc(unsigned addr)
+{
+    nlist_t *sp;
+
+    if (trace > 1)
+        printf("--- Add reloc[%u] %05o\n", nsymbols, addr);
+
+    // Allocate new symbol: external reference.
+    if (nsymbols >= MAXSYMBOLS)
+        fatal("Symbol table overflow");
+    sp = &symtab[nsymbols];
+    nsymbols++;
+    sp->f.n_type = SYM_RELOC;
+    sp->f.n_addr = addr;
+    return sp - symtab;
+}
+
+//
 // Merge symbols from the object file into a common symbol table.
 //
 void merge_symbols(obj_image_t *obj)
@@ -855,7 +879,7 @@ void append_to_obj_list(obj_image_t *obj)
 }
 
 //
-// Pass 1: load one object file.
+// Load an object file.
 // The file can be opened as file descriptor fd,
 // or supplied as byte array of given size.
 // Accumulate the final image sizes: code, data and bss.
@@ -958,6 +982,7 @@ void load1name(char *fname, int libflag)
 
 void usage(int retcode)
 {
+    printf("Linker for BESM-6 object files\n");
     printf("Usage:\n");
     printf("    %s [options] file...\n", progname);
     printf("Options:\n");
@@ -974,7 +999,7 @@ void usage(int retcode)
 }
 
 //
-// Scan files once to find symdefs.
+// Pass 1: Read input files and calculate section sizes.
 //
 void pass1(int argc, char **argv)
 {
@@ -1038,13 +1063,15 @@ void pass1(int argc, char **argv)
 
 //
 // Pass 2: build the symbol table.
+// Allocate common and private blocks.
+// Define _etext, _edata and _end symbols.
 //
 void pass2()
 {
     obj_image_t *obj;
     nlist_t *sp;
-    uint64_t name_etext, name_edata, name_end;
     int text_origin, data_origin, bss_origin, cblock_origin;
+    uint64_t name_etext = 0, name_edata = 0, name_end = 0;
 
     if (trace > 1)
         printf("Second pass:\n");
@@ -1160,6 +1187,179 @@ void pass2()
         dump_symtab();
     if (nsymbols + nnames >= 03777)
         fatal("Total %u symbols: symbol table overflow", nsymbols + nnames);
+}
+
+//
+// Compute a final value of symbol.
+//
+unsigned sym_eval(unsigned index)
+{
+    nlist_t *sp = &symtab[index];
+    unsigned ref, val;
+
+    switch (sp->f.n_type) {
+    default:
+        return sp->f.n_addr;
+
+    case SYM_RELOC:
+        // Relocatable address.
+        return basaddr + sp->f.n_addr;
+
+    case SYM_OFFSET:
+        // Offset from another symbol.
+        // Update the reference field with new index.
+        ref = sp->f.n_ref & 03777;
+        return sym_eval(ref) + sp->f.n_addr;
+
+    case SYM_INDIRECT:
+        // Dereference.
+        ref = sym_eval(sp->f.n_addr);
+        if (ref < basaddr || ref >= basaddr + text_size + data_size)
+            fatal("Indirect symbol out of text+data section: %05o", ref);
+        return aout.word[11 + ref - basaddr] & 077777;
+
+    case SYM_EXPRESSION:
+        // Expression.
+        return sym_eval(sp->f.n_addr);
+
+    case SYM_ADD:
+        // Add two symbols.
+        ref = sp->f.n_ref & 03777;
+        return sym_eval(ref) + sym_eval(sp->f.n_addr);
+
+    case SYM_SUBTRACT:
+        // Subtract two symbols.
+        ref = sp->f.n_ref & 03777;
+        return sym_eval(ref) + sym_eval(sp->f.n_addr);
+
+    case SYM_MULTIPLY:
+        // Multiply two symbols.
+        ref = sp->f.n_ref & 03777;
+        return sym_eval(ref) * sym_eval(sp->f.n_addr);
+
+    case SYM_DIVIDE:
+        // Divide two symbols.
+        ref = sp->f.n_ref & 03777;
+        val = sym_eval(sp->f.n_addr);
+        if (val == 0)
+            fatal("Divide by zero symbol #%u", sp->f.n_addr);
+        return sym_eval(ref) / val;
+    }
+}
+
+//
+// Relocate an instruction.
+//
+unsigned relocate_cmd(obj_image_t *obj, unsigned cmd)
+{
+    unsigned addr, index;
+
+    if (cmd & 02000000) {
+        // Long address.
+        addr = cmd & 077777;
+        if ((addr & 074000) == 074000) {
+            index = obj->word[(cmd & 03777) + obj->table_off];
+            if (emit_relocatable) {
+                // Update symbol index.
+                addr = 074001 + index;
+            } else {
+                addr = sym_eval(index);
+            }
+            cmd = (cmd & ~077777) | addr;
+        } else if (cmd & 040000) {
+            addr = relocate_address(obj, addr & 037777);
+            if (emit_relocatable) {
+                if (addr & 040000) {
+                    // Address out of range.
+                    // Need to use SYM_RELOC.
+                    addr = 074001 + create_reloc(addr);
+                } else {
+                    addr |= 040000;
+                }
+            }
+            cmd = (cmd & ~077777) | addr;
+        }
+    } else {
+        // Short address.
+        if (cmd & 04000) {
+            index = obj->word[(cmd & 03777) + obj->table_off];
+            if (emit_relocatable) {
+                // Update symbol index.
+                addr = 04001 + index;
+            } else {
+                addr = sym_eval(index);
+            }
+            cmd = (cmd & ~07777) | addr;
+        }
+    }
+    return cmd;
+}
+
+//
+// Relocate a section of code.
+//
+void relocate_code(obj_image_t *obj, uint64_t *to, uint64_t *from, unsigned nwords)
+{
+    unsigned a, b;
+
+    for (; nwords > 0; nwords--, to++, from++) {
+        a = relocate_cmd(obj, (*from >> 24) & 077777777);
+        b = relocate_cmd(obj, *from & 077777777);
+        *to = (uint64_t)a << 24 | b;
+    }
+}
+
+//
+// Pass 3: Relocate the code.
+// Build the output object image.
+//
+void pass3()
+{
+    int text_origin, data_origin, bss_origin;
+    obj_image_t *obj;
+
+    if (trace > 1) {
+        printf("Third pass:\n");
+    }
+    text_origin = basaddr;
+    data_origin = text_origin + text_size;
+    bss_origin = data_origin + data_size;
+    for (obj = obj_head; obj; obj = obj->next) {
+        if (trace > 1)
+            printf("%s\n", text_to_utf(obj->word[obj->table_off]));
+
+        // Compute offsets for symbol relocation.
+        offset_text = text_origin;
+        offset_data = data_origin - obj->cmd_len;
+        offset_bss = bss_origin - obj->cmd_len - obj->const_len;
+
+        if (trace > 1)
+            printf("--- Offsets: text %+d, data %+d, bss %+d words\n",
+                offset_text, offset_data, offset_bss);
+
+        // Relocate text section.
+        if (obj->cmd_len > 0) {
+            if (trace > 1)
+                printf("--- text %u words\n", obj->cmd_len);
+            relocate_code(obj, &aout.word[11 + text_origin - basaddr],
+                &obj->word[obj->cmd_off], obj->cmd_len);
+        }
+        // Copy data section.
+        if (obj->const_len > 0) {
+            if (trace > 1)
+                printf("--- data %u words\n", obj->const_len);
+            memcpy(&aout.word[11 + data_origin - basaddr],
+                &obj->word[obj->cmd_off + obj->cmd_len],
+                obj->const_len * sizeof(uint64_t));
+        }
+        text_origin += obj->cmd_len;
+        data_origin += obj->const_len;
+        bss_origin += obj->bss_len;
+
+        //TODO: copy obj->data_len, increase tdata_size
+        //TODO: copy obj->set_len, increase set_size
+        //TODO: copy obj->debug_len, increase debug_size
+    }
 
     //
     // Fill output header.
@@ -1201,9 +1401,23 @@ void pass2()
 
     // Copy symbol table and name table.
     if (!s_flag) {
+        // Update references to long names.
+        nlist_t *sp;
+        for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
+            switch (sp->f.n_type) {
+            case SYM_ENTRY_L:
+            case SYM_EXT_L:
+            case SYM_PRIVATE_L:
+            case SYM_COMMON_L:
+                sp->f.n_ref = (sp->f.n_ref & 03777) + nsymbols + 04001;
+                break;
+            }
+        }
+
         if (nsymbols > 0)
             memcpy(&aout.word[1 + aout.table_off], &symtab[0],
                 nsymbols * sizeof(uint64_t));
+
         if (nnames > 0)
             memcpy(&aout.word[aout.long_off], &nametab[0],
                 nnames * sizeof(uint64_t));
@@ -1211,107 +1425,8 @@ void pass2()
 }
 
 //
-// Compute address of symbol.
+// Write output file.
 //
-unsigned sym_get_addr(obj_image_t *obj, unsigned index)
-{
-    //TODO
-    return obj->word[index + obj->table_off];
-}
-
-//
-// Relocate an instruction.
-//
-unsigned relocate_cmd(obj_image_t *obj, unsigned cmd)
-{
-    unsigned addr;
-
-    if (cmd & 02000000) {
-        // Long address.
-        addr = cmd & 077777;
-        if ((addr & 074000) == 074000) {
-            addr = sym_get_addr(obj, cmd & 03777);
-            cmd = (cmd & ~077777) | addr;
-            //TODO: if (emit_relocatable)
-        } else if (cmd & 040000) {
-            addr = relocate_address(obj, addr & 037777);
-            cmd = (cmd & ~077777) | addr;
-            //TODO: if (emit_relocatable)
-        }
-    } else {
-        // Short address.
-        if (cmd & 04000) {
-            addr = sym_get_addr(obj, cmd & 03777);
-            cmd = (cmd & ~07777) | addr;
-            //TODO: if (emit_relocatable)
-        }
-    }
-    return cmd;
-}
-
-//
-// Relocate a section of code.
-//
-void relocate_code(obj_image_t *obj, uint64_t *to, uint64_t *from, unsigned nwords)
-{
-    unsigned a, b;
-
-    for (; nwords > 0; nwords--, to++, from++) {
-        a = relocate_cmd(obj, (*from >> 24) & 077777777);
-        b = relocate_cmd(obj, *from & 077777777);
-        *to = (uint64_t)a << 24 | b;
-    }
-}
-
-void pass3()
-{
-    int text_origin, data_origin, bss_origin;
-    obj_image_t *obj;
-
-    if (trace > 1) {
-        printf("Third pass:\n");
-    }
-    text_origin = basaddr;
-    data_origin = text_origin + text_size;
-    bss_origin = data_origin + data_size;
-    for (obj = obj_head; obj; obj = obj->next) {
-        if (trace > 1)
-            printf("%s\n", text_to_utf(obj->word[obj->table_off]));
-
-        // Compute offsets for symbol relocation.
-        offset_text = text_origin;
-        offset_data = data_origin - obj->cmd_len;
-        offset_bss = bss_origin - obj->cmd_len - obj->const_len;
-
-        if (trace > 1)
-            printf("--- Offsets: text %+d, data %+d, bss %+d words\n",
-                offset_text, offset_data, offset_bss);
-
-        // Relocate text section.
-        if (obj->cmd_len > 0) {
-            if (trace > 1)
-                printf("--- text %u words\n", obj->cmd_len);
-            relocate_code(obj, &aout.word[aout.cmd_off + text_origin - basaddr],
-                &obj->word[obj->cmd_off], obj->cmd_len);
-        }
-        // Copy data section.
-        if (obj->const_len > 0) {
-            if (trace > 1)
-                printf("--- data %u words\n", obj->const_len);
-            memcpy(&aout.word[aout.cmd_off + data_origin - basaddr],
-                &obj->word[obj->cmd_off + obj->cmd_len],
-                obj->const_len * sizeof(uint64_t));
-        }
-        text_origin += obj->cmd_len;
-        data_origin += obj->const_len;
-        bss_origin += obj->bss_len;
-
-        //TODO: copy obj->data_len, increase tdata_size
-        //TODO: copy obj->set_len, increase set_size
-        //TODO: copy obj->debug_len, increase debug_size
-    }
-}
-
 void emit()
 {
     FILE *fd = fopen(ofilename, "wb");
@@ -1324,7 +1439,8 @@ void emit()
     if (!o_flag) {
         // Rename a.out into l.out.
         unlink("a.out");
-        link("l.out", "a.out");
+        if (link("l.out", "a.out") < 0)
+            fatal("Cannot link l.out to a.out");
         ofilename = "a.out";
     }
     unlink("l.out");

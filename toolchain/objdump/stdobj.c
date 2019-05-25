@@ -142,6 +142,19 @@ int obj_read_fd(FILE *fd, obj_image_t *obj)
 }
 
 //
+// Read header only.
+//
+int obj_read_header(FILE *fd, obj_image_t *obj)
+{
+    int i;
+
+    obj->nwords = 0;
+    for (i=0; i<1+10+2*20; i++)
+        obj->word[obj->nwords++] = fread6(fd);
+    return obj_decode(obj);
+}
+
+//
 // Read object image from a data buffer.
 // Return negative in case of failure.
 //
@@ -179,13 +192,10 @@ obj_image_t *obj_copy(obj_image_t *from)
 }
 
 //
-// Write object image to a file.
-// Return negative in case of failure.
+// Update word[] array with header data.
 //
-int obj_write(FILE *fd, obj_image_t *obj)
+static int update_header(obj_image_t *obj)
 {
-    int i;
-
     if (obj->cmd_off == 11) {
         // Unpacked header.
         obj->word[obj->head_off] = obj->head_len;
@@ -203,12 +213,43 @@ int obj_write(FILE *fd, obj_image_t *obj)
                             (uint64_t) obj->base_addr << 24;
     } else {
         // Wrong header offset.
+        fprintf(stderr, "Unsupported header size: %d words\n", obj->cmd_off);
         return -1;
     }
     obj->word[0] = BESM6_MAGIC;
+    return 0;
+}
+
+//
+// Write object image to a file.
+// Return negative in case of failure.
+//
+int obj_write(FILE *fd, obj_image_t *obj)
+{
+    if (update_header(obj) < 0)
+        return -1;
 
     // Write file contents.
+    int i;
     for (i = 0; i < obj->nwords; i++) {
+        if (fwrite6(fd, obj->word[i]) < 0)
+            return -1;
+    }
+    return 0;
+}
+
+//
+// Write header only.
+//
+int obj_write_header(FILE *fd, obj_image_t *obj)
+{
+    if (update_header(obj) < 0)
+        return -1;
+
+    // Write header.
+    int i;
+    fseek(fd, SEEK_SET, 0L);
+    for (i = 0; i < obj->cmd_off; i++) {
         if (fwrite6(fd, obj->word[i]) < 0)
             return -1;
     }
