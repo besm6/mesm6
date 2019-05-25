@@ -430,6 +430,10 @@ unsigned relocate_address(obj_image_t *obj, unsigned addr)
     if (addr < obj->cmd_len + obj->const_len + obj->bss_len) {
         return addr + offset_bss;
     }
+    if (addr < obj->cmd_len + obj->const_len + obj->data_len) {
+        // Transient data section.
+        return addr + offset_bss;
+    }
     fatal("Module %s: relocatable address %05o out of range",
         text_to_utf(obj->word[obj->table_off]), addr);
     return 0;
