@@ -1,0 +1,26 @@
+ p/ht    :      , name,         . dtran  /01.06.84/
+ stop*   :      , subp,
+ p/e     :      , subp,
+ p/rc    :      , subp,
+ p/ef    :      , subp,
+ paspmdad:      , lc  , 1
+            14  , vtm , paspmdad
+            14  , xta ,
+                , uza , *0003b
+            13  , vtm , *0003b
+            14  , wtc ,
+                , uj  ,
+ *0003b  :   1  , mtj , 13
+            14  , vjm , p/rc
+             7  , xta , 1
+                , utc , *0011b  . =77 7770 0000
+                , aax ,
+            14  , vtm , stop*
+                , its , 14
+            15  , aox , -1
+             7  , stx , 1
+                , uza , p/e
+                , uj  , p/ef
+
+ *0011b  :      , log , 77 7770 0000
+                , end ,

@@ -1,0 +1,195 @@
+ pasout  :      , name,         . dtran  /01.06.84/
+ *pasdds*:      , lc  , 1
+ paszero*:      , lc  , 1
+ rgexport:      , lc  , 1
+ *pastel*:      , lc  , 25
+ pasevn  :      , subp,
+ pasnb8  :      , subp,
+ print8  :      , subp,
+ pult    :      , subp,
+ gam/0   :      , equ , *pastel*+3
+ gam/2   :      , equ , *pastel*+12
+                , sti , 11
+                , sti , 10
+c================================================
+ p/print :      ,entry,
+c================================================
+                , ita , 13
+            13  , vtm , rgexport
+            13  , xts ,
+            9   , vtm , *pastel*
+            9   , aax , 22b
+                , uza , *0020b
+            9   , xta ,
+                , u1a , *0007b
+            13  , vjm , *0037b
+
+                , uza , *0030b
+
+ *0007b  :  13  , vjm , *0053b
+
+                , uza , *0020b
+                , utc , paszero*
+                , xta ,
+                , uza , *0034b
+            13  , vjm , pasevn
+
+            9   , vtm , *pastel*
+            9   , *71 , 5
+            9   , *71 , 12b
+
+            9   , xta , 25b
+            9   , atx , 13b
+            13  , vjm , pasnb8
+
+            9   , vtm , *pastel*
+
+ *0020b  :  13  , vtm , rgexport
+            13  , xta ,
+            9   , aax , 23b
+                , uza , *0027b
+                , utc , paszero*
+                , xta ,
+                , uza , *0032b
+                , ita , 8
+                , its , 10
+                , its , 11
+                , its ,
+            13  , vjm , print8
+                , ntr , 3
+                , ati , 8
+ *0027b  :  15  , wtc ,
+                , uj  ,
+ *0030b  :  9   , xta , 23b
+                , utc , rgexport
+                , atx ,
+                , uj  , *0020b
+ *0032b  :  9   , *64 , 26b
+
+                , uj  , *0027b
+
+ *0034b  :  9   , *71 , 7
+
+            9   , *71 , 12b
+
+                , uj  , *0020b
+c================================================
+
+ pastn   :      ,entry,
+c================================================
+ *0037b  :  9   , vtm , *pastel*
+            9   , utc , 17b
+                , *71 ,
+
+            9   , atx , 1
+                , anx ,
+            9   , atx ,
+            13  , uza ,
+            9   , aox , 30b
+            9   , atx , 12b
+                , asn , 64-12
+            9   , aox , 16b
+            9   , atx , 7
+            9   , aox , 21b
+            9   , atx , 5
+            9   , aox , 20b
+            9   , atx , 6
+            9   , aex , 21b
+            9   , atx , 10b
+            9   , aex , 24b
+            9   , atx , 11b
+            9   , xta ,
+            13  , uj  ,
+c================================================
+
+ paswht  :      ,entry,
+c================================================
+ *0053b  :  9   , xta , 4
+            9   , arx , 22b
+            9   , atx , 4
+            9   , aex , 3
+            13  , u1a ,
+                , xta ,
+            9   , atx , 4
+
+ *0057b  :  9   , xta , 14b
+            9   , atx , 13b
+            9   , *71 , 11b
+
+            9   , *71 , 12b
+
+            9   , xta , 13b
+                , asn , 64+40
+                , ati , 14
+            14  , utm , -42
+            14  , vzm , *0110b
+            14  , utm , -26
+            14  , vzm , *0111b
+            14  , utm , 77505b
+            14  , vzm , *0107b
+            14  , utm , 337b
+            14  , vzm , *0104b
+            14  , utm , -16
+            14  , vzm , *0105b
+            14  , utm , -2
+            14  , vzm , *0100b
+            14  , utm , 15b
+            14  , vzm , *0103b
+            14  , utm , -26
+            14  , vzm , *0076b
+            14  , utm , -9
+            14  , v1m , *0057b
+                , *62 ,
+                , uj  , *0057b
+
+ *0076b  :  9   , xta , 22b
+                , utc , *pasdds*
+                , atx ,
+                , uj  , *0101b
+ *0100b  :  9   , xta , 22b
+
+ *0101b  :  14  , vtm , rgexport
+            14  , atx ,
+            9   , aax , 22b
+            13  , uj  ,
+ *0103b  :  13  , vjm , pult
+
+ *0104b  :  9   , xta , 23b
+                , uj  , *0101b
+ *0105b  :  9   , xta , 22b
+            9   , aox , 23b
+                , uj  , *0101b
+
+ *0107b  :  13  , uj  ,
+
+ *0110b  :      , sj  ,
+
+ *0111b  :  9   , xta , 13b
+                , asn , 64-8
+                , asn , 64+40
+            9   , atx , 3
+            13  , uj  ,
+                , data,
+
+ /0114b  :      , log , 13
+                , log , 12
+ /0116b  :      , log , 2262 6440 1441 2417
+                , log ,
+                , oct , 5020 0000 55
+                , log , 7777 7777 7777 7777
+                , oct , 001
+                , oct , 0001
+                , log , 1
+                , log , 2
+                , log , 1404 0013 1000 0013
+                , log , 3767 7577 3767 7577
+                , oct , 5000 0000 54
+                , log , 4000 0000
+                , oct , 012
+             1  , set ,
+             5  ,     , *pastel*
+             2  , set , /0114b
+             1  ,     , gam/0   . *pastel*+3
+            13  , set , /0116b
+             1  ,     , gam/2   . *pastel*+12
+                , end ,

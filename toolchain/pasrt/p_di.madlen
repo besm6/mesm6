@@ -1,0 +1,10 @@
+ p/di    :      , name,         . dtran  /01.06.84/
+                , ntr ,
+                , avx ,
+            15  , stx , 1
+                , avx ,
+            15  , a/x , 2
+                , ntr , 3
+            1   , a+x , 11b
+            13  , uj  ,
+                , end ,

@@ -1,0 +1,19 @@
+ p/er    :      , name,         . dtran  /01.06.84/
+ *output*:      , lc  , 30
+ p/7a    :      , subp,
+ p/wi    :      , subp,
+ p/ht    :      , subp,
+                , utc , *0006b  . =i7
+                , xta ,
+                , its , 14
+             1  , aex , 11b
+            15  , atx ,
+            12  , vtm , *output*
+            13  , vjm , p/7a
+
+            15  , xta ,
+            13  , vjm , p/wi
+            13  , vjm , p/ht
+
+ *0006b  :      , int , 7
+                , end ,

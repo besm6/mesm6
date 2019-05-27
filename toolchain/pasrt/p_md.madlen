@@ -1,0 +1,16 @@
+ p/md    :      , name,         . dtran  /01.06.84/
+                , ntr ,
+                , avx ,
+            15  , stx , 1
+                , avx ,
+            15  , atx , 1
+            15  , a/x , 2
+                , ntr , 3
+            1   , a+x , 11b
+                , ntr ,
+            15  , a*x , 2
+            15  , x-a , 1
+                , ntr , 3
+            1   , a+x , 11b
+            13  , uj  ,
+                , end ,

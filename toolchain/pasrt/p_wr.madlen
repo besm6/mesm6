@@ -1,0 +1,258 @@
+ p/wr    :      , name,         . dtran  /01.06.84/
+ space*  :      , lc  , 1
+ paszero*:      , lc  , 1
+ pasmins*:      , lc  , 1
+ pasperid:      , lc  , 1
+ pasplus*:      , lc  , 1
+ p/cw    :      , subp,
+ p/tr    :      , subp,
+ p/a7    :      , subp,
+ p/wi    :      , subp,
+                , ntr ,
+                , avx ,
+                , ntr , 3
+                , its , 13
+                , xts ,
+            14  , vtm , *0144b  . =i10
+                , xts ,
+            15  , utm , 3
+ *0004b  :  14  , xta ,
+            15  , a-x , -7
+                , uza , *0012b
+            14  , a+x ,
+                , uza , *0011b
+            14  , avx , 1
+            15  , atx , -7
+            1   , xta , 10b
+            15  , atx , -4
+                , uj  , *0004b
+ *0011b  :  14  , xta ,
+                , uj  , *0014b
+ *0012b  :  14  , a+x , 1
+                , u1a , *0015b
+            1   , xta , 21b
+
+ *0014b  :  15  , atx , -7
+
+ *0015b  :  15  , xta , -8
+            15  , wtc , -4
+            14  , a-x , 2
+                , uza , *0021b
+            15  , wtc , -4
+            14  , xta , 2
+            15  , atx , -8
+
+ *0021b  :  15  , xta , -8
+            15  , a-x , -7
+            15  , atx , -8
+            15  , xta , -4
+                , u1a , *0132b
+
+ *0024b  :  15  , xta , -8
+            14  , a-x , 2
+                , u1a , *0032b
+                , utc , space*
+                , xta ,
+            13  , vjm , p/cw
+            14  , vtm , *0144b  . =i10
+            15  , xta , -8
+            1   , a-x , 21b
+            15  , atx , -8
+                , uj  , *0024b
+
+ *0032b  :  15  , xta , -6
+                , ntr , 20b
+                , u1a , *0036b
+                , utc , space*
+                , xta ,
+                , uj  , *0040b
+ *0035b  :  1   , xta , 21b
+                , uj  , *0046b
+ *0036b  :  14  , avx , 1
+            15  , atx , -6
+                , utc , pasmins*
+                , xta ,
+ *0040b  :  13  , vjm , p/cw
+
+            14  , vtm , *0144b  . =i10
+            15  , xta , -6
+                , uza , *0035b
+                , asn , 64+41
+            14  , a-x , 4
+            1   , aex , 11b
+                , ntr ,
+            14  , a*x , 5
+                , ntr , 3
+            1   , a+x , 11b
+ *0046b  :  15  , atx , -8
+                , amx ,
+                , ati , 13
+            14  , j+m , 13
+            15  , xta , -8
+                , ntr , 20b
+                , u1a , *0053b
+            15  , xta , -6
+            13  , a/x , 22b
+                , uj  , *0054b
+ *0053b  :  15  , xta , -6
+            13  , a*x , 22b
+ *0054b  :  15  , atx , -6
+            14  , a-x , 22b
+                , uza , *0061b
+            15  , xta , -6
+            14  , a*x , 23b
+            15  , atx , -6
+            15  , xta , -8
+                , ntr , 3
+            1   , a-x , 21b
+            15  , atx , -8
+ *0061b  :  13  , vjm , *0134b
+
+            14  , x-a , 23b
+                , uza , *0067b
+            15  , xta , -6
+            14  , a/x , 23b
+            15  , atx , -6
+            15  , xta , -8
+                , ntr , 3
+            1   , a+x , 21b
+            15  , atx , -8
+
+ *0067b  :  1   , xta , 21b
+            15  , atx , -3
+ *0070b  :  15  , xta , -6
+            13  , vjm , p/tr
+            15  , atx , -2
+                , ntr ,
+            15  , x-a , -6
+                , amx ,
+            15  , wtc , -7
+            14  , a*x , 22b
+                , ntr , 3
+            1   , a+x , 11b
+            1   , atx , 4
+            15  , xta , -2
+            1   , aex , 11b
+                , u1a , *0104b
+            15  , xta , -6
+                , ntr , 20b
+                , uza , *0104b
+            15  , xta , -3
+            11  , vtm , *0143b  . =6h-0
+            10  , vtm , 2
+            15  , atx ,
+            13  , vjm , p/a7
+                , uj  , *0106b
+
+ *0104b  :  15  , xta , -3
+            15  , xts , -3
+            13  , vjm , p/wi
+
+ *0106b  :      , utc , pasperid
+                , xta ,
+            13  , vjm , p/cw
+
+            13  , vtm , space*
+            13  , xta ,
+            15  , atx , -1
+                , utc , paszero*
+                , xta ,
+            13  , atx ,
+            15  , xta , -7
+            1   , xts , 4
+            13  , vjm , p/wi
+
+            15  , xta , -4
+                , u1a , *0127b
+            14  , vtm , *0144b  . =i10
+            14  , xta , 6
+            13  , vjm , p/cw
+
+            14  , vtm , pasplus*
+            15  , xta , -8
+                , ntr , 23b
+                , uza , *0124b
+            1   , avx , 17b
+            15  , atx , -8
+            14  , vtm , pasmins*
+
+ *0124b  :  14  , xta ,
+            13  , vjm , p/cw
+            14  , vtm , *0144b  . =i10
+            14  , xta , 7
+            15  , xts , -9
+            13  , vjm , p/wi
+ *0127b  :  15  , xta , -1
+                , utc , space*
+                , atx ,
+            15  , utm , -8
+            15  , wtc , 3
+                , uj  ,
+ *0132b  :  15  , xta , -8
+            1   , a-x , 21b
+            15  , atx , -3
+            13  , vtm , *0070b
+ *0134b  :  11  , vtm ,
+            15  , xta , -6
+                , ntr , 20b
+                , uza , *0137b
+            11  , vtm , *0145b  . =i-9
+
+ *0137b  :      , ntr ,
+            15  , wtc , -7
+            14  , xta , 7
+            11  , avx ,
+            15  , a+x , -6
+            15  , atx , -6
+            13  , uj  ,
+
+ *0143b  :      , iso , 6h-0
+ *0144b  :      , int , 10
+ *0145b  :      , int , -9
+                , int , 8
+                , int , 4
+                , log , 100
+                , log , 3751 5037 2261 7343
+                , log , 105
+                , int , 2
+                , log , 3614 6314 6314 6315
+                , log , 3452 1727 0243 6561
+                , log , 3310 1422 3351 3616
+                , log , 3115 0667 0565 4344
+                , log , 2752 3705 5304 3435
+                , log , 2610 3067 5720 2661
+                , log , 2415 3277 4515 2747
+                , log , 2252 5714 3561 0606
+                , oct , 2110 4560 2764 047
+                , oct , 1715 5746 7754 73
+c================================================
+ pastens :      ,entry,
+c================================================
+                , oct , 405
+                , oct , 4212
+                , oct , 4354 4
+                , oct , 4517 5
+                , oct , 4711 61
+                , oct , 5054 152
+                , oct , 5217 2044
+                , oct , 5411 4226 4
+                , oct , 5553 7274 1
+                , oct , 5716 7153 12
+                , oct , 6111 2402 762
+                , oct , 6253 5103 5564
+                , oct , 6416 4324 5121
+                , oct , 6611 0604 7162 5
+                , oct , 6753 2746 1017 22
+                , oct , 7116 1537 5223 064
+                , log , 7310 7033 6233 7404
+                , log , 7453 0642 5702 7305
+                , log , 7615 7013 3263 5166
+                , log , 7757 7777 7777 7777
+                , data,
+ /0212b  :      , log , 56
+ /0213b  :      , log , 53
+            1   , set , /0212b
+            1   ,     , pasperid
+            1   , set , /0213b
+            1   ,     , pasplus*
+                , end ,

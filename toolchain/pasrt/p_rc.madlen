@@ -1,0 +1,39 @@
+ p/rc    :      , name,         . dtran  /01.06.84/
+                , ntr , 3
+            12  , vtm , *0021b  . =0
+                , ita , 14
+            12  , atx ,
+                , ita , 13
+            12  , atx , 1
+ *0003b  :      , ita , 7
+            12  , aex , 1
+                , uza , *0014b
+             7  , xta , 1
+                , utc , *0023b  . =77 7770 0000
+                , aax ,
+                , uza , *0011b
+                , asn , 64+15
+                , ati , 13
+            13  , utc ,
+            13  , vjm ,
+
+ *0011b  :  12  , vtm , *0021b  . =0
+             7  , mtj , 15
+             7  , xta ,
+                , ati , 7
+                , uj  , *0003b
+
+ *0014b  :      , ita , 15
+             1  , a-x , 6
+                , uza , *0020b
+             1  , wtc , 6
+                , xta ,
+             1  , atx , 6
+                , uj  , *0014b
+
+ *0020b  :  12  , wtc ,
+                , uj  ,
+ *0021b  :      , log ,
+                , log ,
+ *0023b  :      , log , 77 7770 0000
+                , end ,

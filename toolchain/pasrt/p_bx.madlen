@@ -1,0 +1,80 @@
+ p/bx    :      , name,         . dtran  /01.06.84/
+ rgexport:      , lc  , 1
+ p/1d    :      , lc  , 40
+ p/stack :      , lc  , 1
+ gak/7   :      , equ , p/1d+6
+ gal/1   :      , equ , p/1d+27
+            9   , vtm , p/stack
+                , xta , 17b
+                , ati , 10
+                , ita , 15
+            10  , mtj , 15
+                , xts , 17b
+            9   , xts ,
+                , its , 13
+            12  , vtm , -6
+
+ *0005b  :  12  , its , 7
+            12  , vlm , *0005b
+                , xts ,
+                , its , 10
+                , utc , *0025b  . =10 0000
+                , aox ,
+            9   , atx ,
+                , ntr , 3
+            11  , uj  ,
+c================================================
+
+ p/en    :      ,entry,
+c================================================
+            12  , vtm , *0015b
+                , ita , 12
+            1   , vtm , p/1d
+            1   , atx , 1
+            1   , mtj , 7
+            13  , uj  ,
+ *0015b  :  9   , vtm , p/stack
+            9   , wtc ,
+            15  , vtm , 13b
+            12  , vtm , 7
+            15  , xta ,
+
+ *0020b  :  12  , sti ,
+            12  , utm , -1
+            12  , v1m , *0020b
+                , sti , 13
+            9   , stx ,
+                , stx , 17b
+            15  , mtj , 9
+                , ati , 15
+                , ntr , 6
+            13  , uj  ,
+ *0025b  :      , log , 10 0000
+                , data,
+ /0026b  :      , log ,
+                , iso , 6h000000
+                , log , 1
+                , int , 0
+                , oct , 24
+                , log , 7757 7777 7777 7777
+                , log , 17 7777 7777 7777
+                , log , 2650 3067 5720 2661
+                , oct , 405
+                , int , -1
+                , log , 7 7777
+                , int , 1
+                , log , 3407 0160 3407
+                , oct , 401
+                , log , 7777 7777 7777 7777
+                , oct , 4
+                , log , 17 7777 7777 7700
+ /0047b  :      , log , 7 6000
+                , oct , 1
+ /0051b  :      , log , 1
+            17  , set , /0026b
+            1   ,     , gak/7   . p/1d+6
+            2   , set , /0047b
+            1   ,     , gal/1   . p/1d+27
+            1   , set , /0051b
+            1   ,     , rgexport
+                , end ,

@@ -194,70 +194,72 @@ void nm(const char *fname, int narg)
         default:
             continue;
 
-        case SYM_PRIVATE_S:
-            // Private block (short name).
-            if (undef_flg || globl_flg)
-                continue;
-            tname = sp->u64 & 07777777700000000;
-            type = 'p';
-            break;
-
-        case SYM_PRIVATE_L:
-            // Private block (long name).
-            if (undef_flg || globl_flg)
-                continue;
-            tname = obj.word[(sp->f.n_ref & 03777) + obj.table_off];
-            type = 'p';
-            break;
-
         case SYM_EXT_S:
-            // External reference (short name).
-            tname = sp->u64 & 07777777700000000;
-            type = 'U';
-            break;
-
         case SYM_EXT_L:
-            // External reference (long name).
-            tname = obj.word[(sp->f.n_ref & 03777) + obj.table_off];
+            // External reference.
             type = 'U';
             break;
 
         case SYM_ENTRY_S:
-            // Entry, relocatable (short name)
+        case SYM_ENTRY_L:
+            // Entry, relocatable.
             if (undef_flg)
                 continue;
-            tname = sp->u64 & 07777777700000000;
             type = in_text(sp->f.n_addr) ? 'T' :
                    in_data(sp->f.n_addr) ? 'D' : 'B';
                    in_bss(sp->f.n_addr)  ? 'B' : '?';
             break;
 
-        case SYM_ENTRY_L:
-            // Entry, relocatable (long name)
-            if (undef_flg)
+        case SYM_PRIVATE_S:
+        case SYM_PRIVATE_L:
+            // Private block.
+            if (undef_flg || globl_flg)
                 continue;
-            tname = obj.word[(sp->f.n_ref & 03777) + obj.table_off];
-            type = in_text(sp->f.n_addr) ? 'T' :
-                   in_data(sp->f.n_addr) ? 'D' : 'B';
-                   in_bss(sp->f.n_addr)  ? 'B' : '?';
+            type = 'c';
             break;
 
         case SYM_COMMON_S:
-            // Common block (short name).
+        case SYM_COMMON_L:
+            // Common block.
             if (undef_flg)
                 continue;
-            tname = sp->u64 & 07777777700000000;
             type = 'C';
             break;
 
-        case SYM_COMMON_L:
-            // Common block (long name).
+        case SYM_PPAGE_S:
+        case SYM_PPAGE_L:
+            // Private block, page aligned.
+            if (undef_flg || globl_flg)
+                continue;
+            type = 'p';
+            break;
+
+        case SYM_CPAGE_S:
+        case SYM_CPAGE_L:
+            // Common block, page aligned.
             if (undef_flg)
                 continue;
-            tname = obj.word[(sp->f.n_ref & 03777) + obj.table_off];
-            type = 'C';
+            type = 'P';
+            break;
+
+        case SYM_PSECT_S:
+        case SYM_PSECT_L:
+            // Private block, sector aligned.
+            if (undef_flg || globl_flg)
+                continue;
+            type = 's';
+            break;
+
+        case SYM_CSECT_S:
+            // Common block, sector aligned.
+            if (undef_flg)
+                continue;
+            type = 'S';
             break;
         }
+        tname = (sp->f.n_type & SYM_LONG_NAME) ?
+            obj.word[(sp->f.n_ref & 03777) + obj.table_off] :
+            sp->u64 & 07777777700000000;
         add_symbol(fname, tname, type, sp->f.n_addr);
     }
 
@@ -286,7 +288,7 @@ void nm(const char *fname, int narg)
                 // Local label: Madlen, Fortran-Dubna.
                 type = in_text(sp->f.n_addr) ? 't' :
                        in_data(sp->f.n_addr) ? 'd' :
-                       in_tdata(sp) ?          's' :
+                       in_tdata(sp) ?          'i' : // init (set) section
                        in_bss(sp->f.n_addr)  ? 'b' : '?';
                 break;
 
@@ -301,7 +303,7 @@ void nm(const char *fname, int narg)
 
             case 0001:
                 // Expression.
-                type = 'u';
+                type = 'e';
                 break;
             }
             add_symbol(fname, tname, type, sp->f.n_addr);
@@ -326,10 +328,13 @@ void nm(const char *fname, int narg)
                 printf("%s:\t", ar_name);
         }
         if (! undef_flg) {
-            if (symp[i].n_type == 'u' || symp[i].n_type == 'U')
+            if (symp[i].n_type == 'e' || symp[i].n_type == 'U') {
+                // Undefined symbols and expressions have no value
+                // until finally linked.
                 printf("     ");
-            else
+            } else {
                 printf("%05o", symp[i].n_value);
+            }
             printf(" %c ", symp[i].n_type);
         }
         printf("%s\n", symp[i].n_name);

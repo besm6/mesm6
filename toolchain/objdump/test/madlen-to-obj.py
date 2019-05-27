@@ -58,7 +58,7 @@ task_file.close()
 #
 # Run dispak simulator.
 #
-dispak = subprocess.Popen('dispak --punch=%s.punch %s.b6' % (basename, basename),
+dispak = subprocess.Popen('dispak -l --punch=%s.punch %s.b6' % (basename, basename),
     shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 lst_file = open(basename + ".lst", "w")
@@ -70,11 +70,11 @@ for line in dispak.stdout.readlines():
     line = line.decode('utf-8')
     if len(line) == 52:
         # *assem: old Madlen version
-        if line[23:45] == u"ЧИСЛО ОШИБ. ОПЕРАТОРОВ":
+        if line[23:45] == u"ЧИCЛO OШИБ. OПEPATOPOB":
             nerrors = int(line[47:51])
 
         # *madlen: new Madlen version
-        if line[25:47] == u"ЧИСЛО ОШИБ. ОПЕРАТОРОВ":
+        if line[25:47] == u"ЧИCЛO OШИБ. OПEPATOPOB":
             nerrors = int(line[49:51])
 
         #print len(line), line[25:47]

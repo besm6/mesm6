@@ -1,0 +1,56 @@
+ p/trpage:      , name,         . dtran  /01.06.84/
+ p/pages :      , subp,
+ paspagn*:      , lc  , 1
+ pasdrn* :      , lc  , 1
+ pasdrum*:      , lc  , 1
+                , xta ,
+            1   , atx , 37b
+            1   , atx , 36b
+            1   , atx , 35b
+            14  , vjm , p/pages
+
+                , wtc , paspagn*
+            10  , vtm ,
+ *0004b  :  10  , vzm , *0011b
+            10  , utm , -1
+            15  , mtj , 11
+            1   , xta , 36b
+                , its , 9
+            9   , utm , 2000b
+                , its , 11
+            15  , utm , 1
+            1   , atx , 36b
+                , uj  , *0004b
+ *0011b  :      , wtc , pasdrn*
+            10  , vtm ,
+                , utc , pasdrum*
+                , xta ,
+            1   , atx , 3
+            14  , vtm , *0030b  . =37
+ *0014b  :  10  , vzm , *0027b
+            10  , utm , -1
+            15  , mtj , 11
+            1   , xta , 37b
+            1   , xts , 3
+                , its , 11
+            1   , atx , 37b
+            1   , xta , 3
+            14  , aax ,
+            14  , aex ,
+                , uza , *0024b
+            1   , xta , 3
+            1   , arx , 10b
+            1   , atx , 3
+                , uj  , *0014b
+
+ *0024b  :  1   , xta , 3
+                , asn , 64+15
+                , asn , 64-15
+            14  , arx , 1
+            1   , atx , 3
+                , uj  , *0014b
+ *0027b  :  13  , uj  ,
+
+ *0030b  :      , log , 37
+                , log , 1 0000
+                , end ,

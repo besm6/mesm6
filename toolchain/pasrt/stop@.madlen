@@ -1,0 +1,52 @@
+ stop*   :      , name,         . dtran  /01.06.84/
+ iodcb*  :      , lc  , 0
+ stop**  :      , subp,
+ restop* :      , lc  , 1
+ tapelist:      , lc  , 25
+ctapelist:  lc  ,block, gak/4(24)
+ gak/5   :      , equ , tapelist+24
+c               ,cont , gak/5
+ rm*     :      , lc  , 5
+crm*     :  lc  ,block, gak/6
+ gak/7   :      , equ , rm*+1
+c               ,cont , gak/7
+ gal/0   :      , equ , rm*+2
+c               ,cont , gal/0(3)
+ rfmrtflg:      , lc  , 1
+ infload*:      , lc  , 1
+ loadango:      , subp,
+ *0000b  :  12  , vtm , *0000b
+                , wtc , gal/0   . rm*+2
+            15  , vtm ,
+            12  , *67 , 20b
+ *0002b  :      , ita , 13
+                , xts ,
+                , wtc , restop*
+            13  , vtm ,
+            13  , v1m , *0010b
+            13  , vtm , stop**
+                , xts , rm*
+                , atx , 16b
+                , xta , 772b
+                , atx , 17b
+                , xta ,
+                , stx , infload*
+ *0010b  :      , atx , restop*
+                , xta , rfmrtflg
+                , uza , *0013b
+                , asn , 64-8
+                , arx ,
+                , u1a , *0016b
+ *0013b  :      , xta , gak/5   . tapelist+24
+                , asn , 64-47
+                , arx ,
+                , uza , *0016b
+                , stx ,
+            13  , uj  ,
+ *0016b  :  12  , xts , 17b
+                , uj  , loadango
+            10  , 157 , 7056b
+            12  , 36  , 74160b
+                , z00 , *0002b
+             9  , atx ,
+                , end ,

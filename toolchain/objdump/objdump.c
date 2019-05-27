@@ -259,6 +259,34 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
             sprintf(buf + strlen(buf), " (Common %u word%s)", addr, addr==1 ? "" : "s");
         break;
 
+    case SYM_PPAGE_S:
+        // Private block (short name).
+        text_to_buf(buf, word & 07777777700000000);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Private page-aligned %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_CPAGE_S:
+        // Common block (short name).
+        text_to_buf(buf, word & 07777777700000000);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Common page-aligned %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_PSECT_S:
+        // Private block (short name).
+        text_to_buf(buf, word & 07777777700000000);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Private sector-aligned %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_CSECT_S:
+        // Common block (short name).
+        text_to_buf(buf, word & 07777777700000000);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Common sector-aligned %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
     case SYM_EXT_L:
         // External reference (long name).
         text_to_buf(buf, obj->word[ref + obj->table_off]);
@@ -284,6 +312,34 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
         text_to_buf(buf, obj->word[ref + obj->table_off]);
         if (verbose_flag)
             sprintf(buf + strlen(buf), " (Common %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_PPAGE_L:
+        // Private block (long name).
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Private page-aligned %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_CPAGE_L:
+        // Common block (long name).
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Common page-aligned %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_PSECT_L:
+        // Private block (long name).
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Private sector-aligned %u word%s)", addr, addr==1 ? "" : "s");
+        break;
+
+    case SYM_CSECT_L:
+        // Common block (long name).
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
+        if (verbose_flag)
+            sprintf(buf + strlen(buf), " (Common sector-aligned %u word%s)", addr, addr==1 ? "" : "s");
         break;
 
     default:

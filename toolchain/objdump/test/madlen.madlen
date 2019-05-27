@@ -2,6 +2,14 @@
  extvar:    ,lc  , 1    . Common block
  loc:       ,lp  , 2    . Private block, short name
  loclong:   ,lp  , 3    . Private block, long name
+ cpage:     ,pc  , 5    . Page-aligned common plock
+ privpage:  ,pp  , 7    . Page-aligned private plock
+ csect:     ,sc  , 11   . Sector-aligned common plock
+ privsect:  ,sp  , 13   . Sector-aligned private plock
+ cp:        ,pc  , 1    . Page-aligned common plock
+ pp:        ,pp  , 2    . Page-aligned private plock
+ cs:        ,sc  , 3   . Sector-aligned common plock
+ ps:        ,sp  , 4   . Sector-aligned private plock
  extfunc:   ,subp,
             ,wtc , myvar
             ,utc , myconst

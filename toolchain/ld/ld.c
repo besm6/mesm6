@@ -308,6 +308,10 @@ const char *sym_name(nlist_t *sp)
     case SYM_EXT_S:
     case SYM_PRIVATE_S:
     case SYM_COMMON_S:
+    case SYM_PPAGE_S:
+    case SYM_CPAGE_S:
+    case SYM_PSECT_S:
+    case SYM_CSECT_S:
         // Short name.
         return text_to_utf(sp->u64 & 07777777700000000);
 
@@ -315,6 +319,10 @@ const char *sym_name(nlist_t *sp)
     case SYM_EXT_L:
     case SYM_PRIVATE_L:
     case SYM_COMMON_L:
+    case SYM_PPAGE_L:
+    case SYM_CPAGE_L:
+    case SYM_PSECT_L:
+    case SYM_CSECT_L:
         // Long name.
         return text_to_utf(nametab[sp->f.n_ref & 03777]);
 
@@ -336,12 +344,16 @@ int sym_name_match(nlist_t *sp, uint64_t name)
     case SYM_ENTRY_S:
     case SYM_EXT_S:
     case SYM_COMMON_S:
+    case SYM_CPAGE_S:
+    case SYM_CSECT_S:
         // Short name.
         return (sp->u64 & 07777777700000000) == name;
 
     case SYM_ENTRY_L:
     case SYM_EXT_L:
     case SYM_COMMON_L:
+    case SYM_CPAGE_L:
+    case SYM_CSECT_L:
         // Long name.
         sp_name = nametab[sp->f.n_ref & 03777];
         return sp_name == name;
@@ -642,6 +654,8 @@ void merge_symbols(obj_image_t *obj)
             break;
 
         case SYM_PRIVATE_S:
+        case SYM_PPAGE_S:
+        case SYM_PSECT_S:
             // Private block (short name).
             if (trace > 1)
                 printf("--- Add private block[%u] %s size %u words\n",
@@ -649,6 +663,8 @@ void merge_symbols(obj_image_t *obj)
             break;
 
         case SYM_PRIVATE_L:
+        case SYM_PPAGE_L:
+        case SYM_PSECT_L:
             //
             // Private block (long name).
             //
@@ -752,6 +768,8 @@ void merge_symbols(obj_image_t *obj)
             break;
 
         case SYM_COMMON_S:
+        case SYM_CPAGE_S:
+        case SYM_CSECT_S:
             //
             // Common block (short name).
             //
@@ -761,12 +779,19 @@ void merge_symbols(obj_image_t *obj)
                 // The symbol is already defined.
                 if (sp->f.n_type == SYM_EXT_S) {
                     // Convert extref into common block.
-                    sp->f.n_type = SYM_COMMON_S;
+                    sp->f.n_type = sym.f.n_type;
                     sp->f.n_addr = sym.f.n_addr;
-                } else if (sp->f.n_type == SYM_COMMON_S) {
+                } else if (sp->f.n_type == SYM_COMMON_S ||
+                           sp->f.n_type == SYM_CPAGE_S ||
+                           sp->f.n_type == SYM_CSECT_S) {
                     // Common block size is max of two sizes.
                     if (sym.f.n_addr > sp->f.n_addr)
                         sp->f.n_addr = sym.f.n_addr;
+                    // Alignment is max of two alignments.
+                    if (sym.f.n_type == SYM_CPAGE_S)
+                        sp->f.n_type = SYM_CPAGE_S;
+                    else if (sp->f.n_type != SYM_CPAGE_S)
+                        sp->f.n_type |= sym.f.n_type;
                 }
                 // Redirect to old symbol.
                 *wp = sp - symtab;
@@ -778,6 +803,8 @@ void merge_symbols(obj_image_t *obj)
             break;
 
         case SYM_COMMON_L:
+        case SYM_CPAGE_L:
+        case SYM_CSECT_L:
             //
             // Common block (long name).
             //
@@ -786,14 +813,21 @@ void merge_symbols(obj_image_t *obj)
             sp = sym_find(name);
             if (sp) {
                 // The symbol is already defined.
-                if (sp->f.n_type == SYM_EXT_S) {
+                if (sp->f.n_type == SYM_EXT_L) {
                     // Convert extref into common block.
-                    sp->f.n_type = SYM_COMMON_S;
+                    sp->f.n_type = sym.f.n_type;
                     sp->f.n_addr = sym.f.n_addr;
-                } else if (sp->f.n_type == SYM_COMMON_S) {
+                } else if (sp->f.n_type == SYM_COMMON_L ||
+                           sp->f.n_type == SYM_CPAGE_L ||
+                           sp->f.n_type == SYM_CSECT_L) {
                     // Common block size is max of two sizes.
                     if (sym.f.n_addr > sp->f.n_addr)
                         sp->f.n_addr = sym.f.n_addr;
+                    // Alignment is max of two alignments.
+                    if (sym.f.n_type == SYM_CPAGE_L)
+                        sp->f.n_type = SYM_CPAGE_L;
+                    else if (sp->f.n_type != SYM_CPAGE_L)
+                        sp->f.n_type |= sym.f.n_type;
                 }
                 // Redirect to old symbol.
                 *wp = sp - symtab;
@@ -1145,18 +1179,38 @@ void pass2()
     //
     if (d_flag || !emit_relocatable) {
         for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
-            if ((sp->f.n_type == SYM_COMMON_S ||
-                 sp->f.n_type == SYM_COMMON_L ||
-                 sp->f.n_type == SYM_PRIVATE_S ||
-                 sp->f.n_type == SYM_PRIVATE_L))
-            {
-                // Allocate common and private blocks.
-                unsigned size = sp->f.n_addr;
+            unsigned size = sp->f.n_addr;
 
-                sp->f.n_addr = cblock_origin;
-                cblock_origin += size;
-                bss_size += size;
+            switch (sp->f.n_type) {
+            default:
+                continue;
+
+            case SYM_COMMON_S:
+            case SYM_COMMON_L:
+            case SYM_PRIVATE_S:
+            case SYM_PRIVATE_L:
+                // No alignment.
+                break;
+
+            case SYM_CPAGE_S:
+            case SYM_CPAGE_L:
+            case SYM_PPAGE_S:
+            case SYM_PPAGE_L:
+                // Page aligned.
+                cblock_origin = (cblock_origin + 1023) / 1024 * 1024;
+                break;
+
+            case SYM_CSECT_S:
+            case SYM_CSECT_L:
+            case SYM_PSECT_S:
+            case SYM_PSECT_L:
+                // Sector aligned.
+                cblock_origin = (cblock_origin + 255) / 256 * 256;
+                break;
             }
+            sp->f.n_addr = cblock_origin;
+            cblock_origin += size;
+            bss_size += size;
         }
     }
     if (basaddr + text_size + data_size + bss_size > 077777)

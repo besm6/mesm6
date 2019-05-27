@@ -1,0 +1,56 @@
+ p/wo    :      , name,         . dtran  /01.06.84/
+ paszero*:      , lc  , 1
+ p/hide  :      , subp,
+ p/edih  :      , subp,
+ p/sp    :      , subp,
+ p/cw    :      , subp,
+                , ntr , 3
+            15  , atx ,
+            14  , vjm , p/hide
+
+                , utc , *0030b  . =i16
+                , xta ,
+            15  , a-x , -6
+            15  , atx ,
+            13  , vjm , p/sp
+
+            15  , xta , -1
+                , ntr , 27b
+                , uza , *0011b
+                , utc , *0030b  . =i16
+                , xta ,
+            15  , atx , -7
+                , xta ,
+            15  , atx , -1
+ *0011b  :  15  , utc , -6
+             6  , vtm ,
+             7  , vtm , -15
+            15  , mtj , 8
+ *0013b  :   6  , xta ,
+                , asn , 64-3
+             6  , atx ,
+                , yta ,
+                , utc , paszero*
+                , arx ,
+            15  , atx ,
+             7  , vlm , *0013b
+             8  , wtc , -1
+            14  , vtm ,
+             8  , mtj , 6
+            14  , j+m , 6
+             8  , xta , -7
+                , ati , 7
+ *0022b  :   7  , vzm , *0025b
+             7  , utm , -1
+             6  , xta ,
+            13  , vjm , p/cw
+             6  , utm , 1
+                , uj  , *0022b
+ *0025b  :   8  , utc , -1
+            15  , vtm ,
+            14  , vjm , p/edih
+
+            15  , utm , -2
+            13  , uj  ,
+ *0030b  :      , int , 16
+                , end ,

@@ -1,0 +1,18 @@
+ pasnb8  :      , name,         . dtran  /01.06.84/
+                , ita , 13
+                , its , 8
+                , ntr , 3
+                , ita , 11
+                , its , 10
+            15  , a-x ,
+                , ati , 13
+            10  , mtj , 14
+ *0004b  :  14  , xta ,
+             9  , aax , 13b
+            14  , atx ,
+            14  , utm , 1
+            13  , vlm , *0004b
+            15  , wtc ,
+                , uj  ,
+
+                , end ,

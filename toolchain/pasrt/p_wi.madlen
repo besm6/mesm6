@@ -1,0 +1,98 @@
+ p/wi    :      , name,         . dtran  /01.06.84/
+ p/pf    :      , subp,
+ p/sp    :      , subp,
+ paszero*:      , lc  , 1
+ pasmins*:      , lc  , 1
+ p/7a    :      , subp,
+ p/cw    :      , subp,
+             1  , aox , 11b
+                , its , 13
+                , its , 8
+             1  , xts , 10b
+            15  , xts , -4
+             9  , vtm , *0052b  . =4001 4631 4631 4632
+             9  , aax , 4
+             1  , aex , 11b
+                , uza , *0007b
+            11  , vtm , *0057b  . =6h*no in
+            10  , vtm , 14b
+            13  , vjm , p/7a
+                , uj  , *0047b
+
+ *0007b  :  15  , xta , -4
+            10  , vtm ,
+            15  , utc , 24b
+             8  , vtm ,
+                , ntr , 23b
+                , uza , *0014b
+             1  , avx , 17b
+            15  , atx , -4
+                , xta ,
+            15  , atx , -1
+ *0014b  :   9  , xta , 1
+             8  , atx ,
+ *0015b  :  15  , xta , -4
+             9  , a*x ,
+            15  , atx , 1
+             9  , aex , 2
+                , u1a , *0021b
+            15  , xta , -4
+                , uj  , *0023b
+
+ *0021b  :  15  , xta , 1
+             9  , a*x , 3
+                , yta , 100b
+            15  , x-a , -4
+ *0023b  :   9  , aax , 1
+
+         :  10  , utm , 1
+             8  , atx , 1
+             8  , utm , 1
+            15  , xta , 1
+            15  , atx , -4
+             9  , aex , 2
+                , u1a , *0015b
+            15  , xta , -1
+                , u1a , *0031b
+            10  , utm , 1
+ *0031b  :      , ita , 10
+             1  , aex , 11b
+            15  , a-x , -5
+            15  , utm , 62b
+            13  , vjm , p/sp
+
+            15  , utm , -50
+            15  , xta , -1
+                , u1a , *0037b
+                , utc , pasmins*
+                , xta ,
+            13  , vjm , p/cw
+ *0037b  :   8  , xta ,
+                , utc , *0053b  . =377
+                , aex ,
+                , uza , *0047b
+             8  , xta ,
+                , utc , paszero*
+                , arx ,
+            12  , wtc ,
+                , atx ,
+            15  , utm , 62b
+            13  , vjm , p/pf
+
+            15  , utm , -50
+             8  , utm , -1
+                , uj  , *0037b
+
+ *0047b  :  15  , xta , -2
+                , ati , 8
+            15  , utm , -5
+            15  , wtc , 2
+                , uj  ,
+
+ *0052b  :      , log , 4001 4631 4631 4632
+ *0053b  :      , log , 377
+                , int , 0
+                , log , 4000 0000 0000 0012
+                , oct , 774
+ *0057b  :      , iso , 12h*no integer*
+                , end ,

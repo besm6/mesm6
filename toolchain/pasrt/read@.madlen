@@ -1,0 +1,42 @@
+ read*   :      , name,
+ monread*:      , subp,
+ read*err:      , subp,
+ moncard*:      , lc  , 25
+ c       :      , ati , 8
+            11  , base, c
+                , xta , moncard*
+                , aex , *endfile
+                , uza , endinf
+                , xta , moncard*
+                , aex , *name
+                , uza , endinf
+                , xta , moncard*
+                , aax , msmb
+                , uza , read*err
+             9  , vtm , moncard*
+                , ita , 13
+                , xts ,
+ kloop   :   9  , xta ,
+             8  , atx ,
+                , aax , cemask
+                , aex , cestr
+             8  , utm , 1
+             9  , utm , 1
+                , uia , kloop
+                , call, monread*
+                , stx ,
+                , sti , 13
+            13  , uj  ,
+ endinf  :  14  , vtm , moncard*
+                , its , 14
+            14  , utm , 13
+                , its , 14
+                , xts ,
+                , call, print8
+                , call, stop*
+ *end file  :,  iso,6h* end f
+ *name   :      , iso , 6h*name
+ msmb    :      , oct , 776
+ cemask  :      , log , 377
+ cestr   :      , log , 12
+                , end ,

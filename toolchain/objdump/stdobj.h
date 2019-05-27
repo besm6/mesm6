@@ -85,14 +85,24 @@ enum {
     SYM_ENTRY_S     = 0414,     // Entry, relocatable (short name)
     SYM_EXT_S       = 0430,     // External reference (short name)
     SYM_PRIVATE_S   = 0460,     // Private block (short name)
+    SYM_PPAGE_S     = 0464,     // Private page-aligned (short name)
     SYM_COMMON_S    = 0470,     // Common block (short name)
+    SYM_CPAGE_S     = 0474,     // Common page-aligned (short name)
     SYM_INDIRECT    = 0501,     // Dereference, like *ptr
     SYM_CONST       = 0520,     // Constant value, same as SYM_ABS
     SYM_EXPRESSION  = 0521,     // Expression to compute at load time
+    SYM_PSECT_S     = 0560,     // Private sector-aligned (short name)
+    SYM_CSECT_S     = 0570,     // Common sector-aligned (short name)
     SYM_ENTRY_L     = 0614,     // Entry, relocatable (long name)
     SYM_EXT_L       = 0630,     // External reference (long name)
     SYM_PRIVATE_L   = 0660,     // Private block (long name)
+    SYM_PPAGE_L     = 0664,     // Private page-aligned (long name)
     SYM_COMMON_L    = 0670,     // Common block (long name)
+    SYM_CPAGE_L     = 0674,     // Common page-aligned (long name)
+    SYM_PSECT_L     = 0760,     // Private sector-aligned (long name)
+    SYM_CSECT_L     = 0770,     // Common sector-aligned (long name)
+
+    SYM_LONG_NAME   = 0200,     // Flag: long name
 };
 
 //

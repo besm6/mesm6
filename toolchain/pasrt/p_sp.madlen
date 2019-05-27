@@ -1,0 +1,16 @@
+ p/sp    :      , name,         . dtran  /01.06.84/
+ p/pf    :      , subp,
+ space*  :      , lc  , 1
+ *0000b  :  13  , uza ,
+                , its , 13
+                , utc , space*
+                , xts ,
+            12  , wtc ,
+                , atx ,
+            13  , vjm , p/pf
+
+            15  , xta ,
+                , sti , 13
+             1  , a+x , 21b
+                , uj  , *0000b
+                , end ,
