@@ -1,0 +1,182 @@
+ print8  :      , name,         . 19.04.73
+ *7      :      ,block, b, c, ir, ic, jc, iw, jw, rw
+ bl      :      , equ , cont
+ sc      :      , equ , sym
+                , its , b
+            b   , base, *
+                , ntr , 3
+                , stx , sb
+                , aax , =177
+                , atx , pos
+                , asn , 64-36
+                , aox , =4000 0000
+                , stx , inf+1
+                , atx , r
+            15  , x-a ,
+                , atx , sc
+                , ita , c
+            c   , vtm , ir-rw
+ sv      :  c   , its , rw
+            c   , vlm , sv
+                , xts , sc
+                , ati , c
+            iw  , vtm ,
+            15  , mtj , jw
+ cc      :      , bss ,
+                , wtc , r
+            c   , xta ,
+                , atx , w
+            ir  , vtm , -5
+ cr      :      , xta , w
+                , asn , 64-8
+                , atx , w
+                , yta ,
+                , atx , sym
+                , uza , er
+                , aex , =177
+                , uza , er
+                , xta , sym
+                , aax , =200
+                , u1a , blank
+                , xta , pos
+                , u1a , rcon
+            jc  , vtm , consym1-consym2
+ c2      :      , bss ,
+                , utc , consym2
+            jc  , xta ,
+                , atx , cont
+            ic  , vtm , -2
+ c1      :      , bss ,
+                , xta , cont
+                , asn , 64-8
+                , atx , cont
+                , yta ,
+                , aex , sym
+                , uza , contr
+            ic  , vlm , c1
+            jc  , vlm , c2
+ rcon    :      , bss ,
+                , xta , sym
+                , asn , 64+2
+            15  , atx ,
+                , yta ,
+                , asn , 64+43
+            15  , wtc ,
+                , xts , tabl
+            15  , wtc ,
+                , asn , 64+16
+                , aax , =377
+                , atx , sym
+                , aex , =231
+                , uza , print
+                , xta , sym
+                , asn , 64+7
+                , aex , =1
+            rw  , vtm , er
+                , u1a , position
+                , xta , sym
+                , uj  , wrt
+ contr   :      , bss ,
+                , xta , cont
+                , asn , 64+24
+                , aax , =377
+            rw  , vjm , wrt
+                , xta , =017
+                , atx , sym
+                , xta , =1
+            rw  , vjm , position
+ er      :      , bss ,
+            ir  , vlm , cr
+            c   , vlm , cc
+ print   :      , bss ,
+                , xta , =231
+            rw  , vjm , wrt
+                ,print, inf
+            jw  , mtj , 15
+                , ntr , 18
+            c   , vtm , rw-c
+            15  , xta ,
+ up      :  c   , utm , -1
+            c   , sti , ir
+            c   , v1m , up
+                , ati , c
+                , xta , sb
+                , sti , b
+            13  , uj  ,
+ blank   :      , bss ,
+                , xta , sym
+                , aex , =200
+                , uza , er
+                , atx , bl
+                , xta , =200
+                , atx , sym
+                , xta , bl
+            rw  , vjm , position
+                , xta , pos
+            rw  , vtm , er
+                , uj  , wrt
+ position:      , bss ,
+                , a+x , pos
+                , atx , pos
+                , x-a , =200
+                , u1a , print
+                , xta , sym
+ wrt     :      , bss ,
+            iw  , v1m , ew
+            iw  , vtm , -48
+                , atx , sym
+                , xta ,
+                , xts , sym
+ ew      :      , bss ,
+            iw  , utm , 8
+            iw  , asn , 64
+            15  , aox ,
+            15  , atx ,
+            rw  , uj  ,
+ inf     :  jw  , z00 ,
+            15  , z00 , -1
+                , bss , 1
+ consym1 :      , bss ,
+                , iso , 6h014'214''201''204'
+                , iso , 6h56+'205''206''212'
+ consym2 :      , bss ,
+                , iso , 4hS00'310'
+ tabl    :      , gost, 4h'231''212''133''133'
+                , gost, 4h'133''024''135''133'
+                , gost, 4h'133''231''133''310'
+                , gost, 4h'117''116''231''214'
+                , gost, 4h'205''204''201''032'
+                , gost, 4h'020''021''131''206'
+                , gost, 4h'033''124''136''034'
+                , gost, 4h'123''120''125''122'
+                , gost, 4h'034''134''133'
+                , gost, 4h'137''121''126''127'
+                , gost, 4h+*)(
+                , gost, 4h/.-,
+                , gost, 4h3210
+                , gost, 4h7654
+                , gost, 4h'026':98
+                , gost, 4h'21''036'='035'
+                , gost, 4hCBA'136'
+                , gost, 4hGFED
+                , gost, 4hKJIH
+                , gost, 4hONML
+                , gost, 4hSRQP
+                , gost, 4hWVUT
+                , gost, 4h'027'ZYX
+                , gost, 4h'132''130''030''115'
+                , gost, 4hЦБAЮ
+                , gost, 4hГФEД
+                , gost, 4hKЙИX
+                , gost, 4hOHMЛ
+                , gost, 4hCPЯП
+                , gost, 4hBЖYT
+                , gost, 4hШЗЫЬ
+                , gost, 4h'133'ЧЩЭ
+ sym     :      , bss , 1
+ pos     :      , bss , 1
+ w       :      , bss , 1
+ cont    :      , bss , 1
+ r       :      , bss , 1
+ sb      :      , bss , 1
+                , end ,

@@ -38,12 +38,16 @@ OBJ_DUBNA       = print8.obj \
                   read@.obj \
                   stop@.obj
 
-all:            $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4)
+all:            $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA)
+
+hello.out:      $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA)
+		../ld/ld ../pascompl/test/hello/hello.obj $? -o $@
 
 clean:
-		rm -f *.b6 *.punch *.obj *.lst
+		rm -f a.out *.b6 *.punch *.obj *.lst
 
 .SUFFIXES:      .obj .madlen
 
 .madlen.obj:
 		../objdump/test/madlen-to-obj.py $<
+		@rm $*.punch $*.b6

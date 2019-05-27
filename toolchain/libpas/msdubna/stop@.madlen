@@ -1,0 +1,52 @@
+ stop*   :      , name,
+ tapelist:  lc  ,block, (1), sc/unit
+ monitor*:      , subp,
+ loadcall:      , subp,
+ jstop   :      , equ , monitor* + 4
+ jstar   :      , equ , monitor* + 1
+ rm*     :      , lc  ,
+ ws      :      , equ , 1               . экономия
+c-----------------------------------
+ *c      :  13  , vtm , jstop           . на конец
+                , uj  , b
+c-----------------------------------
+ exit    :      ,entry,
+            13  , vtm ,                 .
+ b       :  12  , base, *c              .
+            13  , vim , to stop         .
+            13  , vtm , jstar           . на star*
+                , xta , 60b             . режим
+                , atx , 47b             . "permanent"
+                , xta , 44b             .
+                , aox , =:4             . "no load"
+                , atx , 44b
+ to stop :      , bss ,                 .
+                , xta , 17b
+                , atx , ws + 1
+                , xta , rm* + 2         . восстановление
+                , ati , 15              . магазина
+                , arx , inf67
+                , atx , ws
+                , xta , m67
+                , ctx , 17b             . надо
+                , uj  , 17b             . так
+c-----------------------------------
+ m67     :      , *67 , ws              .
+ inf67   :      , z00 , ret67           . восстановление
+            8   , z37 , -1              . защиты
+ ret67   :      , xta , ws + 1
+                , atx , 17b
+c-----------------------------------
+cdisp    :  2   ,ifseq, d, dd**
+                , xta , =3053 4576 1634 0112
+                , *76 , 1               . разрешение
+c-----------------------------------
+                , xta , sc/unit         . досброс
+                , aax , =:77777 00000 2
+            13  , uza ,                 . не нужен
+                , xts ,
+                , xts , f name
+                , xts ,
+                , uj  , loadcall
+ f name  :      , text, 8hfmrtape
+                , end ,

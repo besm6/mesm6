@@ -34,7 +34,7 @@
                 , xts ,
                 , call, print8
                 , call, stop*
- *end file  :,  iso,6h* end f
+ *endfile:      , iso , 6h*end f
  *name   :      , iso , 6h*name
  msmb    :      , oct , 776
  cemask  :      , log , 377
