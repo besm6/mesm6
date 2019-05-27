@@ -1467,6 +1467,10 @@ void pass3()
             case SYM_EXT_L:
             case SYM_PRIVATE_L:
             case SYM_COMMON_L:
+            case SYM_PPAGE_L:
+            case SYM_CPAGE_L:
+            case SYM_PSECT_L:
+            case SYM_CSECT_L:
                 sp->f.n_ref = (sp->f.n_ref & 03777) + nsymbols + 04001;
                 break;
             }
