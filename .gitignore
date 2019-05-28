@@ -21,4 +21,6 @@ toolchain/as/as
 toolchain/as/dis
 toolchain/ld/ld
 board/de10-lite/project/*
+board/de10-lite/incremental_db/*
+board/de10-lite/output_files/*
 test/*/*.mif

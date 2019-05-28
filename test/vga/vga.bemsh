@@ -1,0 +1,132 @@
+*
+* VGA with UART test.
+*
+start   start   '1'
+* UART registers
+U0_DT   equ     '77740'   , data fifo
+U0_CT   equ     '77747'   , control and status reg
+U0_CTS  equ     '77746'   , set bits
+U0_CTC  equ     '77745'   , clear bits
+* GPIO HEX
+G0_DT   equ     '77756'
+* VGA registers
+VGA_AL  equ     '77737'   , address latch
+VGA_DT  equ     '77730'   , data  
+        ntr 3
+* reset uart & gpio
+        xta     '0'
+        atx     U0_CT
+        atx     G0_DT
+* set divider
+        xta     =b'033'      , 9600
+        atx     U0_CTS
+* enable rx tx
+        xta     =b'1000'   , rxtx_en bit
+        atx     U0_CTS
+* --- packet driver ---
+* format: :LLAAAATTDD....CC
+* LL - length
+* AAAA - address
+* TT - type, always 00
+* DD - data, 1 to 6 bytes
+* CC - control summ
+s0      vjm     getch(2)
+        aex     =b'072'
+        u1a     s0         , wait for ':'
+* ------ receive packet length
+        vjm     getch(2)   , get high nibble
+        vjm     atoi(2)
+        asn     64-4
+        atx     psz
+        vjm     getch(2)   , get low nibble
+        vjm     atoi(2)
+        a+x     psz
+        atx     psz
+* ------ receive address ------
+        vjm     getch(2)   , get high MSByte nibble
+        vjm     atoi(2)
+        asn     64-12
+        atx     paddr
+        vjm     getch(2)   , get low MSB nibble
+        vjm     atoi(2)
+        asn     64-8
+        a+x     paddr
+        atx     paddr
+        vjm     getch(2)   , get high LSB nibble
+        vjm     atoi(2)
+        asn     64-4
+        a+x     paddr
+        atx     paddr
+        vjm     getch(2)   , get low LSB nibble
+        vjm     atoi(2)
+        a+x     paddr
+        atx     paddr
+* --- receive packet type
+        vjm     getch(2)   , get high MSByte nibble
+        vjm     atoi(2)
+        asn     64-4
+        atx     ptype
+        vjm     getch(2)   , get low MSB nibble
+        vjm     atoi(2)
+        a+x     ptype
+        aex     =b'0'
+        u1a     s0      , type is not 00
+* --- receve packet data
+        xta     =b'0'
+        atx     pdata
+        atx     pcsum
+        xta     psz
+        asn     64-1
+        x-a     =b'1'
+        ati     3
+l1      xta     pdata
+        asn     64-4
+        atx     pdata
+        vjm     getch(2)   , get n-th nibble
+        vjm     atoi(2)
+        aox     pdata
+        atx     pdata
+        vlm     l1(3)
+* ------ end
+        wtc     paddr
+        atx     
+        uj s0
+* helpers
+* get_char        
+getch   xta     U0_CT
+        aax     =b'4000'
+        u1a     getch
+        xta     U0_DT
+        aax     =b'377'
+        uj      (2)
+* atoi '0'-'9''A'-'F'
+atoi    atx     buf
+        a-x     =b'060'  , 0
+        u1a     bad
+        xta     buf
+        a-x     =b'072'  , 9 +1
+        uza     n1       , letter
+        xta     buf
+        a-x     =b'060'  , -0
+        uj      (2)
+n1      xta     buf
+        a-x     =b'0101'
+        u1a     bad
+        xta     buf
+        a-x     =b'0107'
+        uza     bad
+        xta     buf
+        a-x     =b'0101'
+        a+x     =b'012'
+        uj      (2)
+bad     uj      s0 , wait for ':'
+*-------------------------
+align   адрес   start+'1777'            , данные с адреса 2000
+buf     конд    b'0'
+buf2    конд    b'0'
+psz     конд    b'0'
+paddr   конд    b'0'
+ptype   конд    b'0'
+pdata   конд    b'0'
+pcsum   конд    b'0'
+        fin

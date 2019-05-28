@@ -184,6 +184,16 @@ mesm6_uart uart(
     uart_rx_pin
 );
 
+
+// dummy VGA signals
+wire [14:0]  vga_addr;
+wire         vga_read;
+wire         vga_write;
+wire [47:0]  vga_rdata;
+wire [47:0]  vga_wdata;
+wire         vga_done;
+wire         vga_irq;
+
 mesm6_mmu mmu(
     dbus_addr,
     dbus_rd, dbus_wr,
@@ -212,6 +222,12 @@ mesm6_mmu mmu(
     uart_rdata, uart_wdata,
     uart_done,
     uart_irq,
+
+    vga_addr,
+    vga_read, vga_write,
+    vga_rdata, vga_wdata,
+    vga_done,
+    vga_irq,
 
     tim_addr,
     tim_read, tim_write,

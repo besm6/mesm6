@@ -14,7 +14,13 @@ module top(
     input  wire [1:0] KEY,
     
     output wire       TXD,
-    input  wire       RXD
+    input  wire       RXD,
+
+    output wire         VGA_HSYNC,
+    output wire         VGA_VSYNC,
+    output wire [3:0]   VGA_R,
+    output wire [3:0]   VGA_G,
+    output wire [3:0]   VGA_B
 );
 
 reg [31:0] cnt  = 0;
@@ -207,6 +213,33 @@ mesm6_uart uart(
     TXD, RXD
 );
 
+// VGA signals
+wire        vga_irq;
+wire [14:0] vga_addr;
+wire        vga_read;
+wire        vga_write;
+wire [47:0] vga_rdata;
+wire [47:0] vga_wdata;
+wire        vga_done;
+
+mesm6_vga vga(
+    clk, reset, vga_irq,
+
+    // MESM-6 side
+    vga_addr,
+    vga_read, vga_write,
+    vga_rdata, vga_wdata,
+    vga_done,
+
+    // VGA pins
+    VGA_HSYNC,
+    VGA_VSYNC,
+    VGA_R,
+    VGA_G,
+    VGA_B
+);
+
+
 mesm6_mmu mmu(
     dbus_addr,
     dbus_rd, dbus_wr,
@@ -235,6 +268,12 @@ mesm6_mmu mmu(
     uart_rdata, uart_wdata,
     uart_done,
     uart_irq,
+
+    vga_addr,
+    vga_read, vga_write,
+    vga_rdata, vga_wdata,
+    vga_done,
+    vga_irq,
 
     tim_addr,
     tim_read, tim_write,
