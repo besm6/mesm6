@@ -42,6 +42,7 @@ const char *inputname;
 // List of input object files.
 //
 obj_image_t *obj_head, *obj_tail;
+obj_image_t *arch_head, *arch_tail;
 
 //
 // Output object image.
@@ -854,6 +855,99 @@ void merge_symbols(obj_image_t *obj)
 }
 
 //
+// Merge only entries and external symbols, for pass 1.
+// No need to compute addresses.
+//
+void merge_ext_symbols(obj_image_t *obj)
+{
+    nlist_t *sp;
+    uint64_t name;
+    int i;
+
+    // Add entries.
+    for (i = 0; i < obj->nentries; i++) {
+        name = obj->word[2*i + 1];
+        create_entry(name, 0);
+    }
+
+    // Merge symbols.
+    for (i = 0; i < obj->sym_len; i++) {
+        nlist_t sym;
+        unsigned old_ref;
+
+        sym.u64 = obj->word[i + 1 + obj->table_off];
+        switch (sym.f.n_type) {
+        default:
+            // Ignore.
+            continue;
+
+        case SYM_EXT_S:
+            //
+            // External reference (short name).
+            //
+            name = sym.u64 & 07777777700000000;
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                continue;
+            }
+            break;
+
+        case SYM_EXT_L:
+            //
+            // External reference (long name).
+            //
+            old_ref = sym.f.n_ref & 03777;
+            name = obj->word[old_ref + obj->table_off];
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                continue;
+            }
+            // Update the reference field with new name index.
+            sym.f.n_ref = 04000 | create_name(name);
+            break;
+
+        case SYM_ENTRY_S:
+            //
+            // Entry, relocatable (short name)
+            //
+            name = sym.u64 & 07777777700000000;
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                // Convert extref into entry.
+                sp->f.n_type = SYM_ENTRY_S;
+                continue;
+            }
+            break;
+
+        case SYM_ENTRY_L:
+            //
+            // Entry, relocatable (long name)
+            //
+            old_ref = sym.f.n_ref & 03777;
+            name = obj->word[old_ref + obj->table_off];
+            sp = sym_find(name);
+            if (sp) {
+                // The symbol is already defined.
+                // Convert extref into entry.
+                sp->f.n_type = SYM_ENTRY_L;
+                continue;
+            }
+            // Update the reference field with new name index.
+            sym.f.n_ref = 04000 | create_name(name);
+            break;
+        }
+
+        // Append to the symbol table.
+        if (nsymbols >= MAXSYMBOLS)
+            fatal("Symbol table overflow");
+        symtab[nsymbols++] = sym;
+    }
+}
+
+//
 // Check whether the object file provides any symbols we need.
 //
 int need_this_obj(obj_image_t *obj)
@@ -903,9 +997,6 @@ int need_this_obj(obj_image_t *obj)
 //
 void append_to_obj_list(obj_image_t *obj)
 {
-    if (!obj)
-        fatal("Out of memory");
-
     obj->next = 0;
 
     if (obj_tail) {
@@ -916,41 +1007,41 @@ void append_to_obj_list(obj_image_t *obj)
     obj_tail = obj;
 }
 
+void append_to_arch_list(obj_image_t *obj)
+{
+    if (!obj)
+        fatal("Out of memory");
+    obj->next = 0;
+
+    if (arch_tail) {
+        arch_tail->next = obj;
+    } else {
+        arch_head = obj;
+    }
+    arch_tail = obj;
+}
+
 //
 // Load an object file.
-// The file can be opened as file descriptor fd,
-// or supplied as byte array of given size.
 // Accumulate the final image sizes: code, data and bss.
-// Return 1 in case any names have been resolved,
-// otherwise return 0.
+// Append the object image to the list.
 //
-int load1obj(FILE *fd, char *data, unsigned nbytes)
+void load1obj(obj_image_t *obj)
 {
-    obj_image_t obj = {0};
-
-    if (fd) {
-        if (obj_read_fd(fd, &obj) < 0)
-            fatal("Bad format");
-    } else {
-        if (obj_read_data(data, nbytes, &obj) < 0)
-            fatal( "Bad format");
-
-        // Does this component have anything useful for us?
-        if (!need_this_obj(&obj)) {
-            return 0;
-        }
-    }
+    if (!obj)
+        fatal("Out of memory");
     if (trace > 1)
         printf("--- Size: cmd=%u, const=%u, bss=%u words\n",
-            obj.cmd_len, obj.const_len, obj.bss_len);
+            obj->cmd_len, obj->const_len, obj->bss_len);
 
-    text_size += obj.cmd_len;
-    data_size += obj.const_len;
-    bss_size += obj.bss_len;
+    text_size += obj->cmd_len;
+    data_size += obj->const_len;
+    bss_size += obj->bss_len;
+
+    merge_ext_symbols(obj);
 
     // Add image to the list.
-    append_to_obj_list(obj_copy(&obj));
-    return 1;
+    append_to_obj_list(obj);
 }
 
 //
@@ -965,6 +1056,56 @@ ssize_t myread(struct archive *a, void *fd, const void **pbuf)
 }
 
 //
+// Load archive from file `input'.
+// Put object images into list arch_head/arch_tail.
+//
+void load_archive()
+{
+    struct archive *a = archive_read_new();
+    struct archive_entry *entry;
+    obj_image_t *obj, img = {0};
+
+    archive_read_support_filter_all(a);
+    archive_read_support_format_all(a);
+    archive_read_open(a, input, NULL, myread, NULL);
+    for (;;) {
+        int ret = archive_read_next_header(a, &entry);
+        if (ret == ARCHIVE_EOF)
+            break;
+
+        if (ret == ARCHIVE_RETRY)
+            continue;
+
+        if (ret == ARCHIVE_WARN)
+            warning("Archive warning");
+        else if (ret != ARCHIVE_OK)
+            fatal("Bad archive");
+
+        const char *name = archive_entry_pathname(entry);
+        unsigned nbytes = archive_entry_size(entry);
+        char data[MAXSZ*6];
+
+        if (nbytes > sizeof(data)) {
+            fatal("Too long array entry");
+        }
+        if (archive_read_data(a, data, nbytes) != nbytes) {
+            fatal("Read error");
+        }
+        if (trace > 2) {
+            printf("--- Archive item %s, size %u bytes\n", name, nbytes);
+        }
+        if (obj_read_data(data, nbytes, &img) < 0) {
+            fatal( "Bad format");
+        }
+
+        // Add image to the list.
+        obj = obj_copy(&img);
+        obj->filename = strdup(name);
+        append_to_arch_list(obj);
+    }
+}
+
+//
 // Scan file to find defined symbols.
 //
 void load1name(char *fname, int libflag)
@@ -973,47 +1114,57 @@ void load1name(char *fname, int libflag)
         //
         // Regular file.
         //
+        obj_image_t img = {0};
+
         if (trace)
             printf("%s\n", fname);
-        load1obj(input, NULL, 0);
+        if (obj_read_fd(input, &img) < 0)
+            fatal("Bad format");
+        load1obj(obj_copy(&img));
     } else {
         //
         // Archive.
         //
-        struct archive *a = archive_read_new();
-        struct archive_entry *entry;
+        int need_this_archive;
+        obj_image_t **nextp, *obj;
 
-        archive_read_support_filter_all(a);
-        archive_read_support_format_all(a);
-        archive_read_open(a, input, NULL, myread, NULL);
-        for (;;) {
-            int ret = archive_read_next_header(a, &entry);
-            if (ret != ARCHIVE_OK) {
-                if (ret == ARCHIVE_EOF)
+        load_archive();
+        do {
+            // Process all items in the arch list in sequence.
+            // Finish the loop, when nothing useful found/.
+            need_this_archive = 0;
+            nextp = &arch_head;
+            for (;;) {
+                obj = *nextp;
+                if (!obj) {
                     break;
-                else if (ret == ARCHIVE_RETRY)
-                    continue;
-                else if (ret == ARCHIVE_WARN)
-                    warning("Archive warning");
-                else
-                    fatal("Bad archive");
-            }
+                }
 
-            const char *name = archive_entry_pathname(entry);
-            unsigned nbytes = archive_entry_size(entry);
-            char data[MAXSZ*6];
+                if (need_this_obj(obj)) {
+                    // This component has something useful for us.
+                    need_this_archive = 1;
 
-            if (trace)
-                printf("%s(%s)\n", fname, name);
+                    // Remove it from archive list and process.
+                    *nextp = obj->next;
+                    if (trace) {
+                        printf("%s(%s)\n", fname, obj->filename);
+                    }
+                    load1obj(obj);
+                } else {
+                    nextp = &obj->next;
+                }
+            }
+        } while (need_this_archive);
 
-            if (nbytes > sizeof(data)) {
-                fatal("Too long array entry");
-            }
-            if (archive_read_data(a, data, nbytes) != nbytes) {
-                fatal("Read error");
-            }
-            load1obj(NULL, data, nbytes);
+        // Dispose the rest.
+        while (arch_head) {
+            obj = arch_head;
+            arch_head = obj->next;
+            if (obj->filename)
+                free(obj->filename);
+            free(obj);
         }
+        arch_tail = 0;
     }
     fclose(input);
 }
@@ -1097,6 +1248,11 @@ void pass1(int argc, char **argv)
     if (trace > 1)
         printf("--- Total size: text=%u, data=%u, bss=%u words\n",
             text_size, data_size, bss_size);
+
+    // Forget the symbol table, created at pass 1.
+    nsymbols = 0;
+    nnames = 0;
+    inputname = 0;
 }
 
 //
@@ -1532,7 +1688,6 @@ int main(int argc, char **argv)
     // First pass: compute segment sizes and entry point.
     //
     pass1(argc, argv);
-    inputname = 0;
 
     //
     // Second pass: relocate symbols.

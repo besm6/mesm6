@@ -51,7 +51,8 @@ typedef struct _obj_image_t {
 
     unsigned nwords;
     unsigned nentries;
-    struct _obj_image_t *next;
+    struct _obj_image_t *next;  // next in single-linked list (linker)
+    char *filename;             // name in archive (linker)
 
     // Last element: can be re-allocated with smaller size.
 #define MAXSZ 50000
