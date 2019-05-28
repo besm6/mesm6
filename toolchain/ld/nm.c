@@ -175,7 +175,7 @@ void nm(const char *fname, int narg)
     uint64_t tname;                     // symbol name in TEXT encoding
     int i, type;
 
-    if (obj.sym_len == 0) {
+    if (obj.sym_len == 0 && obj.nentries == 0) {
         fprintf(stderr, "%s: %s: ", progname, fname);
         if (ar_name)
             fprintf(stderr, "%s: ", ar_name);

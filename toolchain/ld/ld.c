@@ -1542,7 +1542,7 @@ void pass3()
         if (trace > 1)
             printf("%s\n", text_to_utf(obj->word[obj->table_off]));
 
-        // Compute offsets for symbol relocation.
+        // Compute offsets for code relocation.
         offset_text = text_origin;
         offset_data = data_origin - obj->cmd_len;
         offset_bss = bss_origin - obj->cmd_len - obj->const_len;

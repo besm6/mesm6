@@ -38,13 +38,16 @@ OBJ_DUBNA       = print8.obj \
                   read@.obj \
                   stop@.obj
 
-all:            $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA)
+all:            libpas.a
 
-hello.out:      $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA)
-		../ld/ld ../pascompl/test/hello/hello.obj $? -o $@
+libpas.a:       $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA)
+		ar cr $@ $?
+
+hello.out:      libpas.a
+		../ld/ld -t ../pascompl/test/hello/hello.obj $? -o $@
 
 clean:
-		rm -f a.out *.b6 *.punch *.obj *.lst
+		rm -f *.out *.b6 *.punch *.obj *.lst *.a
 
 .SUFFIXES:      .obj .madlen
 
