@@ -1,0 +1,17 @@
+ p/el    :      , name,         . dtran  /01.06.84/
+ paseolsy:      , lc  , 1
+            12  , wtc ,
+                , xta ,
+                , utc , paseolsy
+                , aex ,
+                , uza , *0004b
+            12  , xta , 30b
+            13  , uj  ,
+
+ *0004b  :   1  , xta , 10b
+            13  , uj  ,
+                , data,
+ /0005b  :      , log , 12
+             1  , set , /0005b
+             1  ,     , paseolsy
+                , end ,

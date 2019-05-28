@@ -1,0 +1,107 @@
+ p/nw    :      , name,         . dtran  /01.06.84/
+ p/print :      , subp,
+ p/ht    :      , subp,
+             1  , xta , 27b
+                , its , 14
+             1  , arx , 27b
+             1  , atx , 27b
+             1  , arx , 30b
+                , u1a , *0004b
+            15  , xta ,
+            13  , uj  ,
+ *0004b  :  15  , xta ,
+             1  , atx , 27b
+            12  , vtm ,
+             1  , xta , 31b
+                , ati , 11
+            10  , vtm , *0050b
+                , ita , 14
+             1  , atx , 3
+ *0010b  :  11  , vzm , *0040b
+            11  , xta ,
+                , asn , 64+15
+            10  , aax ,
+            15  , atx , 1
+             1  , a-x , 3
+                , u1a , *0027b
+            11  , mtj , 12
+            11  , wtc ,
+            11  , vtm ,
+                , uj  , *0010b
+
+ *0016b  :  11  , xta ,
+            10  , aax ,
+             1  , atx , 31b
+             9  , uj  ,
+ *0020b  :  12  , vzm , *0016b
+            12  , xta ,
+            10  , aax , 2
+            11  , xts ,
+            10  , aax ,
+            15  , aex ,
+            12  , atx ,
+                , asn , 64+15
+                , ati , 14
+            12  , xta ,
+            14  , utc , -1
+            12  , atx ,
+             9  , uj  ,
+
+ *0027b  :      , ita , 14
+            15  , aex , 1
+                , uza , *0046b
+            15  , xta , 1
+             1  , a-x , 3
+                , asn , 64-15
+            11  , xts ,
+            10  , aax , 1
+            15  , aex ,
+            11  , atx ,
+            11  , j+m , 14
+            14  , atx , -1
+ *0035b  :      , xta ,
+            14  , atx ,
+             1  , wtc , 3
+            14  , atx , -1
+                , ita , 14
+            13  , uj  ,
+ *0040b  :  10  , vtm , *0043b
+            11  , vtm , *0045b
+            13  , vjm , p/print
+
+            13  , vjm , p/ht
+
+ *0043b  :   2  , a+x , 7117b
+             2  , a+x , 3514b
+             4  , 36  , 41101b
+             4  , uj  , 20115b
+ *0045b  :   4  , 124 , 6517b
+             5  , j+m , 2336
+ *0046b  :   9  , vjm , *0020b
+
+            11  , mtj , 14
+                , uj  , *0035b
+ *0050b  :      , atx ,
+                , amx , 7777b
+            15  , vlm , -64
+                , amx , 7777b
+            15  , vlm , -1
+            15  , vlm ,
+            15  , vlm , -1
+            15  , vlm , -2
+c================================================
+ p/gd    :      ,entry,
+c================================================
+                , ita , 15
+             1  , atx , 27b
+             1  , atx , 32b
+            14  , j+m , 15
+                , ita , 15
+             1  , aex , 24b
+             1  , arx , 24b
+             1  , arx , 10b
+             1  , atx , 30b
+                , xta ,
+             1  , atx , 31b
+            13  , uj  ,
+                , end ,

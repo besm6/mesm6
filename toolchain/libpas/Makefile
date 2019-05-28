@@ -33,6 +33,38 @@ OBJ3            = p_a7.obj \
 
 OBJ4            = pashid.obj
 
+OBJ5            = obprog.obj \
+                  p_08.obj \
+                  p_2.obj \
+                  p_3.obj \
+                  p_31.obj \
+                  p_4.obj \
+                  p_42.obj \
+                  p_5.obj \
+                  p_51.obj \
+                  p_52.obj \
+                  p_53.obj \
+                  p_6.obj \
+                  p_62.obj \
+                  p_63.obj \
+                  p_6a.obj \
+                  p_a6.obj \
+                  p_el.obj \
+                  p_eo.obj \
+                  p_in.obj \
+                  p_is.obj \
+                  p_kc.obj \
+                  p_ldar.obj \
+                  p_mi.obj \
+                  p_nw.obj \
+                  p_pa.obj \
+                  p_pi.obj \
+                  p_ss.obj \
+                  p_un.obj \
+                  p_wc.obj \
+                  pasmitxt.obj \
+                  pastpr.obj
+
 OBJ_DUBNA       = print8.obj \
                   pult.obj \
                   read@.obj \
@@ -40,7 +72,7 @@ OBJ_DUBNA       = print8.obj \
 
 all:            libpas.a
 
-libpas.a:       $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA)
+libpas.a:       $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA) $(OBJ5)
 		ar cr $@ $?
 
 hello.out:      libpas.a

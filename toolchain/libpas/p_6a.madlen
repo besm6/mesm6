@@ -1,0 +1,7 @@
+ p/6a    :      , name,         . dtran  /01.06.84/
+ p/7a    :      , subp,
+             1  , atx , 5
+             1  , utc , 5
+            11  , vtm ,
+                , uj  , p/7a
+                , end ,

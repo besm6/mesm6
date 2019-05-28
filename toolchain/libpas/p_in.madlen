@@ -1,0 +1,17 @@
+ p/in    :      , name,         . dtran  /01.06.84/
+                , ntr , 3
+                , ati , 14
+             1  , aax , 26b
+                , asn , 64+6
+                , u1a , *0006b
+             1  , xta , 25b
+            14  , asn , 64
+            15  , aax ,
+            13  , uza ,
+             1  , xta , 10b
+            13  , uj  ,
+            13  , uj  ,
+ *0006b  :  15  , utm , -1
+                , xta ,
+            13  , uj  ,
+                , end ,

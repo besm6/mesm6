@@ -1,0 +1,12 @@
+ p/un    :      , name,         . dtran  /01.06.84/
+            15  , atx , 1
+            14  , vtm , -5
+ *0001b  :  15  , xta , 1
+                , asn , 64-8
+            15  , atx , 1
+                , yta ,
+            14  , utc ,
+            12  , atx , 5
+            14  , vlm , *0001b
+            13  , uj  ,
+                , end ,

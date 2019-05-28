@@ -1,0 +1,15 @@
+ p/pa    :      , name,         . dtran  /01.06.84/
+                , xta ,
+            15  , atx , 1
+            14  , vtm , -4
+
+ *0002b  :  14  , utc ,
+            12  , xta , 4
+            15  , aox , 1
+                , asn , 64-8
+            15  , atx , 1
+            14  , vlm , *0002b
+            12  , xta , 5
+            15  , aox , 1
+            13  , uj  ,
+                , end ,

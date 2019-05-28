@@ -1,0 +1,10 @@
+ pastpr  :      , name,         . dtran  /01.06.84/
+ p/wxd   :      , subp,
+            15  , atx , 2
+                , utc , *0003b  . =i8
+                , xta ,
+            15  , xts , 1
+                , uj  , p/wxd
+
+ *0003b  :      , int , 8
+                , end ,
