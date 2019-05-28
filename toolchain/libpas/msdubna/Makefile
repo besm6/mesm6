@@ -11,4 +11,4 @@ clean:
 .SUFFIXES:      .obj .madlen
 
 .madlen.obj:
-		../../objdump/test/madlen-to-obj.py $<
+		../../ld/madlen-to-obj.py $<

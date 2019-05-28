@@ -1,0 +1,6 @@
+ld
+nm
+objdump
+size
+strip
+test-ld/test1
