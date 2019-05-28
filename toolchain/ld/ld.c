@@ -630,7 +630,7 @@ void merge_symbols(obj_image_t *obj)
             //
             // Update the address field with new index.
             old_ref = sym.f.n_addr;
-            sym.f.n_addr = obj->word[old_ref + 1 + obj->table_off];
+            sym.f.n_addr = 1 + obj->word[old_ref + 1 + obj->table_off];
             if (trace > 1)
                 printf("--- Add %s[%u] %05o\n", sym.f.n_type==SYM_INDIRECT ?
                     "indirect" : "expression", nsymbols, sym.f.n_addr);

@@ -76,7 +76,11 @@ libpas.a:       $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA) $(OBJ5)
 		ar cr $@ $?
 
 hello.out:      libpas.a
+		$(MAKE) -C../pascompl/test/hello hello.obj
 		../ld/ld -t ../pascompl/test/hello/hello.obj $? -o $@
+
+pascompl.out:   libpas.a
+		../ld/ld -t ../pascompl/test/pascompl/pascompl.obj $? -o $@
 
 clean:
 		rm -f *.out *.b6 *.punch *.obj *.lst *.a

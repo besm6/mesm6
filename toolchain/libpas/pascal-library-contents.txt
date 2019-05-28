@@ -1,0 +1,447 @@
+Contents of Pascal library at disk 2148, zone 0440.
+
+CCЫЛKИ HA ПOДПPOГPAMMЫ
+~~~~~~~~~~~~~~~~~~~~~~
+
+   *PASCAL  (*PASCOM )
+   *PASCOM   E MONITOR*
+               P/PAGES
+               P/PAMPAM
+               PASCOMPL
+               PASCONTR
+               PASISOCD
+               PASLIST
+             E READ*
+   LIBSUB    E MONREAD*
+             E PRINT8
+   OBPROG
+   P/00
+   P/01
+   P/02
+   P/03
+   P/04
+   P/06
+   P/07
+   P/08
+   P/0П
+   P/1         P/BX
+               P/EN
+               P/TRPAGE
+   P/2
+   P/3
+   P/31
+   P/4
+   P/41
+   P/42
+   P/5
+   P/51
+   P/52
+   P/53
+   P/6
+   P/61
+   P/62
+   P/63
+   P/64
+   P/6A        P/7A
+   P/7A        P/EDIH
+               P/HIDE
+               P/PF
+   P/7AD    (P/7A    )
+   P/A6        P/6A
+               P/SP
+   P/A7        P/7AD
+               P/HIDE
+               P/SP
+   P/AB     (P/CP    )
+   P/B6     (P/PB    )
+   P/B7     (P/PB    )
+   P/BEXF
+   P/BP     (P/PB    )
+   P/BX
+   P/CA        P/ER
+   P/CE     (P/CI    )
+   P/CI        P/7A
+               P/WI
+               P/WL
+               PASTPR
+   P/CK
+   P/CO     (P/SYS   )
+   P/CP
+   P/CW        P/PF
+   P/D1        P/WL
+               P/WXD
+   P/DA        P/7A
+               P/HT
+               P/WI
+               P/WL
+   P/DD        PASDD1
+   P/DI
+   P/DIV    (P/SYS   )
+   P/DS
+   P/E      (P/EF    )
+   P/EA        P/7A
+               P/HT
+               P/WL
+   P/EDIH   (P/HIDE  )
+   P/EF
+   P/EL
+   P/EN     (P/BX    )
+   P/EO
+   P/EQ
+   P/ER        P/7A
+               P/HT
+               P/WI
+   P/FM     (P/MF    )
+   P/GD     (P/NW    )
+   P/GE     (P/EQ    )
+   P/GF     (P/SYS   )
+   P/HIDE
+   P/HT        P/E
+               P/EF
+               P/RC
+             E STOP*
+   P/IN
+   P/IS
+   P/IT     (P/SYS   )
+   P/KC
+   P/LDAR
+   P/LDARIN
+   P/LNGPAR
+   P/LV        P/BX
+               P/EN
+   P/MD
+   P/MF
+   P/MI
+   P/MOD    (P/SYS   )
+   P/NN        P/BX
+               P/EN
+   P/NW        P/HT
+               P/PRINT
+   P/PA
+   P/PAGES
+   P/PAMPAM
+   P/PB        P/7A
+               P/HT
+               P/PRINT
+               P/RSR
+               P/WI
+               P/WO
+               P/WOLN
+   P/PF     (P/SYS   )
+   P/PI
+   P/PMDSET (PASPMD  )
+   P/PRINT  (PASOUT  )
+   P/RA        P/GF
+               PASDIH
+               PASHID
+   P/RA7       P/GF
+               PASDIH
+               PASHID
+   P/RACPAK (P/SYS   )
+   P/RC
+   P/RDI       P/EL
+               P/GF
+   P/RDR       P/GF
+               P/RDI
+               PASTENS
+   P/RE        P/RE1
+               P/RE2
+   P/RE1    (P/SYS   )
+   P/RE2    (P/SYS   )
+   P/RF     (P/SYS   )
+   P/RI        P/GD
+   P/RILN      P/EL
+               P/GF
+   P/RL     (P/RILN  )
+   P/RR
+   P/RSR
+   P/SC        P/ER
+   P/SETEXF
+   P/SP        P/PF
+   P/SS
+   P/STAR
+   P/SYS       P/BEXF
+               P/DA
+               P/DI
+               P/HT
+               P/MD
+               P/PF
+               P/PRINT
+               P/TF
+               P/WL
+               P/WOLN
+               P/WXD
+               PASEOF
+             E READ*
+             E STOP*
+   P/TF     (P/SYS   )
+   P/TR
+   P/TRPAGE    P/PAGES
+   P/TXGOST
+   P/UN
+   P/WA        P/PF
+               PASDIH
+               PASHID
+   P/WC        P/CW
+               P/SP
+   P/WI        P/7A
+               P/CW
+               P/PF
+               P/SP
+   P/WL     (P/SYS   )
+   P/WO        P/CW
+               P/EDIH
+               P/HIDE
+               P/SP
+   P/WOLN   (P/SYS   )
+   P/WR        P/A7
+               P/CW
+               P/TR
+               P/WI
+   P/WX        P/CW
+               P/SP
+               PASISOXT
+   P/WXD    (P/WX    )
+   PAIB     (PASBDI  )
+   PASACD      PASBD
+               PASBDI
+   PASADD   (PASBIND )
+   PASBD    (PASBDI  )
+   PASBDE
+   PASBDI      P/HT
+               P/PRINT
+               PASBDE
+               PASBDI
+   PASBIND     P/EO
+               P/PF
+               P/RF
+               P/TF
+               PASDIH
+               PASHID
+               PASNB8
+               PASTN
+   PASCODAD
+   PASCOMPL    OBPROG
+               P/08
+               P/1
+               P/2
+               P/3
+               P/31
+               P/4
+               P/42
+               P/5
+               P/51
+               P/52
+               P/53
+               P/6
+               P/62
+               P/63
+               P/6A
+               P/7A
+               P/A6
+               P/A7
+               P/CO
+               P/CW
+               P/DI
+               P/E
+               P/EF
+               P/EL
+               P/EO
+               P/GD
+               P/GF
+               P/IN
+               P/IS
+               P/IT
+               P/KC
+               P/LDAR
+               P/MD
+               P/MI
+               P/NW
+               P/PA
+               P/PF
+               P/PI
+               P/RC
+               P/RF
+               P/SS
+               P/TF
+               P/TR
+               P/UN
+               P/WC
+               P/WI
+               P/WL
+               P/WO
+               P/WOLN
+               PASDIV
+               PASISOXT
+               PASMITXT
+               PASTPR
+   PASCONTR
+   PASCTRP  (P/SYS   )
+   PASDD1      P/06
+               P/08
+               P/1
+               P/2
+               P/3
+               P/31
+               P/4
+               P/41
+               P/42
+               P/5
+               P/52
+               P/53
+               P/6
+               P/62
+               P/6A
+               P/7A
+               P/AB
+               P/CO
+               P/CP
+               P/CW
+               P/E
+               P/EF
+               P/EO
+               P/GF
+               P/IN
+               P/IT
+               P/LDAR
+               P/MI
+               P/NN
+               P/RC
+               P/RDR
+               P/RE
+               P/RF
+               P/SC
+               P/SS
+               P/STAR
+               P/WC
+               P/WI
+               P/WL
+               P/WO
+               P/WOLN
+               P/WR
+               PASISOCD
+               PASPMD
+               PASRED
+               PASTPR
+   PASDIH   (PASHID  )
+   PASDIV   (OBPROG  )
+   PASENDED    P/CW
+               P/MD
+               PASDIH
+               PASHID
+   PASEOF
+   PASEVN      PASDIH
+               PASHID
+   PASGIVEP (P/SYS   )
+   PASGOST
+   PASGOST7    P/1
+               P/2
+               P/7A
+               P/CO
+               P/DA
+               P/E
+               P/EF
+               P/GF
+               P/IT
+               P/PA
+               P/PF
+               P/TF
+               P/WL
+             E БPЗD0*6Л
+   PASGVNF   E INBUF
+               P/7A
+               P/DIV
+               P/HT
+               P/MOD
+               P/RACPAK
+               P/RF
+               P/WI
+               P/WOLN
+               PASCTRP
+               PASGIVEP
+   PASHELP   E  З  FOЫЮ
+             E 0 7JW
+             E D    + 8
+             E D   0 6Ю
+               P/06
+               P/1
+               P/2
+               P/3
+               P/31
+               P/6A
+               P/7A
+               P/CO
+               P/CW
+               P/E
+               P/EF
+               P/EL
+               P/EO
+               P/GF
+               P/IN
+               P/IT
+               P/MI
+               P/PF
+               P/RC
+               P/RF
+               P/TF
+               P/WI
+               P/WL
+               P/WO
+             E Б1З D
+             E Ц APБ0
+   PASHID
+   PASINBUF (P/SYS   )
+   PASINP   (PASBIND )
+   PASISOCD
+   PASISOXT
+   PASLIST
+   PASMITXT
+   PASMON2   E MONITOR*
+   PASNB8
+   PASOUT   D  PASEVN
+               PASNB8
+             E PRINT8
+               PULT
+   PASPMD      P/7A
+               P/CW
+               P/PRINT
+               P/WI
+               P/WL
+               P/WO
+               P/WOLN
+               P/WR
+               P/WXD
+             E STOP*
+   PASRED      P/08
+               P/1
+               P/2
+               P/CO
+               P/DA
+               P/E
+               P/EF
+               P/IN
+               P/IT
+               P/LDARIN
+               P/NN
+               P/SC
+               P/STAR
+               PASINP
+   PASSETAR    PASBDI
+   PASTENS  (P/WR    )
+   PASTIME   E 0 7Q0Я7T
+               P/1
+               P/2
+               P/6A
+               P/CO
+               P/DA
+               P/E
+               P/EF
+               P/IT
+               P/WL
+               P/WR
+   PASTN    (PASOUT  )
+   PASTPR      P/WXD
+   PASWHT   (PASOUT  )
+   PROGRAM  (PASCOMPL)
+   PULT
+   TIME     (PASTIME )
