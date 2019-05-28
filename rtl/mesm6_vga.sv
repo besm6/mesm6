@@ -1,5 +1,5 @@
 //
-// MESM-6: Simple UART unit.
+// MESM-6: 4-plane (16 color) 320x240 VGA videoadapter.
 //
 // Copyright (c) 2019 Evgeniy Khaluev
 //
