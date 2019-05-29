@@ -1,3 +1,2 @@
-hello.out
-libpas.a
-pascompl.out
+*.out
+*.a

@@ -51,23 +51,23 @@ void size(char *fname)
 
     sum = obj.cmd_len + obj.const_len + obj.bss_len;
     if (!header_printed) {
-        if (format == 'o')
-            printf("   text    data     bss     oct     hex filename\n");
+        if (format == 'x')
+            printf("   text    data     bss     hex     oct filename\n");
         else
-            printf("   text    data     bss     dec     hex filename\n");
+            printf("   text    data     bss     dec     oct filename\n");
         header_printed = 1;
     }
     switch (format) {
     default:
-        printf("%7d %7d %7d %7d %7x %s\n",
+        printf("%7d %7d %7d %7d %7o %s\n",
             obj.cmd_len, obj.const_len, obj.bss_len, sum, sum, fname);
         break;
     case 'x':
-        printf("%#7x %#7x %#7x %#7x %7x %s\n",
+        printf("%#7x %#7x %#7x %#7x %7o %s\n",
             obj.cmd_len, obj.const_len, obj.bss_len, sum, sum, fname);
         break;
     case 'o':
-        printf("%#7o %#7o %#7o %#7o %7x %s\n",
+        printf("%#7o %#7o %#7o %#7o %7o %s\n",
             obj.cmd_len, obj.const_len, obj.bss_len, sum, sum, fname);
         break;
     }

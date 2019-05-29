@@ -1,0 +1,30 @@
+ p/rsr   :      , name,         . dtran  /01.06.84/
+            13  , uza ,
+                , ati , 7
+                , its , 1
+            15  , aex ,
+            13  , uza ,
+             7  , mtj , 9
+            14  , vtm , 2
+
+ *0004b  :      , ita , 1
+             9  , aex , 2
+                , uza , *0007b
+             9  , xta , 2
+                , ati , 9
+            14  , vlm , *0004b
+ *0007b  :   7  , mtj , 9
+
+ *0010b  :      , ita , 9
+            14  , utc ,
+                , ati ,
+                , ita , 1
+             9  , aex , 2
+            13  , uza ,
+             9  , xta , 2
+            13  , uza ,
+             9  , xta , 2
+                , ati , 9
+            14  , utm , -1
+                , uj  , *0010b
+                , end ,

@@ -1,0 +1,133 @@
+ p/pb    :      , name,         . dtran  /01.06.84/
+ p/rsr   :      , subp,
+ p/woln  :      , subp,
+ p/print :      , subp,
+ p/7a    :      , subp,
+ p/wi    :      , subp,
+ p/wo    :      , subp,
+ p/ht    :      , subp,
+                , ita , 14
+                , its , 7
+                , asn , 64-15
+            15  , aex ,
+            13  , uj  ,
+c================================================
+
+ p/b7    :      ,entry,
+c================================================
+                , ita , 13
+                , its , 7
+            10  , xts ,
+                , asn , 64+15
+            15  , atx ,
+            10  , wtc ,
+                , uj  ,
+c================================================
+
+ p/b6    :      ,entry,
+c================================================
+            15  , xta ,
+                , sti , 7
+                , ati , 13
+            13  , uj  ,
+c================================================
+ p/bp    :      ,entry,
+c================================================
+            12  , vtm , 1
+            15  , j+m , 9
+             9  , mtj , 11
+
+ *0013b  :  10  , xta ,
+                , uza , *0045b
+             9  , aex , 3
+                , uza , *0044b
+            10  , xta ,
+                , utc , *0100b  .=3
+                , aex ,
+                , u1a , *0047b
+             9  , xta , 3
+                , utc , *0101b  .=4
+                , aex ,
+                , uza , *0040b
+                , utc , *0102b  .=5
+                , aex ,
+                , u1a , *0047b
+            15  , utm , 100b
+                , ita , 9
+                , its , 10
+                , its , 11
+                , its , 12
+                , its , 13
+             9  , utc , 2
+            10  , vtm ,
+            10  , xts ,
+            13  , vjm , p/rsr
+
+            10  , wtc ,
+                , xta , 4
+                , u1a , *0047b
+            10  , wtc ,
+            13  , vjm ,
+
+            15  , xta ,
+                , sti , 13
+                , sti , 12
+                , sti , 11
+                , sti , 10
+                , ati , 9
+            15  , xta , 10b
+            15  , utm , -64
+                , uj  , *0041b
+
+ *0040b  :   9  , wtc , 2
+                , xta ,
+ *0041b  :  11  , atx , 2
+            11  , utm , 1
+            12  , utm , 1
+            10  , utm , 1
+             9  , utm , 2
+                , uj  , *0013b
+ *0044b  :   9  , xta , 2
+                , uj  , *0041b
+ *0045b  :   9  , xta , 3
+                , u1a , *0047b
+            15  , xta ,
+                , uj  , p/rsr
+ *0047b  :      , ita , 12
+            15  , atx ,
+            13  , vjm , p/woln
+
+            10  , vtm , *0065b  .=6h forma
+            11  , vtm , *0070b  .=6herror
+            13  , vjm , p/print
+
+            11  , vtm , *0071b  .=6h for
+            10  , vtm , 5
+            13  , vjm , p/7a
+
+             2  , vtm , *0076b  .=i0
+             2  , xta ,
+            15  , xts , -2
+            13  , vjm , p/wi
+            11  , vtm , *0072b  .=6h param
+            10  , vtm , 24b
+            13  , vjm , p/7a
+
+             2  , xta , 1
+            15  , xts , -5
+             2  , aox ,
+            13  , vjm , p/wo
+            13  , vjm , p/woln
+
+            13  , vjm , p/ht
+
+ *0065b  :      , iso , 18h formal proc call
+ *0070b  :      , iso , 6herror
+ *0071b  :      , iso , 6h for
+ *0072b  :      , iso , 24h parametr call from
+ *0076b  :      , int , 0
+                , int , 6
+ *0100b  :      , log , 3
+ *0101b  :      , log , 4
+ *0102b  :      , log , 5
+                , end ,

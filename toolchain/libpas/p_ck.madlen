@@ -1,0 +1,73 @@
+ p/ck    :      , name,         . dtran  /01.06.84/
+                , ntr , 3
+             1  , atx , 3
+                , ita , 13
+                , its , 14
+             1  , xts , 3
+                , uza , *0011b
+            15  , mtj , 13
+            15  , utm , 2
+ *0004b  :  11  , xts ,
+            11  , utm , 1
+             1  , aex , 3
+            14  , utm , -1
+            14  , v1m , *0004b
+            11  , xts ,
+            13  , mtj , 15
+            13  , utc ,
+            11  , vtm , 3
+
+ *0011b  :      , ita , 9
+                , utc , *0043b  . =2
+                , x-a ,
+                , ati , 14
+ *0013b  :      , ita , 9
+            15  , x-a , -1
+                , u1a , *0024b
+
+ *0015b  :  15  , atx , -1
+            14  , mtj , 13
+             9  , j+m , 11
+                , xta ,
+ *0017b  :  13  , utc , -2
+            11  , aex ,
+            10  , asn ,
+            13  , vlm , *0017b
+            11  , aex , -1
+            12  , atx ,
+            12  , utm , 1
+            15  , xta , -1
+                , uza , *0024b
+                , uj  , *0013b
+ *0024b  :  15  , xta , -1
+                , u1a , *0027b
+            15  , utm , -1
+            15  , wtc ,
+                , uj  ,
+
+ *0027b  :      , ati , 13
+                , ita , 8
+                , its , 7
+            15  , atx ,
+            15  , mtj , 8
+            14  , utc , -2
+             7  , vtm ,
+
+ *0033b  :  13  , vzm , *0042b
+            13  , utm , -1
+            11  , xta ,
+            11  , utm , 1
+ *0035b  :  15  , atx ,
+             7  , vlm , *0033b
+             8  , mtj , 15
+            15  , mtj , 11
+            15  , xta ,
+                , sti , 7
+                , ati , 8
+                , xta ,
+                , uj  , *0015b
+
+ *0042b  :      , xta ,
+                , uj  , *0035b
+ *0043b  :      , log , 2
+                , end ,

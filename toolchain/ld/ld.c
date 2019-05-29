@@ -71,6 +71,8 @@ int emit_relocatable;           // generate relocatable output
 
 unsigned basaddr = 1;           // base address of resulting image
 
+unsigned max_set_address = 0;   // max address touched by SET directive
+
 //
 // Cumulative sizes set in pass 1 (in words).
 //
@@ -1419,7 +1421,7 @@ unsigned sym_eval(unsigned index)
 
     case SYM_RELOC:
         // Relocatable address.
-        return basaddr + sp->f.n_addr;
+        return sp->f.n_addr;
 
     case SYM_OFFSET:
         // Offset from another symbol.
@@ -1554,11 +1556,78 @@ void relocate_set_section(obj_image_t *obj, uint64_t *to, uint64_t *from, unsign
 //
 // Relocate a section of `set' instructions.
 //
-void apply_set_instructions(obj_image_t *obj, uint64_t *cmd, int ncommands,
-    uint64_t *tdata, int ndata)
+void apply_set_instructions(obj_image_t *obj, unsigned bss_origin,
+    uint64_t *cmd, int ncommands, uint64_t *tdata, int ndata)
 {
-    //TODO: apply `set` instructions
-//printf("--- %s(%s, ncommands = %u, ndata = %u)\n", __func__, text_to_utf(obj->word[obj->table_off]), ncommands, ndata);
+    if (trace > 1) {
+        printf("--- %s set directives: ncommands = %u, ndata = %u\n",
+            text_to_utf(obj->word[obj->table_off]), ncommands, ndata);
+    }
+    for (; ncommands > 0; ncommands--, cmd++) {
+        unsigned size  = (*cmd >> 36) & 07777;
+        unsigned from  = (*cmd >> 24) & 07777;
+        unsigned count = (*cmd >> 12) & 07777;
+        unsigned to    = *cmd & 07777;
+        unsigned i;
+//if (trace > 1) printf("--- %04o %04o %04o %04o\n", size, from, count, to);
+
+        // Compute final addresses.
+        if (to & 04000)
+            to = sym_eval(obj->word[(to & 03777) + obj->table_off]);
+        else
+            fatal("Wrong destination address in SET directive: %05o", to);
+
+        if (to < basaddr ||
+            to + size*count > basaddr + text_size + data_size + bss_size)
+            fatal("Wrong destination address and size in SET directive: %05o+%05o",
+                to, size*count);
+
+        if (from & 04000) {
+            from = sym_eval(obj->word[(from & 03777) + obj->table_off]);
+//if (trace > 1) printf("--- from symbol mapped to index %u, value %05o, bss_origin = %05o\n", (unsigned)obj->word[(from & 03777) + obj->table_off], from, bss_origin);
+            if (from >= bss_origin) {
+                // Copy from transient data section.
+                from -= bss_origin;
+                if (trace > 1) {
+                    printf("--- copy %u words from t%05o to %05o", size, from, to);
+                    if (count != 1) printf(", replicate %u times", count);
+                    printf("\n");
+                }
+                if (from + size > ndata)
+                    fatal("Source address in SET directive exceeds size of DATA section");
+                for (i = 0; i < count; i++) {
+                    memcpy(&aout.word[11 + to - basaddr + i*size],
+                        &tdata[from], size * sizeof(uint64_t));
+                }
+            } else {
+                // Copy from cmd/const section.
+                if (trace > 1) {
+                    printf("--- copy %u words from %05o to %05o", size, from, to);
+                    if (count != 1) printf(", replicate %u times", count);
+                    printf("\n");
+                }
+                if (from < basaddr || from + size > basaddr + text_size + data_size)
+                    fatal("Source address in SET directive out of range");
+                for (i = 0; i < count; i++) {
+                    memcpy(&aout.word[11 + to - basaddr + i*size],
+                        &aout.word[11 + from - basaddr],
+                        size * sizeof(uint64_t));
+                }
+            }
+        } else if (from == 0) {
+            // Clear destination
+            if (size != 1)
+                fatal("Wrong size in SET directive: %u", size);
+            if (trace > 1)
+                printf("--- clear %u words at %05o\n", count, to);
+            memset(&aout.word[11 + to - basaddr], 0, size * sizeof(uint64_t));
+        } else {
+            fatal("Wrong source address in SET directive: %05o", from);
+        }
+
+        if (to + size*count > max_set_address)
+            max_set_address = to + size*count;
+    }
 }
 
 //
@@ -1682,7 +1751,7 @@ void pass3()
                     obj->set_len);
             } else {
                 // Perform data transter.
-                apply_set_instructions(obj,
+                apply_set_instructions(obj, bss_origin,
                     &obj->word[obj->cmd_off + obj->cmd_len + obj->const_len + obj->data_len],
                     obj->set_len,
                     &obj->word[obj->cmd_off + obj->cmd_len + obj->const_len],
@@ -1701,6 +1770,19 @@ void pass3()
         bss_origin += obj->bss_len;
         tdata_origin += obj->data_len;
         set_origin += obj->set_len;
+    }
+
+    // As a result of SET directives, the boundary between
+    // initialized and uninitialized data can change.
+    int offset = max_set_address - basaddr - text_size - data_size;
+    if (offset > 0) {
+        if (offset > bss_size)
+            fatal("Max SET address out of BSS range");
+        data_size += offset;
+        bss_size -= offset;
+        if (trace > 1)
+            printf("--- extend data segment by %d words up to %05o\n",
+                offset, basaddr + text_size + data_size);
     }
 
     //

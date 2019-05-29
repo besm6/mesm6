@@ -1,0 +1,18 @@
+ p/ca    :      , name,         . dtran  /01.06.84/
+ p/er    :      , subp,
+            15  , atx ,
+             1  , a-x , 32b
+                , u1a , *0005b
+            15  , xta , -1
+             1  , a-x , 27b
+                , uza , *0005b
+            15  , xta ,
+                , ati , 14
+            13  , uj  ,
+
+ *0005b  :  11  , vtm , *0007b  . =6h point
+            10  , vtm , 30b
+                , uj  , p/er
+
+ *0007b  :      , iso , 24h pointer overrange. line
+                , end ,

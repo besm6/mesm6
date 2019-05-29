@@ -1,0 +1,112 @@
+ p/ds    :      , name,         . dtran  /01.06.84/
+                , ntr , 3
+             9  , xta ,
+                , ati , 9
+                , its , 13
+                , its , 14
+             9  , j+m , 14
+                , its , 14
+             9  , utm , -1
+                , its , 9
+             9  , xts ,
+            10  , vtm , *0065b  . =:7753 17
+            10  , aax , 1
+            10  , aex ,
+                , u1a , *0024b
+             1  , xta , 31b
+            12  , vtm ,
+ *0010b  :      , ati , 11
+            11  , vzm , *0024b
+            11  , xta ,
+             9  , aex ,
+                , uza , *0015b
+
+ *0013b  :  11  , mtj , 12
+            11  , xta ,
+                , uj  , *0010b
+
+ *0015b  :  11  , xta ,
+                , asn , 64+15
+            10  , aax , 2
+                , its , 11
+            15  , arx ,
+            15  , aex , -5
+                , u1a , *0013b
+                , ita , 11
+            15  , atx , -5
+            15  , mtj , 14
+            14  , xta ,
+            15  , a+x , -3
+            15  , atx , -3
+            13  , vjm , *0054b
+ *0024b  :  15  , wtc , -2
+             9  , vtm ,
+             9  , xta ,
+            10  , aax , 1
+            10  , aex ,
+                , uza , *0034b
+ *0027b  :  15  , xta , -2
+             1  , aex , 27b
+                , u1a , *0045b
+            15  , xta , -5
+             1  , atx , 27b
+
+ *0032b  :  15  , utm , -5
+            15  , wtc , 1
+                , uj  ,
+
+ *0034b  :   1  , xta , 31b
+            12  , vtm ,
+ *0035b  :      , ati , 11
+            11  , vzm , *0027b
+            11  , xta ,
+             9  , aex ,
+                , uza , *0041b
+            11  , mtj , 12
+            11  , xta ,
+                , uj  , *0035b
+ *0041b  :  13  , vjm , *0054b
+
+             9  , xta ,
+                , asn , 64+15
+            10  , aax , 2
+            15  , a+x , -3
+            15  , atx , -3
+
+ *0045b  :  15  , xta , -3
+                , asn , 64-15
+            10  , aex ,
+             1  , aex , 31b
+            15  , wtc , -5
+            14  , vtm ,
+            14  , atx ,
+            15  , xts , -6
+            15  , a+x , -4
+                , sti , 13
+            13  , atx , -1
+            15  , xta , -5
+             1  , atx , 31b
+                , uj  , *0032b
+ *0054b  :  12  , vzm , *0063b
+            12  , xta ,
+            10  , aax , 3
+            11  , xts ,
+            10  , aax , 2
+            15  , aex ,
+            12  , atx ,
+                , asn , 64+15
+                , ati , 14
+            12  , xta ,
+            14  , utc , -1
+            12  , atx ,
+            13  , uj  ,
+
+ *0063b  :  11  , xta ,
+            10  , aax , 2
+             1  , atx , 31b
+            13  , uj  ,
+ *0065b  :      , oct , 7753 17
+                , oct , 7777 77
+                , log , 7 7777
+                , oct , 7777 7777 777
+                , end ,

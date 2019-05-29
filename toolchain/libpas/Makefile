@@ -34,6 +34,11 @@ OBJ3            = p_a7.obj \
 OBJ4            = pashid.obj
 
 OBJ5            = obprog.obj \
+                  p_00.obj \
+                  p_01.obj \
+                  p_03.obj \
+                  p_04.obj \
+                  p_06.obj \
                   p_08.obj \
                   p_2.obj \
                   p_3.obj \
@@ -49,17 +54,30 @@ OBJ5            = obprog.obj \
                   p_63.obj \
                   p_6a.obj \
                   p_a6.obj \
+                  p_ca.obj \
+                  p_ck.obj \
+                  p_cp.obj \
+                  p_ds.obj \
                   p_el.obj \
                   p_eo.obj \
+                  p_eq.obj \
                   p_in.obj \
                   p_is.obj \
                   p_kc.obj \
                   p_ldar.obj \
+                  p_ldarin.obj \
+                  p_lngpar.obj \
                   p_mi.obj \
                   p_nw.obj \
                   p_pa.obj \
+                  p_pb.obj \
                   p_pi.obj \
+                  p_riln.obj \
+                  p_rdi.obj \
+                  p_rdr.obj \
+                  p_rsr.obj \
                   p_ss.obj \
+                  p_star.obj \
                   p_un.obj \
                   p_wc.obj \
                   pasmitxt.obj \
@@ -75,12 +93,28 @@ all:            libpas.a
 libpas.a:       $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ_DUBNA) $(OBJ5)
 		ar cr $@ $?
 
+tests:          hello.out besm6pat1.out besm6pat2.out besm6pat3.out pascompl.out
+
 hello.out:      libpas.a
 		$(MAKE) -C../pascompl/test/hello hello.obj
-		../ld/ld -t ../pascompl/test/hello/hello.obj $? -o $@
+		../ld/ld ../pascompl/test/hello/hello.obj $? -o $@
+		../ld/size $@
 
 pascompl.out:   libpas.a
-		../ld/ld -t ../pascompl/test/pascompl/pascompl.obj $? -o $@
+		../ld/ld ../pascompl/test/pascompl/pascompl.obj $? -o $@
+		../ld/size $@
+
+besm6pat1.out:  libpas.a
+		../ld/ld ../pascompl/test/accept/besm6pat1.obj $? -o $@
+		../ld/size $@
+
+besm6pat2.out:  libpas.a
+		../ld/ld ../pascompl/test/accept/besm6pat2.obj $? -o $@
+		../ld/size $@
+
+besm6pat3.out:  libpas.a
+		../ld/ld ../pascompl/test/accept/besm6pat3.obj $? -o $@
+		../ld/size $@
 
 clean:
 		rm -f *.out *.b6 *.punch *.obj *.lst *.a

@@ -1,4 +1,9 @@
 LST             = obprog \
+                  p/00 \
+                  p/01 \
+                  p/03 \
+                  p/04 \
+                  p/06 \
                   p/08 \
                   p/1 \
                   p/2 \
@@ -19,12 +24,17 @@ LST             = obprog \
                   p/a7 \
                   p/bexf \
                   p/bx \
+                  p/ca \
+                  p/ck \
+                  p/cp \
                   p/cw \
                   p/da \
                   p/di \
+                  p/ds \
                   p/ef \
                   p/el \
                   p/eo \
+                  p/eq \
                   p/er \
                   p/hide \
                   p/ht \
@@ -32,16 +42,24 @@ LST             = obprog \
                   p/is \
                   p/kc \
                   p/ldar \
+                  p/ldarin \
+                  p/lngpar \
                   p/md \
                   p/mi \
                   p/nw \
                   p/pa \
                   p/pages \
+                  p/pb \
                   p/pi \
                   p/rc \
+                  p/rdi \
+                  p/rdr \
+                  p/riln \
+                  p/rsr \
                   p/sc \
                   p/sp \
                   p/ss \
+                  p/star \
                   p/sys \
                   p/tr \
                   p/trpage \

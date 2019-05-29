@@ -33,7 +33,7 @@ objdump: objdump.o stdobj.o
 	$(CC) $(LDFLAGS) objdump.o stdobj.o -o objdump
 
 install: $(DESTDIR)/$(ld) $(DESTDIR)/$(size) $(DESTDIR)/$(strip) \
-         $(DESTDIR)/$(nm) $(DESTDIR)/bin/$(objdump)
+         $(DESTDIR)/$(nm) $(DESTDIR)/$(objdump)
 
 clean:
 	rm -f *.o *.b a.out core ld strip nm size objdump
@@ -50,8 +50,8 @@ $(DESTDIR)/$(size): size
 $(DESTDIR)/$(strip): strip
 	install -s strip $(DESTDIR)/$(strip)
 
-$(DESTDIR)/bin/$(objdump): objdump
-	install -s objdump $(DESTDIR)/bin/$(objdump)
+$(DESTDIR)/$(objdump): objdump
+	install -s objdump $(DESTDIR)/$(objdump)
 
 ###
 ld.o: ld.c stdobj.h
