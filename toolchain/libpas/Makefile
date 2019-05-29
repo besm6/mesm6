@@ -101,6 +101,7 @@ hello.out:      libpas.a
 		../ld/size $@
 
 pascompl.out:   libpas.a
+		$(MAKE) -C../pascompl/test/pascompl pascompl.obj
 		../ld/ld ../pascompl/test/pascompl/pascompl.obj $? -o $@
 		../ld/size $@
 

@@ -620,7 +620,7 @@ void merge_symbols(obj_image_t *obj)
             //
             // Update the reference field with new index.
             old_ref = sym.f.n_ref & 03777;
-            sym.f.n_ref = 04000 | obj->word[old_ref + 1 + obj->table_off];
+            sym.f.n_ref = 04001 + obj->word[old_ref + obj->table_off];
             if (trace > 1)
                 printf("--- Add offset[%u] %05o\n", nsymbols, sym.f.n_addr);
             break;
@@ -647,11 +647,11 @@ void merge_symbols(obj_image_t *obj)
             //
             // Update the reference field with new index.
             old_ref = sym.f.n_ref & 03777;
-            sym.f.n_ref = 04000 | obj->word[old_ref + 1 + obj->table_off];
+            sym.f.n_ref = 04001 + obj->word[old_ref + obj->table_off];
 
             // Update the address field with new index.
             old_ref = sym.f.n_addr;
-            sym.f.n_addr = obj->word[old_ref + 1 + obj->table_off];
+            sym.f.n_addr = 1 + obj->word[old_ref + obj->table_off];
             if (trace > 1)
                 printf("--- Add arith op[%u]\n", nsymbols);
             break;
@@ -1448,26 +1448,27 @@ unsigned sym_eval(unsigned index)
 
     case SYM_EXPRESSION:
         // Expression.
-        return sym_eval(sp->f.n_addr);
+        ref = sp->f.n_addr & 03777;
+        return sym_eval(ref);
 
     case SYM_ADD:
         // Add two symbols.
-        ref = sp->f.n_ref & 03777;
+        ref = (sp->f.n_ref & 03777) - 1;
         return sym_eval(ref) + sym_eval(sp->f.n_addr);
 
     case SYM_SUBTRACT:
         // Subtract two symbols.
-        ref = sp->f.n_ref & 03777;
+        ref = (sp->f.n_ref & 03777) - 1;
         return sym_eval(ref) + sym_eval(sp->f.n_addr);
 
     case SYM_MULTIPLY:
         // Multiply two symbols.
-        ref = sp->f.n_ref & 03777;
+        ref = (sp->f.n_ref & 03777) - 1;
         return sym_eval(ref) * sym_eval(sp->f.n_addr);
 
     case SYM_DIVIDE:
         // Divide two symbols.
-        ref = sp->f.n_ref & 03777;
+        ref = (sp->f.n_ref & 03777) - 1;
         val = sym_eval(sp->f.n_addr);
         if (val == 0)
             fatal("Divide by zero symbol #%u", sp->f.n_addr);
@@ -1662,12 +1663,17 @@ unsigned relocate_debug(obj_image_t *obj, uint64_t *from, unsigned nwords)
 
         if (sp->f.n_type == (SYM_RELOC & 0277)) {
             sp->f.n_addr = relocate_address(obj, sp->f.n_addr);
-        } else if (emit_relocatable) {
-            // Update symbol index.
-            sp->f.n_addr = 04001 + obj->word[(sp->f.n_addr & 03777) + obj->table_off];
         } else {
-            // Compute final address.
-            sp->f.n_addr = sym_eval(obj->word[(sp->f.n_addr & 03777) + obj->table_off]);
+            int old_index = sp->f.n_addr & 03777;
+            int new_index = obj->word[old_index + obj->table_off];
+
+            if (emit_relocatable) {
+                // Update symbol index.
+                sp->f.n_addr = 04001 + new_index;
+            } else {
+                // Compute final address.
+                sp->f.n_addr = sym_eval(new_index);
+            }
         }
         nprocessed += 2;
     }

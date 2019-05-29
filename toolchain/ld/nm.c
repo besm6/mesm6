@@ -328,7 +328,8 @@ void nm(const char *fname, int narg)
                 printf("%s:\t", ar_name);
         }
         if (! undef_flg) {
-            if (symp[i].n_type == 'e' || symp[i].n_type == 'U') {
+            if (symp[i].n_type == 'U' ||
+                (symp[i].n_type == 'e' && obj.entry == 0)) {
                 // Undefined symbols and expressions have no value
                 // until finally linked.
                 printf("     ");
