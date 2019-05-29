@@ -75,7 +75,7 @@ unsigned basaddr = 1;           // base address of resulting image
 // Cumulative sizes set in pass 1 (in words).
 //
 int text_size, data_size, bss_size;
-int tdata_size, set_size, debug_size;
+int tdata_size, set_size;
 
 //
 // Symbol relocation: passes 2 and 3.
@@ -1037,6 +1037,8 @@ void load1obj(obj_image_t *obj)
     text_size += obj->cmd_len;
     data_size += obj->const_len;
     bss_size += obj->bss_len;
+    tdata_size += obj->data_len;
+    set_size += obj->set_len;
 
     merge_ext_symbols(obj);
 
@@ -1524,12 +1526,102 @@ void relocate_code(obj_image_t *obj, uint64_t *to, uint64_t *from, unsigned nwor
 }
 
 //
+// Relocate a `set` address.
+//
+unsigned relocate_ref(obj_image_t *obj, unsigned ref)
+{
+    if (ref & 04000) {
+        // Update symbol index.
+        ref = 04001 + obj->word[(ref & 03777) + obj->table_off];
+    }
+    return ref;
+}
+
+//
+// Relocate a section of `set' instructions.
+//
+void relocate_set_section(obj_image_t *obj, uint64_t *to, uint64_t *from, unsigned nwords)
+{
+    unsigned a, b;
+
+    for (; nwords > 0; nwords--, to++, from++) {
+        a = relocate_ref(obj, (*from >> 24) & 07777);
+        b = relocate_ref(obj, *from & 07777);
+        *to = (*from & 07777000077770000) | (uint64_t)a << 24 | b;
+    }
+}
+
+//
+// Relocate a section of `set' instructions.
+//
+void apply_set_instructions(obj_image_t *obj, uint64_t *cmd, int ncommands,
+    uint64_t *tdata, int ndata)
+{
+    //TODO: apply `set` instructions
+//printf("--- %s(%s, ncommands = %u, ndata = %u)\n", __func__, text_to_utf(obj->word[obj->table_off]), ncommands, ndata);
+}
+
+//
+// Relocate a debug section.
+//
+unsigned relocate_debug(obj_image_t *obj, uint64_t *from, unsigned nwords)
+{
+    unsigned nprocessed = 0;
+    nlist_t *sp;
+
+    for (; nwords > 1; nwords -= 2, from += 2) {
+        // Ignore everything after name '////////'.
+        if (from[0] == 0x3cf3cf3cf3cf)
+            break;
+
+        sp = (nlist_t*) &from[1];
+        if (sp->f.n_type == 0 && sp->f.n_ref == 01000000) {
+            // Fix incompatibility of Fortran-GDR.
+            sp->f.n_type = SYM_RELOC & 0277;
+            sp->f.n_ref = 0;
+        }
+
+        if (sp->f.n_type == (SYM_RELOC & 0277)) {
+            sp->f.n_addr = relocate_address(obj, sp->f.n_addr);
+        } else if (emit_relocatable) {
+            // Update symbol index.
+            sp->f.n_addr = 04001 + obj->word[(sp->f.n_addr & 03777) + obj->table_off];
+        } else {
+            // Compute final address.
+            sp->f.n_addr = sym_eval(obj->word[(sp->f.n_addr & 03777) + obj->table_off]);
+        }
+        nprocessed += 2;
+    }
+    return nprocessed;
+}
+
+//
+// Copy a debug section.
+//
+unsigned copy_debug(uint64_t *to, uint64_t *from, unsigned nwords)
+{
+    unsigned ncopied = 0;
+
+    for (; nwords > 1; nwords -= 2) {
+        // Ignore everything after name '////////'.
+        if (*from == 0x3cf3cf3cf3cf)
+            break;
+
+        *to++ = *from++;
+        *to++ = *from++;
+        ncopied += 2;
+    }
+    return ncopied;
+}
+
+//
 // Pass 3: Relocate the code.
 // Build the output object image.
 //
 void pass3()
 {
     int text_origin, data_origin, bss_origin;
+    int tdata_origin, set_origin, debug_size = 0;
     obj_image_t *obj;
 
     if (trace > 1) {
@@ -1538,6 +1630,8 @@ void pass3()
     text_origin = basaddr;
     data_origin = text_origin + text_size;
     bss_origin = data_origin + data_size;
+    tdata_origin = bss_origin;
+    set_origin = tdata_origin + tdata_size;
     for (obj = obj_head; obj; obj = obj->next) {
         if (trace > 1)
             printf("%s\n", text_to_utf(obj->word[obj->table_off]));
@@ -1566,13 +1660,47 @@ void pass3()
                 &obj->word[obj->cmd_off + obj->cmd_len],
                 obj->const_len * sizeof(uint64_t));
         }
+        // Copy transient data section.
+        if (obj->data_len > 0) {
+            if (trace > 1)
+                printf("--- transient data %u words\n", obj->data_len);
+            if (emit_relocatable) {
+                memcpy(&aout.word[11 + data_size + tdata_origin],
+                    &obj->word[obj->cmd_off + obj->cmd_len + obj->const_len],
+                    obj->data_len * sizeof(uint64_t));
+            }
+        }
+        // Copy SET section.
+        if (obj->set_len > 0) {
+            if (trace > 1)
+                printf("--- `set' %u words\n", obj->set_len);
+            if (emit_relocatable) {
+                // Relocate `set' instructions.
+                relocate_set_section(obj,
+                    &aout.word[11 + data_size + tdata_size + set_origin],
+                    &obj->word[obj->cmd_off + obj->cmd_len + obj->const_len + obj->data_len],
+                    obj->set_len);
+            } else {
+                // Perform data transter.
+                apply_set_instructions(obj,
+                    &obj->word[obj->cmd_off + obj->cmd_len + obj->const_len + obj->data_len],
+                    obj->set_len,
+                    &obj->word[obj->cmd_off + obj->cmd_len + obj->const_len],
+                    obj->data_len);
+            }
+        }
+        // Relocate debug section.
+        if (!s_flag && obj->debug_len > 0) {
+            if (trace > 1)
+                printf("--- debug info %u words\n", obj->debug_len);
+            debug_size += relocate_debug(obj,
+                &obj->word[obj->debug_off], obj->debug_len);
+        }
         text_origin += obj->cmd_len;
         data_origin += obj->const_len;
         bss_origin += obj->bss_len;
-
-        //TODO: copy obj->data_len, increase tdata_size
-        //TODO: copy obj->set_len, increase set_size
-        //TODO: copy obj->debug_len, increase debug_size
+        tdata_origin += obj->data_len;
+        set_origin += obj->set_len;
     }
 
     //
@@ -1599,8 +1727,6 @@ void pass3()
     }
 
     aout.nwords = 1 + 10 + text_size + data_size + 1;
-    if (!s_flag)
-        aout.nwords += nsymbols + nnames + debug_size;
     if (emit_relocatable)
         aout.nwords += set_size + tdata_size;
 
@@ -1615,6 +1741,8 @@ void pass3()
 
     // Copy symbol table and name table.
     if (!s_flag) {
+        aout.nwords += nsymbols + nnames + debug_size;
+
         // Update references to long names.
         nlist_t *sp;
         for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
@@ -1639,6 +1767,15 @@ void pass3()
         if (nnames > 0)
             memcpy(&aout.word[aout.long_off], &nametab[0],
                 nnames * sizeof(uint64_t));
+
+        // Copy debug section.
+        unsigned ndebug = 0;
+        for (obj = obj_head; obj; obj = obj->next) {
+            if (obj->debug_len > 0) {
+                ndebug += copy_debug(&aout.word[aout.debug_off + ndebug],
+                    &obj->word[obj->debug_off], obj->debug_len);
+            }
+        }
     }
 }
 
