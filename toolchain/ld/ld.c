@@ -1382,6 +1382,11 @@ void pass2()
         create_entry(name_etext, basaddr + text_size);
         create_entry(name_edata, basaddr + text_size + data_size);
         create_entry(name_end, basaddr + text_size + data_size + bss_size);
+        if (trace > 1)
+            printf("--- /etext = %05o, /edata = %05o, /end = %05o\n",
+                basaddr + text_size,
+                basaddr + text_size + data_size,
+                basaddr + text_size + data_size + bss_size);
     }
 
     if (!r_flag) {
@@ -1426,7 +1431,7 @@ unsigned sym_eval(unsigned index)
     case SYM_OFFSET:
         // Offset from another symbol.
         // Update the reference field with new index.
-        ref = sp->f.n_ref & 03777;
+        ref = (sp->f.n_ref & 03777) - 1;
         return sym_eval(ref) + sp->f.n_addr;
 
     case SYM_INDIRECT:
