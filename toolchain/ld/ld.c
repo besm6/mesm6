@@ -1340,6 +1340,7 @@ void pass2()
     if (d_flag || !emit_relocatable) {
         for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
             unsigned size = sp->f.n_addr;
+            int gap = 0;
 
             switch (sp->f.n_type) {
             default:
@@ -1357,7 +1358,9 @@ void pass2()
             case SYM_PPAGE_S:
             case SYM_PPAGE_L:
                 // Page aligned.
+                gap = -cblock_origin;
                 cblock_origin = (cblock_origin + 1023) / 1024 * 1024;
+                gap += cblock_origin;
                 break;
 
             case SYM_CSECT_S:
@@ -1365,12 +1368,14 @@ void pass2()
             case SYM_PSECT_S:
             case SYM_PSECT_L:
                 // Sector aligned.
+                gap = -cblock_origin;
                 cblock_origin = (cblock_origin + 255) / 256 * 256;
+                gap += cblock_origin;
                 break;
             }
             sp->f.n_addr = cblock_origin;
             cblock_origin += size;
-            bss_size += size;
+            bss_size += gap + size;
         }
     }
     if (basaddr + text_size + data_size + bss_size > 077777)
