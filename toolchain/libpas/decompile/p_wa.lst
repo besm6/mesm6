@@ -1,0 +1,63 @@
+﻿                                                      29.05.19 M1
+
+  M O H И T O P-8 0  (3.7)   25.09.84*       (  MC " Д Y Б H A " ИAЭ  )             ШИФP    419999000000
+
+
+
+
+
+
+
+                    ЖЖЖЖ        Ж   Ж  ЖЖЖ
+                    Ж   Ж       Ж   Ж Ж   Ж
+                    Ж   Ж    Ж  Ж   Ж Ж   Ж
+                    Ж   Ж   Ж   Ж   Ж Ж   Ж
+                    ЖЖЖЖ   Ж    Ж Ж Ж Ж   Ж
+                    Ж           Ж Ж Ж ЖЖЖЖЖ
+                    Ж            Ж Ж  Ж   Ж
+
+
+
+
+
+
+
+
+*NAME P/WA
+           *PERSO: 401350, CONT
+ 04.10.84 M1
+           *CALL DTRAN:410440(P/WA)
+                 DTRAN  /01.06.84/
+           *CALL PUTFLAG*
+ 40
+           *ASSEM
+           *READ: 1
+                                                      29.05.19 M1
+ ABTOKOД  MADLEN
+   (1.10.72)
+                    P/WA    :  , NAME,        DTRAN  /01.06.84/
+                    PASHID  :  , SUBP,
+                    PASDIH  :  , SUBP,
+                    P/PF    :  , SUBP,
+ 0000                         9, VTM ,-1
+  -                          14, VJM ,PASHID
+ 0001                        11, MTJ ,6
+  -                          10, MTJ ,5
+ 0002 0007          *0002B  : 5, VZM ,*0007B
+  -                           6, XTA ,
+ 0003                        12, WTC ,
+  -                            , ATX ,
+ 0004                        13, VJM ,P/PF
+  -
+ 0005                         6, UTM ,1
+  -                           5, UTM ,-1
+ 0006 0002                     , UJ  ,*0002B
+  -
+ 0007               *0007B  : 9, VTM ,-1
+  -                            , UJ  ,PASDIH
+                               , END ,
+ ЧИCЛO ПEPФ. 0019      ЧИCЛO OШИБ. OПEPATOPOB  0000
+           *READ OLD
+           *END FILE
+ КОНЕЦ ЗАДАЧИ
+ 00411: 00 074 0000	*74

@@ -1,0 +1,114 @@
+﻿                                                      29.05.19 M1
+
+  M O H И T O P-8 0  (3.7)   25.09.84*       (  MC " Д Y Б H A " ИAЭ  )             ШИФP    419999000000
+
+
+
+
+
+
+
+                    ЖЖЖЖ        ЖЖЖЖ  ЖЖЖ   ЖЖЖЖ
+                    Ж   Ж       Ж   Ж Ж  Ж  Ж   Ж
+                    Ж   Ж    Ж  Ж   Ж Ж   Ж Ж   Ж
+                    Ж   Ж   Ж   ЖЖЖЖ  Ж   Ж ЖЖЖЖ
+                    ЖЖЖЖ   Ж    Ж Ж   Ж   Ж Ж Ж
+                    Ж           Ж  Ж  Ж   Ж Ж  Ж
+                    Ж           Ж   Ж ЖЖЖЖ  Ж   Ж
+
+
+
+
+
+
+
+
+*NAME P/RDR
+           *PERSO: 401350, CONT
+ 04.10.84 M1
+           *CALL DTRAN:410440(P/RDR)
+                 DTRAN  /01.06.84/
+           *CALL PUTFLAG*
+ 40
+           *ASSEM
+           *READ: 1
+                                                      29.05.19 M1
+ ABTOKOД  MADLEN
+   (1.10.72)
+                    P/RDR   :  , NAME,        DTRAN  /01.06.84/
+                    PASTENS :  , SUBP,
+                    PASPERID:  , LC  ,1
+                    P/RDI   :  , SUBP,
+                    P/GF    :  , SUBP,
+ 0000                          , ITA ,13
+  -                          15, ATX ,
+ 0001                        15, UTM ,3
+  -                          13, VJM ,P/RDI
+ 0002                        15, ATX ,-1
+  -                          15, AVX ,-1
+ 0003                        15, ATX ,-2
+  -                          15, XTA ,2
+ 0004                        15, ATX ,-1
+  -                          12, WTC ,
+ 0005                          , XTA ,
+  -                            , UTC ,PASPERID
+ 0006                          , AEX ,
+  -   0015                     , U1A ,*0015B
+ 0007                        13, VJM ,P/GF
+  -
+ 0010                        13, VJM ,P/RDI
+  -
+ 0011                          , NTR ,
+  -                            , AVX ,
+ 0012                        14, VTM ,PASTENS
+  -                          15, WTC ,3
+ 0013                        14, A/X ,
+  -                          15, A+X ,-2
+ 0014                        15, ATX ,-2
+  -
+ 0015               *0015B  :12, WTC ,
+  -                            , WTC ,
+ 0016                        14, VTM ,-69
+  -   0033                   14, VZM ,*0033B
+ 0017                        14, UTM ,-32
+  -   0033                   14, V1M ,*0033B
+ 0020                        13, VJM ,P/GF
+  -
+ 0021                        13, VJM ,P/RDI
+  -
+ 0022                        15, ATX ,-3
+  -                            , NTR ,23B
+ 0023 0035                     , UZA ,*0035B
+  -                           1, AVX ,17B
+ 0024                          , NTR ,
+  -                          15, ATX ,-3
+ 0025                        15, XTA ,-2
+  -                            , AVX ,
+ 0026                        15, WTC ,-3
+  -                            , UTC ,PASTENS
+ 0027                          , A/X ,
+  -
+ 0030               *0030B  :15, AVX ,-1
+  -                          15, WTC ,-4
+ 0031                        13, VTM ,
+  -                          15, UTM ,-4
+ 0032                          , NTR ,3
+  -                          13, UJ  ,
+ 0033               *0033B  :15, XTA ,-2
+  -                            , NTR ,
+ 0034 0030                     , UJ  ,*0030B
+  -
+ 0035               *0035B  :15, ATX ,-3
+  -                          15, XTA ,-2
+ 0036                          , NTR ,
+  -                            , AVX ,
+ 0037                        15, WTC ,-3
+  -                            , UTC ,PASTENS
+ 0040                          , A*X ,
+  -   0030                     , UJ  ,*0030B
+                               , END ,
+ ЧИCЛO ПEPФ. 0065      ЧИCЛO OШИБ. OПEPATOPOB  0000
+           *READ OLD
+           *END FILE
+ КОНЕЦ ЗАДАЧИ
+ 00411: 00 074 0000	*74

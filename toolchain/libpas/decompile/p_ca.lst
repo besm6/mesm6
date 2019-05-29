@@ -1,0 +1,61 @@
+﻿                                                      29.05.19 M1
+
+  M O H И T O P-8 0  (3.7)   25.09.84*       (  MC " Д Y Б H A " ИAЭ  )             ШИФP    419999000000
+
+
+
+
+
+
+
+                    ЖЖЖЖ         ЖЖЖЖ  ЖЖЖ
+                    Ж   Ж       Ж     Ж   Ж
+                    Ж   Ж    Ж  Ж     Ж   Ж
+                    Ж   Ж   Ж   Ж     Ж   Ж
+                    ЖЖЖЖ   Ж    Ж     Ж   Ж
+                    Ж           Ж     ЖЖЖЖЖ
+                    Ж            ЖЖЖЖ Ж   Ж
+
+
+
+
+
+
+
+
+*NAME P/CA
+           *PERSO: 401350, CONT
+ 04.10.84 M1
+           *CALL DTRAN:410440(P/CA)
+                 DTRAN  /01.06.84/
+           *CALL PUTFLAG*
+ 40
+           *ASSEM
+           *READ: 1
+                                                      29.05.19 M1
+ ABTOKOД  MADLEN
+   (1.10.72)
+                    P/CA    :  , NAME,        DTRAN  /01.06.84/
+                    P/ER    :  , SUBP,
+ 0000                        15, ATX ,
+  -                           1, A-X ,32B
+ 0001 0005                     , U1A ,*0005B
+  -                          15, XTA ,-1
+ 0002                         1, A-X ,27B
+  -   0005                     , UZA ,*0005B
+ 0003                        15, XTA ,
+  -                            , ATI ,14
+ 0004                        13, UJ  ,
+  -
+ 0005 0007          *0005B  :11, VTM ,*0007B  .=6H POINT
+  -                          10, VTM ,30B
+ 0006                          , UJ  ,P/ER
+  -
+ 0007               *0007B  :  , ISO ,24H POINTER OVERRANGE. LI
+                                                NE
+                               , END ,
+ ЧИCЛO ПEPФ. 0016      ЧИCЛO OШИБ. OПEPATOPOB  0000
+           *READ OLD
+           *END FILE
+ КОНЕЦ ЗАДАЧИ
+ 00411: 00 074 0000	*74
