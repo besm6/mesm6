@@ -1,0 +1,73 @@
+ p/nn    :      , name,         . dtran  /01.06.84/
+ p/stack :      , lc  , 1
+ p/bx    :      , subp,
+ p/en    :      , subp,
+             8  , vtm , *0036b  . =0
+             8  , atx ,
+                , utc , p/stack
+                , xta ,
+                , utc , *0045b  . =10 0000
+                , aax ,
+                , uza , *0005b
+             8  , xta ,
+            11  , uj  ,
+
+ *0005b  :      , ita , 11
+             8  , atx , 1
+                , ita , 14
+             8  , atx , 2
+            11  , vjm , p/bx
+
+            13  , vjm , p/en
+
+             8  , xta , 2
+                , asn , 64+7
+             8  , atx , 3
+             8  , xta , 2
+             8  , aax , 4
+             8  , avx , 6
+                , ati , 9
+                , uza , *0033b
+             9  , utm , 1
+             9  , v1m , *0023b
+ *0016b  :   8  , xta , 3
+                , u1a , *0033b
+                , wtc , p/stack
+            10  , vtm ,
+            10  , wtc ,
+            11  , vtm ,
+            11  , utm , -1
+                , ita , 11
+            10  , atx ,
+                , uj  , *0033b
+ *0023b  :   8  , wtc , 3
+            15  , utm , 3
+                , wtc , p/stack
+            10  , vtm ,
+            10  , wtc ,
+            11  , vtm ,
+             9  , j+m , 11
+                , ita , 11
+            10  , atx ,
+
+ *0030b  :  11  , xta ,
+            15  , atx ,
+            11  , utm , 1
+             9  , utm , 1
+             9  , v1m , *0030b
+                , uj  , *0016b
+ *0033b  :   8  , xta ,
+             1  , wtc , 1
+            13  , vtm ,
+             8  , wtc , 1
+                , uj  ,
+
+ *0036b  :      , log ,
+                , log ,
+                , log ,
+                , log ,
+                , log , 77
+                , log , 10 0000
+                , oct , 402
+ *0045b  :      , log , 10 0000
+                , end ,

@@ -1,0 +1,18 @@
+ p/07    :      , name,         . dtran  /01.06.84/
+             8  , xta ,
+                , atx , 1
+             8  , atx ,
+                , atx , 2
+                , atx ,
+            15  , vlm , -1
+                , atx ,
+                , z00 , *0007b
+                , atx ,
+                , z00 , *0011b
+                , oct , 54
+                , oct , 4
+ *0007b  :      , oct , 24
+                , oct , 4
+ *0011b  :      , log , 7777 7777
+                , oct , 7777 7777
+                , end ,

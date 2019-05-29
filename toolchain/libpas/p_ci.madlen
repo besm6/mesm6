@@ -1,0 +1,68 @@
+ p/ci    :      , name,         . dtran  /01.06.84/
+ *pasbug*:      , lc  , 1
+ *output*:      , lc  , 30
+ pastpr  :      , subp,
+ p/7a    :      , subp,
+ p/wi    :      , subp,
+ p/wl    :      , subp,
+            14  , vjm , *0016b
+
+            13  , vjm , pastpr
+
+            11  , vtm , *0032b  . =6h call
+            10  , vtm , 11b
+            13  , vjm , p/7a
+
+                , utc , *0036b  . =i5
+                , xta ,
+            15  , xts , -2
+            13  , vjm , p/wi
+            11  , vtm , *0034b  . =6h line.
+            10  , vtm , 6
+            13  , vjm , p/7a
+
+ *0010b  :      , utc , *pasbug*
+                , xta ,
+                , utc , *0037b  . =i2
+                , aex ,
+                , u1a , *0013b
+            13  , vjm , p/wl
+ *0013b  :  15  , utm , -1
+            15  , xta ,
+                , sti , 13
+            15  , utm , -7
+            13  , uj  ,
+
+ *0016b  :      , ntr , 3
+            15  , utm , 7
+                , its , 13
+                , its , 11
+             1  , aex , 11b
+                , utc , *pasbug*
+                , xts ,
+             1  , aex , 11b
+                , uza , *0013b
+             8  , j+m , 10
+            12  , vtm , *output*
+            10  , xta ,
+            14  , uj  ,
+c================================================
+
+ p/ce    :      ,entry,
+c================================================
+            14  , vjm , *0016b
+
+            13  , vjm , pastpr
+
+            11  , vtm , *0035b  . =6h exit.
+            10  , vtm , 6
+            13  , vjm , p/7a
+
+                , uj  , *0010b
+
+ *0032b  :      , iso , 12h call at
+ *0034b  :      , iso , 6h line.
+ *0035b  :      , iso , 6h exit.
+ *0036b  :      , int , 5
+ *0037b  :      , int , 2
+                , end ,

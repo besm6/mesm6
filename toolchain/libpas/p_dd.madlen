@@ -1,0 +1,38 @@
+ p/dd    :      , name,         . dtran  /01.06.84/
+ *pasdds*:      , lc  , 1
+ pasdd1  :      , subp,
+                , ntr , 3
+                , wtc , *pasdds*
+            11  , vtm ,
+            11  , v1m , *0003b
+            13  , uj  ,
+
+ *0003b  :      , its , 14
+            11  , vtm , 13b
+            14  , vtm , -12
+
+ *0005b  :  14  , its , 13
+            14  , vlm , *0005b
+            15  , atx ,
+            15  , atx , 1
+            15  , utm , 2
+            15  , mtj , 14
+            14  , utm , -17
+                , ita , 14
+            13  , vjm , pasdd1
+
+            15  , utm , -2
+            15  , xta ,
+            14  , vtm , -12
+            11  , vtm , 15b
+ *0014b  :  11  , utc ,
+                , sti ,
+            11  , utm , -1
+            14  , vlm , *0014b
+            15  , xta ,
+            13  , uj  ,
+                , data,
+ /0017b  :      , log , 2
+             1  , set , /0017b
+             1  ,     , *pasdds*
+                , end ,

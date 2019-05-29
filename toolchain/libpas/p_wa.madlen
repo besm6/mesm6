@@ -1,0 +1,21 @@
+ p/wa    :      , name,         . dtran  /01.06.84/
+ pashid  :      , subp,
+ pasdih  :      , subp,
+ p/pf    :      , subp,
+             9  , vtm , -1
+            14  , vjm , pashid
+            11  , mtj , 6
+            10  , mtj , 5
+ *0002b  :   5  , vzm , *0007b
+             6  , xta ,
+            12  , wtc ,
+                , atx ,
+            13  , vjm , p/pf
+
+             6  , utm , 1
+             5  , utm , -1
+                , uj  , *0002b
+
+ *0007b  :   9  , vtm , -1
+                , uj  , pasdih
+                , end ,

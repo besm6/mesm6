@@ -1,0 +1,46 @@
+ p/re    :      , name,         . dtran  /01.06.84/
+ p/re1   :      , subp,
+ p/re2   :      , subp,
+                , ntr , 3
+                , its , 13
+            13  , vtm , *0003b
+                , its , 13
+            15  , atx ,
+                , uj  , p/re1
+ *0003b  :      , xta ,
+            12  , atx , 16b
+            12  , atx , 5
+            12  , atx , 2
+            15  , xta , -2
+                , asn , 64-6
+                , asn , 64+6
+            15  , atx ,
+                , asn , 64+18
+            12  , stx , 4
+                , utc , *0024b  . =77 7777
+                , aax ,
+            12  , atx , 3
+            12  , xta , 4
+                , u1a , *0014b
+            12  , atx , 3
+             1  , xta , 10b
+            12  , atx , 2
+ *0014b  :  12  , xta , 1
+            12  , a-x , 15b
+             1  , atx , 5
+                , utc , *0025b  . =7 6000
+                , xta ,
+            12  , atx , 6
+            12  , atx , 20b
+            14  , vtm , *0022b
+                , ita , 14
+             1  , atx , 3
+                , uj  , p/re2
+
+ *0022b  :  15  , utm , -2
+            15  , xta ,
+                , sti , 13
+            13  , uj  ,
+ *0024b  :      , log , 77 7777
+ *0025b  :      , log , 7 6000
+                , end ,

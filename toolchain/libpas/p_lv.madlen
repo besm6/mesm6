@@ -1,0 +1,7 @@
+ p/lv    :      , name,         . dtran  /01.06.84/
+ p/bx    :      , subp,
+ p/en    :      , subp,
+            11  , vjm , p/bx
+            13  , vjm , p/en
+            14  , uj  ,
+                , end ,

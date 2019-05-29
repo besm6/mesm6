@@ -1,0 +1,50 @@
+ p/ra7   :      , name,         . dtran  /01.06.84/
+ pashid  :      , subp,
+ pasdih  :      , subp,
+ space*  :      , lc  , 1
+ p/gf    :      , subp,
+             9  , mtj , 11
+             9  , vtm , -3
+            14  , vjm , pashid
+
+            11  , mtj , 6
+            10  , mtj , 5
+            15  , mtj , 4
+
+ *0004b  :   3  , vtm , -5
+             4  , mtj , 15
+ *0005b  :   5  , vzm , *0012b
+             5  , utm , -1
+            12  , wtc ,
+                , xta ,
+            15  , atx ,
+            13  , vjm , p/gf
+             3  , vlm , *0005b
+            13  , vjm , *0021b
+                , uj  , *0004b
+
+ *0012b  :   3  , mtj , 5
+             5  , utm , 5
+             5  , vzm , *0020b
+
+ *0014b  :      , utc , space*
+                , xta ,
+            15  , atx ,
+             3  , vlm , *0014b
+             4  , mtj , 15
+            13  , vtm , *0020b
+                , uj  , *0021b
+
+ *0020b  :   9  , vtm , -3
+                , uj  , pasdih
+ *0021b  :   3  , vtm , -4
+                , xta ,
+ *0022b  :   3  , utc ,
+             4  , aox , 4
+                , asn , 64-8
+             3  , vlm , *0022b
+             4  , aox , 5
+             6  , atx ,
+             6  , utm , 1
+            13  , uj  ,
+                , end ,

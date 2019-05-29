@@ -1,0 +1,24 @@
+ p/ea    :      , name,         . dtran  /01.06.84/
+ p/ht    :      , subp,
+ *output*:      , lc  , 30
+ p/7a    :      , subp,
+ p/wl    :      , subp,
+                , ati , 14
+                , asn , 64+15
+                , u1a , *0004b
+            14  , xta , 3
+                , utc , *0017b  . =7 7777
+                , aax ,
+            13  , uj  ,
+
+ *0004b  :  11  , vtm , *0010b  . =6h not p
+            10  , vtm , 51b
+            12  , vtm , *output*
+            13  , vjm , p/7a
+            13  , vjm , p/wl
+                , uj  , p/ht
+
+ *0010b  :      , iso , 24h not possible pascal pro
+                , iso , 18hc to fortran subr
+ *0017b  :      , log , 7 7777
+                , end ,
