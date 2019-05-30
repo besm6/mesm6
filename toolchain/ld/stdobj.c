@@ -90,7 +90,7 @@ static int obj_decode(obj_image_t *obj)
 
         // Extension for MESM-6 linker.
         obj->entry     = obj->word[obj->head_off + 2] & 077777;
-        obj->base_addr = (obj->word[obj->head_off + 2] >> 24) & 077777;
+        obj->base_addr = (obj->word[obj->head_off + 2] >> 15) & 077777;
 
         obj->cmd_off = obj->head_off + 10;
     } else {
@@ -210,7 +210,7 @@ static int update_header(obj_image_t *obj)
 
         // Extension for MESM-6 linker.
         obj->word[obj->head_off + 2] = obj->entry |
-                            (uint64_t) obj->base_addr << 24;
+                            (uint64_t) obj->base_addr << 15;
     } else {
         // Wrong header offset.
         fprintf(stderr, "Unsupported header size: %d words\n", obj->cmd_off);
