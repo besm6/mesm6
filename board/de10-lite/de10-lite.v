@@ -20,7 +20,9 @@ module top(
     output wire         VGA_VSYNC,
     output wire [3:0]   VGA_R,
     output wire [3:0]   VGA_G,
-    output wire [3:0]   VGA_B
+    output wire [3:0]   VGA_B,
+
+    output wire         BUZZER
 );
 
 reg [31:0] cnt  = 0;
@@ -181,6 +183,7 @@ wire        tim_write;
 wire [47:0] tim_rdata;
 wire [47:0] tim_wdata;
 wire        tim_done;
+wire        tim_pwm;
 
 mesm6_timer tim(
     clk, reset, tim_irq,
@@ -188,8 +191,12 @@ mesm6_timer tim(
     tim_addr,
     tim_read, tim_write,
     tim_rdata, tim_wdata,
-    tim_done
+    tim_done,
+    
+    tim_pwm
 );
+
+assign BUZZER = tim_pwm;
 
 // UART signals
 wire        uart_irq;

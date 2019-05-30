@@ -229,6 +229,9 @@ set_location_assignment PIN_A14 -to SW[7]
 set_location_assignment PIN_B14 -to SW[8]
 set_location_assignment PIN_F15 -to SW[9]
 
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BUZZER
+set_location_assignment PIN_AA12 -to BUZZER
+
 set_location_assignment PIN_AB6 -to RXD
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RXD
 set_location_assignment PIN_AB5 -to TXD

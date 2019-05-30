@@ -1,0 +1,47 @@
+*
+* PWM timer example.
+*
+start   start   '1'
+* UART registers
+U0_DT   equ     '77740'   , data fifo
+U0_CT   equ     '77747'   , control and status reg
+U0_CTS  equ     '77746'   , set bits
+U0_CTC  equ     '77745'   , clear bits
+        ntr 3
+* reset uart
+        xta     '0'
+        atx     U0_CT
+* set divider
+        xta     =b'033'   , 115200
+        atx     U0_CTS
+* enable rx tx
+        xta     =b'1000'  , rxtx_en bit
+        atx     U0_CTS
+* setup PWM
+        xta     '0'
+        atx     '77765'   , disable timer
+        xta     =b'2'
+        atx     '77767'   , prescaler clk/4
+        xta     =b'1'
+        atx     '77766'   , PRD = 1
+        xta     =b'1'
+        atx     '77763'   , mode - continuous
+        xta     =b'1'
+        atx     '77765'   , enable timer
+s0      vjm     getch(2)
+        asn     65
+        atx     '77762'
+        u1a     s0
+* helpers
+* get_char        
+getch   xta     U0_CT
+        aax     =b'4000'
+        u1a     getch
+        xta     U0_DT
+        aax     =b'377'
+        uj      (2)
+*-------------------------
+align   адрес   start+'1777'            , данные с адреса 2000
+buf     конд    b'0'
+buf2    конд    b'0'
+        fin

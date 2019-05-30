@@ -4,14 +4,24 @@
 start   start   '1'
         xta     '0'
         atx     '77765'  , disable timer
-        xta     =b'1'
-        atx     '77767'  , set prescaler tim_clk = clk/4
+        xta     =b'0'
+        atx     '77767'  , set prescaler tim_clk = clk/1
         xta     =b'20'   , period = 020
         atx     '77766'  , PRD = 020
         xta     =b'1'
+        atx     '77763'  , set periodic mode
+        xta     =b'4'
+        atx     '77762'  , set PWM comparator
+        xta     =b'1'
         atx     '77765'  , enable timer
-loop    xta     '77765'  , wait
-        u1a     loop        
+loop    xta     '77763'  , wait
+        aax     =b'2'    , for period latch
+        uza     loop
+        xta     =b'1'
+        atx     '77763'  , reset latch
+l2      xta     '77763'  , wait
+        aax     =b'2'    , for period latch
+        uza     l2       
         стоп    '12345'(6)
 *-------------------------
 align   адрес   start+'1777'            , данные с адреса 2000

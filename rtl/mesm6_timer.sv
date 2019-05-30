@@ -30,6 +30,8 @@
 `define TIM_PRD    'o6
 `define TIM_EN     'o5
 `define TIM_IEN    'o4
+`define TIM_MODE   'o3
+`define TIM_PWM    'o2
 `define TIM_CNT    'o0
 
 module mesm6_timer(
@@ -37,99 +39,143 @@ module mesm6_timer(
     input   wire        reset,
     output  wire        interrupt,
 
-    input  wire [14:0]  tim_addr,
-    input  wire         tim_read,
-    input  wire         tim_write,
-    output wire [47:0]  tim_rdata,
-    input  wire [47:0]  tim_wdata,
-    output reg          tim_done
+    input  wire [14:0]  i_addr,
+    input  wire         i_rd,
+    input  wire         i_wr,
+    output wire [47:0]  o_rdata,
+    input  wire [47:0]  i_wdata,
+    output reg          o_done,
+
+    output wire         o_pwm
 );
 
 reg [2:0]  PRS;          // prescaler mode
 reg [6:0]  PRS_CNT;      // prescaler counter
-
 reg [31:0] PRD;          // timer period
 reg        EN;           // timer eanble
 reg        IEN;          // interrupt enable
+reg [7:0]  PWM;          // PWM comparator value
 reg [31:0] CNT;          // timer counter
+
+// status & mode register
+// bit 0:  =0 - single period mode
+//         =1 - continuous counting
+// bit 1:  =1 - period ended latch 
+reg [1:0] MODE;           
+wire md_periodic = MODE[0];
 
 reg delay;               // interrupt delay
 
+// selectors
+wire sel_prs  = i_addr [2:0] == `TIM_PRS;
+wire sel_prd  = i_addr [2:0] == `TIM_PRD;
+wire sel_en   = i_addr [2:0] == `TIM_EN;
+wire sel_ien  = i_addr [2:0] == `TIM_IEN;
+wire sel_mode = i_addr [2:0] == `TIM_MODE;
+wire sel_pwm  = i_addr [2:0] == `TIM_PWM;
 
 
-// Readout logic
-assign tim_rdata = (tim_addr [2:0] == `TIM_PRS) ? { 45'b0, PRS } :
-                   (tim_addr [2:0] == `TIM_PRD) ? { 16'b0, PRD } :
-                   (tim_addr [2:0] == `TIM_EN)  ? { 47'b0,  EN } :
-                   (tim_addr [2:0] == `TIM_IEN) ? { 47'b0, IEN } :
-                   /* TIM_CNT */                           CNT ;
+wire prs_stb = PRS == 0 ? 1 :
+               PRS == 1 ? PRS_CNT[0]   == 0 :
+               PRS == 2 ? PRS_CNT[1:0] == 0 :
+               PRS == 3 ? PRS_CNT[2:0] == 0 :
+               PRS == 4 ? PRS_CNT[3:0] == 0 :
+               PRS == 5 ? PRS_CNT[4:0] == 0 :
+               PRS == 6 ? PRS_CNT[5:0] == 0 :
+                          PRS_CNT      == 0;
+
+
+wire prd_stb = (CNT == PRD) & prs_stb;
+
+// hold IRQ signal for 2 cycles
+assign interrupt =  delay | (prd_stb & IEN);
 
 always @(posedge clk) begin
-    tim_done <= tim_read | tim_write;
-end
-
-// hold 2 cycles
-assign interrupt =  delay | ((CNT == 0) & IEN);
-
-always @(posedge clk) begin
-    delay <= (CNT == 0) & IEN;
+    delay <= prd_stb & IEN;
 end
 
 // Interrupt enable
 always @(posedge clk) begin
     if (reset)
         IEN <= 0;
-    else if (tim_write)
-        if (tim_addr[2:0] == `TIM_IEN) IEN <= tim_wdata[0];
+    else if (i_wr & sel_ien)
+        IEN <= i_wdata[0];
 end
 
 // Prescaler
 always @(posedge clk) begin
-    if (tim_write) begin
-        if (tim_addr[2:0] == `TIM_PRS) PRS <= tim_wdata[2:0];
+    if (i_wr & sel_prs) begin
+        PRS <= i_wdata[2:0];
     end
 end
 
 always @(posedge clk) begin
-    if (tim_write) begin
-        if (tim_addr[2:0] == `TIM_PRS) PRS_CNT <= 0;
+    if (i_wr & sel_prs) begin
+        PRS_CNT <= 0;
     end else
         PRS_CNT <= PRS_CNT + 1;
 end
 
 // Period register
 always @(posedge clk) begin
-    if (tim_write) begin
-        if (tim_addr[2:0] == `TIM_PRD) PRD <= tim_wdata;
+    if (i_wr & sel_prd) begin
+        PRD <= i_wdata;
     end
 end
 
 // Enable count register
 always @(posedge clk) begin
-    if (tim_write) begin
-        if (tim_addr[2:0] == `TIM_EN) begin
-            EN  <= tim_wdata[0];
-        end
-    end else if (CNT == 0) begin
-        EN <= 0;
+    if (i_wr & sel_en) begin
+        EN  <= i_wdata[0];
+    end else if (prd_stb) begin
+        EN <= md_periodic ? 1 : 0;
     end
 end
 
 // Counting
-wire tick = PRS == 0 ? 1 :
-            PRS == 1 ? PRS_CNT[0]   == 0 :
-            PRS == 2 ? PRS_CNT[1:0] == 0 :
-            PRS == 3 ? PRS_CNT[2:0] == 0 :
-            PRS == 4 ? PRS_CNT[3:0] == 0 :
-            PRS == 5 ? PRS_CNT[4:0] == 0 :
-            PRS == 6 ? PRS_CNT[5:0] == 0 :
-                       PRS_CNT      == 0;
+always @(posedge clk) begin
+    if (i_wr & (sel_en | sel_prd))
+        CNT <= 0;
+    else if (EN & prs_stb)
+        CNT <= prd_stb ? 0 : CNT + 1;
+end
 
 always @(posedge clk) begin
-    if (tim_write & (tim_addr[2:0] == `TIM_EN))
-        CNT <= PRD;
-    else
-        if (EN & tick) CNT <= CNT - 1;
+    if (i_wr & sel_mode)
+        MODE <= i_wdata[1:0];
+    else if (prd_stb)
+        MODE <= MODE | 2'b10;
+end
+
+
+always @(posedge clk) begin
+    if (i_wr & sel_pwm)
+        PWM <= i_wdata;
+end
+
+reg [6:0] pwm_cnt;
+always @(posedge clk) begin
+    if (i_wr & sel_en)
+        pwm_cnt <= 0;
+    else if (prd_stb)
+        pwm_cnt <= pwm_cnt + 1;
+end
+
+assign o_pwm = !EN            ? 0 :
+               pwm_cnt <  PWM ? 1 : 0;
+
+
+// Readout logic
+assign o_rdata   = sel_prs ? PRS  :
+                   sel_prd ? PRD  :
+                   sel_en  ? EN   :
+                   sel_ien ? IEN  :
+                   sel_mode? MODE :
+                   sel_pwm ? PWM  :
+               /* TIM_CNT */ CNT  ;
+
+always @(posedge clk) begin
+    o_done <= i_rd | i_wr;
 end
 
 endmodule

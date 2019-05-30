@@ -151,6 +151,7 @@ wire        tim_write;
 wire [47:0] tim_rdata;
 wire [47:0] tim_wdata;
 wire        tim_done;
+wire        tim_pwm;
 
 mesm6_timer tim(
     clk, reset, tim_irq,
@@ -158,7 +159,9 @@ mesm6_timer tim(
     tim_addr,
     tim_read, tim_write,
     tim_rdata, tim_wdata,
-    tim_done
+    tim_done,
+    
+    tim_pwm
 );
 
 // UART wires
