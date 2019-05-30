@@ -1152,7 +1152,7 @@ void load1name(char *fname, int libflag)
                     // Remove it from archive list and process.
                     *nextp = obj->next;
                     if (trace) {
-                        printf("%s(%s)\n", fname, obj->filename);
+                        printf("%s(%s)\n", inputname, obj->filename);
                     }
                     load1obj(obj);
                 } else {
@@ -1344,21 +1344,47 @@ void pass2()
     // Allocate common and private blocks.
     //
     if (d_flag || !emit_relocatable) {
+        // Put unaligned blocks first.
         for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
             unsigned size = sp->f.n_addr;
-            int gap = 0;
 
             switch (sp->f.n_type) {
-            default:
-                continue;
-
             case SYM_COMMON_S:
             case SYM_COMMON_L:
             case SYM_PRIVATE_S:
             case SYM_PRIVATE_L:
-                // No alignment.
+                sp->f.n_addr = cblock_origin;
+                cblock_origin += size;
+                bss_size += size;
                 break;
+            }
+        }
+        // Then sector-aligned blocks.
+        for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
+            unsigned size = sp->f.n_addr;
+            int gap;
 
+            switch (sp->f.n_type) {
+            case SYM_CSECT_S:
+            case SYM_CSECT_L:
+            case SYM_PSECT_S:
+            case SYM_PSECT_L:
+                gap = -cblock_origin;
+                cblock_origin = (cblock_origin + 255) / 256 * 256;
+                gap += cblock_origin;
+
+                sp->f.n_addr = cblock_origin;
+                cblock_origin += size;
+                bss_size += gap + size;
+                break;
+            }
+        }
+        // Finally page-aligned blocks.
+        for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
+            unsigned size = sp->f.n_addr;
+            int gap;
+
+            switch (sp->f.n_type) {
             case SYM_CPAGE_S:
             case SYM_CPAGE_L:
             case SYM_PPAGE_S:
@@ -1367,21 +1393,12 @@ void pass2()
                 gap = -cblock_origin;
                 cblock_origin = (cblock_origin + 1023) / 1024 * 1024;
                 gap += cblock_origin;
-                break;
 
-            case SYM_CSECT_S:
-            case SYM_CSECT_L:
-            case SYM_PSECT_S:
-            case SYM_PSECT_L:
-                // Sector aligned.
-                gap = -cblock_origin;
-                cblock_origin = (cblock_origin + 255) / 256 * 256;
-                gap += cblock_origin;
+                sp->f.n_addr = cblock_origin;
+                cblock_origin += size;
+                bss_size += gap + size;
                 break;
             }
-            sp->f.n_addr = cblock_origin;
-            cblock_origin += size;
-            bss_size += gap + size;
         }
     }
     if (basaddr + text_size + data_size + bss_size > 077777)
