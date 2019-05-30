@@ -69,7 +69,8 @@ int o_flag;                     // output name specified
 char *ofilename = "l.out";      // output file name
 int emit_relocatable;           // generate relocatable output
 
-unsigned basaddr = 1;           // base address of resulting image
+unsigned basaddr = 1;           // base address of code section
+unsigned dataddr;               // separate address space for data/BSS
 
 unsigned max_set_address = 0;   // max address touched by SET directive
 
@@ -1180,8 +1181,9 @@ void usage(int retcode)
     printf("    %s [options] file...\n", progname);
     printf("Options:\n");
     printf("    -d              Force common symbols to be defined\n");
+    printf("    -D address      Use a separate address space for data and BSS\n");
     printf("    -e symbol       Set entry address\n");
-    printf("    -l libname      Search for library `libname'\n");
+    printf("    -l name         Search for library `libname'\n");
     printf("    -o filename     Set output file name\n");
     printf("    -r              Generate relocatable output\n");
     printf("    -s              Strip all symbol information\n");
@@ -1198,7 +1200,7 @@ void pass1(int argc, char **argv)
 {
     for (;;) {
         inputname = 0;
-        switch (getopt(argc, argv, "-de:l:o:rstT:u:")) {
+        switch (getopt(argc, argv, "-dD:e:l:o:rstT:u:")) {
         case EOF:
             break;
         case 1:
@@ -1208,6 +1210,10 @@ void pass1(int argc, char **argv)
         case 'd':
             // Force allocation of commons.
             d_flag++;
+            continue;
+        case 'D':
+            // Separate address space for data.
+            dataddr = strtoul(optarg, 0, 0);
             continue;
         case 'e':
             // Set `entry' symbol.

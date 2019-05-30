@@ -767,7 +767,7 @@ struct IdentRec : public BESM6Obj {
         assert(cl == ROUTINEID);
         return flags_;
     }
-    
+
     std::string p(bool verbose = false) const {
         std::string ret;
         char * strp;
@@ -4381,7 +4381,7 @@ genFullExpr::genFullExpr(ExprPtr exprToGen_)
 
     static int level;
     Level l(level);
-    
+
     super.push_back(this);
 
     if (exprToGen == NULL)
@@ -9038,7 +9038,7 @@ struct initTables {
                "\032\037\040\073\074\075\076\000" // 370-377 (Ь - Ъ)
                , 64);
         CHILD.clear();
-        for (jdx = 1; jdx <= 10; ++jdx)
+        for (jdx = 1; jdx <= 12; ++jdx)
             CHILD.push_back(0);
         for (idx = 0; idx <= 127; ++idx) {
             symHashTabBase[idx] = NULL;
@@ -9063,20 +9063,30 @@ void finalize()
 
     sizes[1] = 1;
     sizes[2] = symTabPos - 074000 - 1;
-    sizes[5] = longSymCnt;
-    sizes[6] = moduleOffset - 040000;
-    sizes[8] = FcstCnt;
     sizes[3] = 0;
     sizes[4] = 0;
+    sizes[5] = longSymCnt;
+    sizes[6] = moduleOffset - 040000;
     sizes[7] = 0;
+    sizes[8] = FcstCnt;
     sizes[9] = int92z;
     sizes[10] = int93z;
     curVal.i = moduleOffset - 040000;
     symTab[074001] = 041000000 | curVal.i;
-    // Forming the compact form of the module header.
-    CHILD[7] = sizes[1] | (sizes[2] << 12);
-    CHILD[8] = sizes[5] << 30 | sizes[9] << 15 | sizes[10];
-    CHILD[9] = sizes[8] << 30 | sizes[7] << 15 | sizes[6];
+
+    // Forming the module header.
+    CHILD[0] = symTab[074000];      // program name
+    CHILD[1] = 02000000000000000;   // address
+    CHILD[2] = sizes[1];            // length of symhdr
+    CHILD[3] = sizes[2];            // length of symtab
+    CHILD[4] = 0;                   // entry address
+    CHILD[5] = 0;                   // length of debug section
+    CHILD[6] = sizes[5];            // length of long name table
+    CHILD[7] = sizes[6];            // length of code section
+    CHILD[8] = sizes[7];            // length of BSS section
+    CHILD[9] = sizes[8];            // length of const section
+    CHILD[10] = sizes[9];           // length of data section
+    CHILD[11] = sizes[10];          // length of SET section
     /*
     reset(FCST);
     while not eof(FCST) do {
@@ -9423,7 +9433,7 @@ L9999:  printf(" IN %ld LINES %ld ERRORS\n", lineCnt-1, totalErrors);
             exit(-1);
         }
         fwrite("BESM6\0", 6, 1, f);
-        for (size_t i = 7; i < CHILD.size(); ++i) {
+        for (size_t i = 0; i < CHILD.size(); ++i) {
             for (int j = 40; j >= 0; j -= 8)
                 fputc((CHILD[i] >> j) & 0xFF, f);
         }
