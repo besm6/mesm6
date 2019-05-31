@@ -85,6 +85,7 @@ enum {
     SYM_ABS         = 0400,     // Absolute address
     SYM_RELOC       = 0410,     // Relocatable address
     SYM_ENTRY_S     = 0414,     // Entry, relocatable (short name)
+    SYM_DENTRY_S    = 0415,     // Data entry, relocatable (short name)
     SYM_EXT_S       = 0430,     // External reference (short name)
     SYM_PRIVATE_S   = 0460,     // Private block (short name)
     SYM_PPAGE_S     = 0464,     // Private page-aligned (short name)
@@ -96,6 +97,7 @@ enum {
     SYM_PSECT_S     = 0560,     // Private sector-aligned (short name)
     SYM_CSECT_S     = 0570,     // Common sector-aligned (short name)
     SYM_ENTRY_L     = 0614,     // Entry, relocatable (long name)
+    SYM_DENTRY_L    = 0615,     // Data entry, relocatable (long name)
     SYM_EXT_L       = 0630,     // External reference (long name)
     SYM_PRIVATE_L   = 0660,     // Private block (long name)
     SYM_PPAGE_L     = 0664,     // Private page-aligned (long name)

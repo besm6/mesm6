@@ -240,8 +240,13 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
     case SYM_ENTRY_S:
         // Entry, relocatable (short name).
         text_to_buf(buf, word & 07777777700000000);
+        sprintf(buf+strlen(buf), " = c%o", addr);
+        break;
+
+    case SYM_DENTRY_S:
+        // Data entry, relocatable (short name).
+        text_to_buf(buf, word & 07777777700000000);
         sprintf(buf+strlen(buf), " = %c%o",
-            (addr < obj->cmd_len) ? 'c' :
             transient_flag ? 't' : 'd', addr);
         break;
 
@@ -313,8 +318,13 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
     case SYM_ENTRY_L:
         // Entry, relocatable (long name).
         text_to_buf(buf, obj->word[ref + obj->table_off]);
+        sprintf(buf+strlen(buf), " = c%o", addr);
+        break;
+
+    case SYM_DENTRY_L:
+        // Data entry, relocatable (long name).
+        text_to_buf(buf, obj->word[ref + obj->table_off]);
         sprintf(buf+strlen(buf), " = %c%o",
-            (addr < obj->cmd_len) ? 'c' :
             transient_flag ? 't' : 'd', addr);
         break;
 

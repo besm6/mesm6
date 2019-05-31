@@ -131,50 +131,50 @@ const char *text_to_utf(uint64_t word)
 //
 // Does the address belong to code segment?
 //
-int in_text(nlist_t *sp, int global)
+int in_text(unsigned addr, int global)
 {
     if (!global && obj.data_base != 0) {
         // Cannot differentiate local symbols by segment
         // in case of separate address space.
         return 0;
     }
-    return (sp->f.n_addr >= obj.text_base) &&
-           (sp->f.n_addr < obj.text_base + obj.cmd_len);
+    return (addr >= obj.text_base) &&
+           (addr < obj.text_base + obj.cmd_len);
 }
 
 //
 // Does the address belong to data segment?
 //
-int in_data(nlist_t *sp, int global)
+int in_data(unsigned addr, int global)
 {
     if (obj.data_base == 0) {
         // Shared address space.
-        return (sp->f.n_addr >= obj.text_base + obj.cmd_len) &&
-               (sp->f.n_addr < obj.text_base + obj.cmd_len + obj.const_len);
+        return (addr >= obj.text_base + obj.cmd_len) &&
+               (addr < obj.text_base + obj.cmd_len + obj.const_len);
     } else {
         // Separate address space.
         if (!global)
             return 0;
-        return (sp->f.n_addr >= obj.data_base) &&
-               (sp->f.n_addr < obj.data_base + obj.const_len);
+        return (addr >= obj.data_base) &&
+               (addr < obj.data_base + obj.const_len);
     }
 }
 
 //
 // Does the address belong to BSS segment?
 //
-int in_bss(nlist_t *sp, int global)
+int in_bss(unsigned addr, int global)
 {
     if (obj.data_base == 0) {
         // Shared address space.
-        return (sp->f.n_addr >= obj.text_base + obj.cmd_len + obj.const_len) &&
-               (sp->f.n_addr < obj.text_base + obj.cmd_len + obj.const_len + obj.bss_len);
+        return (addr >= obj.text_base + obj.cmd_len + obj.const_len) &&
+               (addr < obj.text_base + obj.cmd_len + obj.const_len + obj.bss_len);
     } else {
         // Separate address space.
         if (!global)
             return 0;
-        return (sp->f.n_addr >= obj.data_base + obj.const_len) &&
-               (sp->f.n_addr < obj.data_base + obj.const_len + obj.bss_len);
+        return (addr >= obj.data_base + obj.const_len) &&
+               (addr < obj.data_base + obj.const_len + obj.bss_len);
     }
 }
 
@@ -265,13 +265,19 @@ void nm(const char *fname, int narg)
             // Entry, relocatable.
             if (undef_flg)
                 continue;
-            type = (tname == T_ETEXT) ? 'T' :
-                   (tname == T_BDATA) ? 'D' :
-                   (tname == T_EDATA) ? 'D' :
-                   (tname == T_END)   ? 'B' :
-                   in_text(sp, 1)     ? 'T' :
-                   in_data(sp, 1)     ? 'D' : 'B';
-                   in_bss(sp, 1)      ? 'B' : '?';
+            type = 'T';
+            break;
+
+        case SYM_DENTRY_S:
+        case SYM_DENTRY_L:
+            // Data entry, relocatable.
+            if (undef_flg)
+                continue;
+            type = (tname == T_BDATA)       ? 'D' :
+                   (tname == T_EDATA)       ? 'D' :
+                   (tname == T_END)         ? 'B' :
+                   in_data(sp->f.n_addr, 1) ? 'D' : 'B';
+                   in_bss(sp->f.n_addr, 1)  ? 'B' : '?';
             break;
 
         case SYM_PRIVATE_S:
@@ -329,7 +335,7 @@ void nm(const char *fname, int narg)
         uint64_t addr = obj.word[2*i + 2] & 077777;
 
         tname = obj.word[2*i + 1];
-        add_symbol(fname, tname, 'T', addr);
+        add_symbol(fname, tname, in_text(addr, 1) ? 'T' : 'D', addr);
     }
 
     // Add local symbols.
@@ -347,19 +353,19 @@ void nm(const char *fname, int narg)
 
             case 0010:
                 // Local label: Madlen, Fortran-Dubna.
-                type = in_text(sp, 0) ? 't' :
-                       in_data(sp, 0) ? 'd' :
-                       in_tdata(sp)   ? 'i' : // init (set) section
-                       in_bss(sp, 0)  ? 'b' : '?';
+                type = in_text(sp->f.n_addr, 0) ? 't' :
+                       in_data(sp->f.n_addr, 0) ? 'd' :
+                       in_tdata(sp)             ? 'i' : // init (set) section
+                       in_bss(sp->f.n_addr, 0)  ? 'b' : '?';
                 break;
 
             case 0000:
                 // Local label: Fortran-GDR.
                 if (sp->f.n_ref != 01000000)
                     continue;
-                type = in_text(sp, 0) ? 't' :
-                       in_data(sp, 0) ? 'd' :
-                       in_bss(sp, 0)  ? 'b' : '?';
+                type = in_text(sp->f.n_addr, 0) ? 't' :
+                       in_data(sp->f.n_addr, 0) ? 'd' :
+                       in_bss(sp->f.n_addr, 0)  ? 'b' : '?';
                 break;
 
             case 0001:

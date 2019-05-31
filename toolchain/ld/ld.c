@@ -309,6 +309,7 @@ const char *sym_name(nlist_t *sp)
 {
     switch (sp->f.n_type) {
     case SYM_ENTRY_S:
+    case SYM_DENTRY_S:
     case SYM_EXT_S:
     case SYM_PRIVATE_S:
     case SYM_COMMON_S:
@@ -320,6 +321,7 @@ const char *sym_name(nlist_t *sp)
         return text_to_utf(sp->u64 & 07777777700000000);
 
     case SYM_ENTRY_L:
+    case SYM_DENTRY_L:
     case SYM_EXT_L:
     case SYM_PRIVATE_L:
     case SYM_COMMON_L:
@@ -346,6 +348,7 @@ int sym_name_match(nlist_t *sp, uint64_t name)
 
     switch (sp->f.n_type) {
     case SYM_ENTRY_S:
+    case SYM_DENTRY_S:
     case SYM_EXT_S:
     case SYM_COMMON_S:
     case SYM_CPAGE_S:
@@ -354,6 +357,7 @@ int sym_name_match(nlist_t *sp, uint64_t name)
         return (sp->u64 & 07777777700000000) == name;
 
     case SYM_ENTRY_L:
+    case SYM_DENTRY_L:
     case SYM_EXT_L:
     case SYM_COMMON_L:
     case SYM_CPAGE_L:
@@ -491,7 +495,7 @@ nlist_t *create_extref(const char *str)
 //
 // Create new symbol: entry.
 //
-nlist_t *create_entry(uint64_t name, unsigned addr)
+nlist_t *create_entry(uint64_t name, char type, unsigned addr)
 {
     nlist_t *sp;
 
@@ -506,10 +510,10 @@ nlist_t *create_entry(uint64_t name, unsigned addr)
             // Replace the symbol
             if (name & 077777777) {
                 // Long name.
-                sp->f.n_type = SYM_ENTRY_L;
+                sp->f.n_type = (type == 't') ? SYM_ENTRY_L : SYM_DENTRY_L;
             } else {
                 // Short name.
-                sp->f.n_type = SYM_ENTRY_S;
+                sp->f.n_type = (type == 't') ? SYM_ENTRY_S : SYM_DENTRY_S;
             }
             sp->f.n_addr = addr;
             if (trace > 1)
@@ -528,11 +532,11 @@ nlist_t *create_entry(uint64_t name, unsigned addr)
     nsymbols++;
     if (name & 077777777) {
         // Long name.
-        sp->f.n_type = SYM_ENTRY_L;
+        sp->f.n_type = (type == 't') ? SYM_ENTRY_L : SYM_DENTRY_L;
         sp->f.n_ref = create_name(name);
     } else {
         // Short name.
-        sp->f.n_type = SYM_ENTRY_S;
+        sp->f.n_type = (type == 't') ? SYM_ENTRY_S : SYM_DENTRY_S;
         sp->f.n_ref = name >> 24;
     }
     sp->f.n_addr = addr;
@@ -568,7 +572,7 @@ void merge_symbols(obj_image_t *obj)
     nlist_t *sp;
     uint64_t name;
     unsigned addr;
-    int i;
+    int i, type;
 
     if (trace > 1)
         printf("--- Merge %u entries and %u symbols from %s\n",
@@ -578,8 +582,9 @@ void merge_symbols(obj_image_t *obj)
     for (i = 0; i < obj->nentries; i++) {
         name = obj->word[2*i + 1];
         addr = obj->word[2*i + 2] & 077777;
+        type = (addr < obj->cmd_len) ? 't' : 'd';
         addr = relocate_address(obj, addr);
-        create_entry(name, addr);
+        create_entry(name, type, addr);
     }
 
     // Merge symbols.
@@ -717,6 +722,7 @@ void merge_symbols(obj_image_t *obj)
             break;
 
         case SYM_ENTRY_S:
+        case SYM_DENTRY_S:
             //
             // Entry, relocatable (short name)
             //
@@ -730,7 +736,7 @@ void merge_symbols(obj_image_t *obj)
                     fatal("Name %s redefined", text_to_utf(name));
 
                 // Convert extref into entry.
-                sp->f.n_type = SYM_ENTRY_S;
+                sp->f.n_type = sym.f.n_type;
                 sp->f.n_addr = sym.f.n_addr;
 
                 // Redirect to it.
@@ -743,6 +749,7 @@ void merge_symbols(obj_image_t *obj)
             break;
 
         case SYM_ENTRY_L:
+        case SYM_DENTRY_L:
             //
             // Entry, relocatable (long name)
             //
@@ -757,7 +764,7 @@ void merge_symbols(obj_image_t *obj)
                     fatal("Name %s redefined", text_to_utf(name));
 
                 // Convert extref into entry.
-                sp->f.n_type = SYM_ENTRY_L;
+                sp->f.n_type = sym.f.n_type;
                 sp->f.n_addr = sym.f.n_addr;
 
                 // Redirect to it.
@@ -870,7 +877,7 @@ void merge_ext_symbols(obj_image_t *obj)
     // Add entries.
     for (i = 0; i < obj->nentries; i++) {
         name = obj->word[2*i + 1];
-        create_entry(name, 0);
+        create_entry(name, 't', 0);
     }
 
     // Merge symbols.
@@ -912,6 +919,7 @@ void merge_ext_symbols(obj_image_t *obj)
             break;
 
         case SYM_ENTRY_S:
+        case SYM_DENTRY_S:
             //
             // Entry, relocatable (short name)
             //
@@ -920,12 +928,13 @@ void merge_ext_symbols(obj_image_t *obj)
             if (sp) {
                 // The symbol is already defined.
                 // Convert extref into entry.
-                sp->f.n_type = SYM_ENTRY_S;
+                sp->f.n_type = sym.f.n_type;
                 continue;
             }
             break;
 
         case SYM_ENTRY_L:
+        case SYM_DENTRY_L:
             //
             // Entry, relocatable (long name)
             //
@@ -935,7 +944,7 @@ void merge_ext_symbols(obj_image_t *obj)
             if (sp) {
                 // The symbol is already defined.
                 // Convert extref into entry.
-                sp->f.n_type = SYM_ENTRY_L;
+                sp->f.n_type = sym.f.n_type;
                 continue;
             }
             // Update the reference field with new name index.
@@ -978,9 +987,11 @@ int need_this_obj(obj_image_t *obj)
         nlist_t sym;
 
         sym.u64 = obj->word[i + 1 + obj->table_off];
-        if (sym.f.n_type == SYM_ENTRY_S)
+        if (sym.f.n_type == SYM_ENTRY_S ||
+            sym.f.n_type == SYM_DENTRY_S)
             name = sym.u64 & 07777777700000000;
-        else if (sym.f.n_type == SYM_ENTRY_L)
+        else if (sym.f.n_type == SYM_ENTRY_L ||
+                 sym.f.n_type == SYM_DENTRY_L)
             name = obj->word[(sym.f.n_ref & 03777) + obj->table_off];
         else
             continue;
@@ -1409,11 +1420,11 @@ void pass2()
 
     if (!emit_relocatable) {
         // Define _etext, _edata and _end symbols.
-        create_entry(name_etext, text_base + text_size);
+        create_entry(name_etext, 't', text_base + text_size);
         if (data_base == 0) {
             // Shared address space.
-            create_entry(name_edata, text_base + text_size + data_size);
-            create_entry(name_end, text_base + text_size + data_size + bss_size);
+            create_entry(name_edata, 'd', text_base + text_size + data_size);
+            create_entry(name_end, 'b', text_base + text_size + data_size + bss_size);
             if (trace > 1)
                 printf("--- /etext = %05o, /edata = %05o, /end = %05o\n",
                     text_base + text_size,
@@ -1421,9 +1432,9 @@ void pass2()
                     text_base + text_size + data_size + bss_size);
         } else {
             // Separate address space.
-            create_entry(name_bdata, data_base);
-            create_entry(name_edata, data_base + data_size);
-            create_entry(name_end, data_base + data_size + bss_size);
+            create_entry(name_bdata, 'd', data_base);
+            create_entry(name_edata, 'd', data_base + data_size);
+            create_entry(name_end, 'b', data_base + data_size + bss_size);
             if (trace > 1)
                 printf("--- /etext = %05o, /bdata = %05o, /edata = %05o, /end = %05o\n",
                     text_base + text_size, data_base,
@@ -1894,6 +1905,7 @@ void pass3()
         for (sp=symtab; sp<&symtab[nsymbols]; sp++) {
             switch (sp->f.n_type) {
             case SYM_ENTRY_L:
+            case SYM_DENTRY_L:
             case SYM_EXT_L:
             case SYM_PRIVATE_L:
             case SYM_COMMON_L:
