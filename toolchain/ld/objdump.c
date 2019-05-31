@@ -228,7 +228,13 @@ const char *getsyminfo(obj_image_t *obj, uint64_t word, int verbose_flag, int tr
     case SYM_RELOC:
         // Relocatable address.
         snprintf(buf, sizeof(buf), "%c%o",
-            (addr < obj->cmd_len) ? 'c' :
+            (obj->data_base != 0 || addr < obj->cmd_len) ? 'c' :
+            transient_flag ? 't' : 'd', addr);
+        break;
+
+    case SYM_DRELOC:
+        // Relocatable address in data space.
+        snprintf(buf, sizeof(buf), "%c%o",
             transient_flag ? 't' : 'd', addr);
         break;
 

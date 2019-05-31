@@ -84,6 +84,7 @@ enum {
     SYM_DIVIDE      = 0103,     // Divide two symbols
     SYM_ABS         = 0400,     // Absolute address
     SYM_RELOC       = 0410,     // Relocatable address
+    SYM_DRELOC      = 0411,     // Relocatable address in data space
     SYM_ENTRY_S     = 0414,     // Entry, relocatable (short name)
     SYM_DENTRY_S    = 0415,     // Data entry, relocatable (short name)
     SYM_EXT_S       = 0430,     // External reference (short name)
