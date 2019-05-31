@@ -57,7 +57,7 @@ void strip(char *fname)
         printf("%s already stripped\n", fname);
         return;
     }
-    if (!obj.base_addr || !obj.entry || obj.cmd_off != 11) {
+    if (!obj.text_base || !obj.entry || obj.cmd_off != 11) {
         fclose(fd);
         printf("%s: cannot strip relocatable file %s\n", progname, fname);
         return;

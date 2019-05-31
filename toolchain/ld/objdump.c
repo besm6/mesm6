@@ -448,6 +448,17 @@ void print_insn(obj_image_t *obj, int opcode)
     }
 }
 
+unsigned data_base(obj_image_t *obj)
+{
+    if (obj->data_base == 0) {
+        // Shared address space.
+        return obj->cmd_len + obj->text_base;
+    } else {
+        // Separate address space.
+        return obj->data_base;
+    }
+}
+
 void disassemble(const char *fname)
 {
     FILE *fd;
@@ -503,8 +514,10 @@ void disassemble(const char *fname)
     printf("  Debug offset: %#o words\n", obj.debug_off);
     printf("Comment offset: %#o words\n", obj.comment_off);
 #endif
-    if (obj.base_addr != 0 || obj.entry != 0) {
-        printf("  Base address: %05o\n", obj.base_addr);
+    if (obj.text_base != 0 || obj.entry != 0) {
+        printf("  Code address: %05o\n", obj.text_base);
+        if (obj.data_base != 0)
+            printf("  Data address: %05o\n", obj.data_base);
         printf("         Entry: %05o\n", obj.entry);
     }
 
@@ -534,7 +547,7 @@ void disassemble(const char *fname)
     for (i = 0; i < obj.cmd_len; i++) {
         uint64_t word = obj.word[i + obj.cmd_off];
 
-        printf("%6s:  ", getlabel('c', i + obj.base_addr));
+        printf("%6s:  ", getlabel('c', i + obj.text_base));
         print_insn(&obj, word >> 24);
         printf("\n         ");
         print_insn(&obj, word & 077777777);
@@ -552,7 +565,7 @@ void disassemble(const char *fname)
             uint64_t word = obj.word[i + obj.cmd_off + obj.cmd_len];
 
             printf("%6s:  %04o %04o %04o %04o",
-                getlabel('d', i + obj.cmd_len + obj.base_addr),
+                getlabel('d', i + data_base(&obj)),
                 (unsigned)(word >> 36) & 07777,
                 (unsigned)(word >> 24) & 07777,
                 (unsigned)(word >> 12) & 07777,
@@ -576,10 +589,10 @@ void disassemble(const char *fname)
         printf("\n");
         printf("Uninitialized data:\n");
         printf("\n");
-        printf("%6s", getlabel('d', obj.cmd_len + obj.const_len + obj.base_addr));
+        printf("%6s", getlabel('d', data_base(&obj) + obj.const_len));
         if (obj.bss_len > 1)
             printf("-%s",
-                getlabel('d', obj.cmd_len + obj.const_len + obj.base_addr + obj.bss_len - 1));
+                getlabel('d', data_base(&obj) + obj.const_len + obj.bss_len - 1));
         printf(":  %d word%s\n", obj.bss_len, obj.bss_len<2 ? "" : "s");
     }
 

@@ -90,7 +90,8 @@ static int obj_decode(obj_image_t *obj)
 
         // Extension for MESM-6 linker.
         obj->entry     = obj->word[obj->head_off + 2] & 077777;
-        obj->base_addr = (obj->word[obj->head_off + 2] >> 15) & 077777;
+        obj->text_base = (obj->word[obj->head_off + 2] >> 15) & 077777;
+        obj->data_base = (obj->word[obj->head_off + 2] >> 30) & 077777;
 
         obj->cmd_off = obj->head_off + 10;
     } else {
@@ -109,7 +110,8 @@ static int obj_decode(obj_image_t *obj)
 
         // Extension for MESM-6 linker: relocatable module only.
         obj->entry     = 0;
-        obj->base_addr = 0;
+        obj->text_base = 0;
+        obj->data_base = 0;
 
         obj->cmd_off = obj->head_off + 3;
     }
@@ -210,7 +212,8 @@ static int update_header(obj_image_t *obj)
 
         // Extension for MESM-6 linker.
         obj->word[obj->head_off + 2] = obj->entry |
-                            (uint64_t) obj->base_addr << 15;
+                            (uint64_t) obj->text_base << 15 |
+                            (uint64_t) obj->data_base << 30;
     } else {
         // Wrong header offset.
         fprintf(stderr, "Unsupported header size: %d words\n", obj->cmd_off);

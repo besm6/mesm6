@@ -69,8 +69,8 @@ int o_flag;                     // output name specified
 char *ofilename = "l.out";      // output file name
 int emit_relocatable;           // generate relocatable output
 
-unsigned basaddr = 1;           // base address of code section
-unsigned dataddr;               // separate address space for data/BSS
+unsigned text_base = 1;         // base address of code section
+unsigned data_base;             // separate address space for data/BSS
 
 unsigned max_set_address = 0;   // max address touched by SET directive
 
@@ -1213,7 +1213,7 @@ void pass1(int argc, char **argv)
             continue;
         case 'D':
             // Separate address space for data.
-            dataddr = strtoul(optarg, 0, 0);
+            data_base = strtoul(optarg, 0, 0);
             continue;
         case 'e':
             // Set `entry' symbol.
@@ -1244,7 +1244,7 @@ void pass1(int argc, char **argv)
             continue;
         case 'T':
             // Set base address.
-            basaddr = strtoul(optarg, 0, 0);
+            text_base = strtoul(optarg, 0, 0);
             continue;
         case 'u':
             // Mark `symbol' as undefined.
@@ -1275,12 +1275,12 @@ void pass2()
     obj_image_t *obj;
     nlist_t *sp;
     int text_origin, data_origin, bss_origin, cblock_origin;
-    uint64_t name_etext = 0, name_edata = 0, name_end = 0;
+    uint64_t name_etext = 0, name_bdata = 0, name_edata = 0, name_end = 0;
 
     if (trace > 1)
         printf("Second pass:\n");
-    text_origin = basaddr;
-    data_origin = text_origin + text_size;
+    text_origin = text_base;
+    data_origin = (data_base == 0) ? (text_origin + text_size) : data_base;
     bss_origin = data_origin + data_size;
     cblock_origin = bss_origin + bss_size;
 
@@ -1315,6 +1315,7 @@ void pass2()
         emit_relocatable = 1;
     if (!emit_relocatable) {
         name_etext = utf_to_text("_etext");
+        name_bdata = utf_to_text("_bdata");
         name_edata = utf_to_text("_edata");
         name_end = utf_to_text("_end");
 
@@ -1322,6 +1323,7 @@ void pass2()
             if ((sp->f.n_type == SYM_EXT_S ||
                  sp->f.n_type == SYM_EXT_L) &&
                 !sym_name_match(sp, name_end) &&
+                !sym_name_match(sp, name_bdata) &&
                 !sym_name_match(sp, name_edata) &&
                 !sym_name_match(sp, name_etext))
             {
@@ -1401,20 +1403,33 @@ void pass2()
             }
         }
     }
-    if (basaddr + text_size + data_size + bss_size > 077777)
+    if (text_base + text_size + data_size + bss_size > 077777)
         fatal("Program size %u words: memory overflow",
-            basaddr + text_size + data_size + bss_size);
+            text_base + text_size + data_size + bss_size);
 
     if (!emit_relocatable) {
         // Define _etext, _edata and _end symbols.
-        create_entry(name_etext, basaddr + text_size);
-        create_entry(name_edata, basaddr + text_size + data_size);
-        create_entry(name_end, basaddr + text_size + data_size + bss_size);
-        if (trace > 1)
-            printf("--- /etext = %05o, /edata = %05o, /end = %05o\n",
-                basaddr + text_size,
-                basaddr + text_size + data_size,
-                basaddr + text_size + data_size + bss_size);
+        create_entry(name_etext, text_base + text_size);
+        if (data_base == 0) {
+            // Shared address space.
+            create_entry(name_edata, text_base + text_size + data_size);
+            create_entry(name_end, text_base + text_size + data_size + bss_size);
+            if (trace > 1)
+                printf("--- /etext = %05o, /edata = %05o, /end = %05o\n",
+                    text_base + text_size,
+                    text_base + text_size + data_size,
+                    text_base + text_size + data_size + bss_size);
+        } else {
+            // Separate address space.
+            create_entry(name_bdata, data_base);
+            create_entry(name_edata, data_base + data_size);
+            create_entry(name_end, data_base + data_size + bss_size);
+            if (trace > 1)
+                printf("--- /etext = %05o, /bdata = %05o, /edata = %05o, /end = %05o\n",
+                    text_base + text_size, data_base,
+                    data_base + data_size,
+                    data_base + data_size + bss_size);
+        }
     }
 
     if (!r_flag) {
@@ -1465,9 +1480,9 @@ unsigned sym_eval(unsigned index)
     case SYM_INDIRECT:
         // Dereference.
         ref = sym_eval(sp->f.n_addr);
-        if (ref < basaddr || ref >= basaddr + text_size + data_size)
+        if (ref < text_base || ref >= text_base + text_size + data_size)
             fatal("Indirect symbol out of text+data section: %05o", ref);
-        return aout.word[11 + ref - basaddr] & 077777;
+        return aout.word[11 + ref - text_base] & 077777;
 
     case SYM_EXPRESSION:
         // Expression.
@@ -1611,8 +1626,8 @@ void apply_set_instructions(obj_image_t *obj, unsigned bss_origin,
         else
             fatal("Wrong destination address in SET directive: %05o", to);
 
-        if (to < basaddr ||
-            to + size*count > basaddr + text_size + data_size + bss_size)
+        if (to < text_base ||
+            to + size*count > text_base + text_size + data_size + bss_size)
             fatal("Wrong destination address and size in SET directive: %05o+%05o",
                 to, size*count);
 
@@ -1630,7 +1645,7 @@ void apply_set_instructions(obj_image_t *obj, unsigned bss_origin,
                 if (from + size > ndata)
                     fatal("Source address in SET directive exceeds size of DATA section");
                 for (i = 0; i < count; i++) {
-                    memcpy(&aout.word[11 + to - basaddr + i*size],
+                    memcpy(&aout.word[11 + to - text_base + i*size],
                         &tdata[from], size * sizeof(uint64_t));
                 }
             } else {
@@ -1640,11 +1655,11 @@ void apply_set_instructions(obj_image_t *obj, unsigned bss_origin,
                     if (count != 1) printf(", replicate %u times", count);
                     printf("\n");
                 }
-                if (from < basaddr || from + size > basaddr + text_size + data_size)
+                if (from < text_base || from + size > text_base + text_size + data_size)
                     fatal("Source address in SET directive out of range");
                 for (i = 0; i < count; i++) {
-                    memcpy(&aout.word[11 + to - basaddr + i*size],
-                        &aout.word[11 + from - basaddr],
+                    memcpy(&aout.word[11 + to - text_base + i*size],
+                        &aout.word[11 + from - text_base],
                         size * sizeof(uint64_t));
                 }
             }
@@ -1654,7 +1669,7 @@ void apply_set_instructions(obj_image_t *obj, unsigned bss_origin,
                 fatal("Wrong size in SET directive: %u", size);
             if (trace > 1)
                 printf("--- clear %u words at %05o\n", count, to);
-            memset(&aout.word[11 + to - basaddr], 0, size * sizeof(uint64_t));
+            memset(&aout.word[11 + to - text_base], 0, size * sizeof(uint64_t));
         } else {
             fatal("Wrong source address in SET directive: %05o", from);
         }
@@ -1731,15 +1746,21 @@ void pass3()
     int text_origin, data_origin, bss_origin;
     int tdata_origin, set_origin, debug_size = 0;
     obj_image_t *obj;
+    uint64_t *aout_datap, *aout_tdatap, *aout_setp;
 
     if (trace > 1) {
         printf("Third pass:\n");
     }
-    text_origin = basaddr;
-    data_origin = text_origin + text_size;
+    text_origin = text_base;
+    data_origin = (data_base == 0) ? (text_origin + text_size) : data_base;
     bss_origin = data_origin + data_size;
     tdata_origin = bss_origin;
     set_origin = tdata_origin + tdata_size;
+
+    aout_datap  = &aout.word[11 + text_size];
+    aout_tdatap = &aout.word[11 + text_size + data_size];
+    aout_setp   = &aout.word[11 + text_size + data_size + tdata_size];
+
     for (obj = obj_head; obj; obj = obj->next) {
         if (trace > 1)
             printf("%s\n", text_to_utf(obj->word[obj->table_off]));
@@ -1757,14 +1778,14 @@ void pass3()
         if (obj->cmd_len > 0) {
             if (trace > 1)
                 printf("--- text %u words\n", obj->cmd_len);
-            relocate_code(obj, &aout.word[11 + text_origin - basaddr],
+            relocate_code(obj, &aout.word[11 + text_origin - text_base],
                 &obj->word[obj->cmd_off], obj->cmd_len);
         }
         // Copy data section.
         if (obj->const_len > 0) {
             if (trace > 1)
                 printf("--- data %u words\n", obj->const_len);
-            memcpy(&aout.word[11 + data_origin - basaddr],
+            memcpy(aout_datap,
                 &obj->word[obj->cmd_off + obj->cmd_len],
                 obj->const_len * sizeof(uint64_t));
         }
@@ -1773,7 +1794,7 @@ void pass3()
             if (trace > 1)
                 printf("--- transient data %u words\n", obj->data_len);
             if (emit_relocatable) {
-                memcpy(&aout.word[11 + data_size + tdata_origin],
+                memcpy(aout_tdatap,
                     &obj->word[obj->cmd_off + obj->cmd_len + obj->const_len],
                     obj->data_len * sizeof(uint64_t));
             }
@@ -1784,8 +1805,7 @@ void pass3()
                 printf("--- `set' %u words\n", obj->set_len);
             if (emit_relocatable) {
                 // Relocate `set' instructions.
-                relocate_set_section(obj,
-                    &aout.word[11 + data_size + tdata_size + set_origin],
+                relocate_set_section(obj, aout_setp,
                     &obj->word[obj->cmd_off + obj->cmd_len + obj->const_len + obj->data_len],
                     obj->set_len);
             } else {
@@ -1809,11 +1829,15 @@ void pass3()
         bss_origin += obj->bss_len;
         tdata_origin += obj->data_len;
         set_origin += obj->set_len;
+
+        aout_datap  += obj->const_len;
+        aout_tdatap += obj->data_len;
+        aout_setp   += obj->set_len;
     }
 
     // As a result of SET directives, the boundary between
     // initialized and uninitialized data can change.
-    int offset = max_set_address - basaddr - text_size - data_size;
+    int offset = max_set_address - text_base - text_size - data_size;
     if (offset > 0) {
         if (offset > bss_size)
             fatal("Max SET address out of BSS range");
@@ -1821,7 +1845,7 @@ void pass3()
         bss_size -= offset;
         if (trace > 1)
             printf("--- extend data segment by %d words up to %05o\n",
-                offset, basaddr + text_size + data_size);
+                offset, text_base + text_size + data_size);
     }
 
     //
@@ -1836,15 +1860,16 @@ void pass3()
     aout.cmd_len   = text_size;
     aout.bss_len   = bss_size;
     aout.const_len = data_size;
-    aout.base_addr = emit_relocatable ? 0 : basaddr;
+    aout.text_base = emit_relocatable ? 0 : text_base;
+    aout.data_base = emit_relocatable ? 0 : data_base;
     if (emit_relocatable) {
         aout.entry = 0;
     } else if (entrypt) {
         aout.entry = entrypt->f.n_addr;
-        if (aout.entry < basaddr || aout.entry >= basaddr + text_size)
+        if (aout.entry < text_base || aout.entry >= text_base + text_size)
             error("Entry out of text segment");
     } else {
-        aout.entry = basaddr;
+        aout.entry = text_base;
     }
 
     aout.nwords = 1 + 10 + text_size + data_size + 1;
