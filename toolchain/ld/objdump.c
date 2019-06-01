@@ -731,11 +731,14 @@ void usage()
 {
     printf("BESM6 Disassembler\n");
     printf("Usage:\n");
-    printf("    %s [option...] infile...\n", progname);
+    printf("    %s [-bdr] infile...\n", progname);
+    printf("    %s [-OX] infile [outfile]\n", progname);
     printf("Options:\n");
     printf("    -b      Use BEMSH mnemonics\n");
     printf("    -d      Print Debug section\n");
-    printf("    -r      Dump raw data\n");
+    printf("    -r      Print raw data\n");
+    printf("    -O      Convert to MESM-6 octal format\n");
+    printf("    -X      Convert to Intel hex format\n");
     exit(0);
 }
 
@@ -749,7 +752,7 @@ int main(int argc, char **argv)
         progname = argv[0];
 
     for (;;) {
-        switch (getopt(argc, argv, "bdr")) {
+        switch (getopt(argc, argv, "bdOrX")) {
         case EOF:
             break;
         case 'b':
@@ -761,9 +764,17 @@ int main(int argc, char **argv)
             // Print Debug section.
             debug_flag++;
             continue;
+        case 'O':
+            // Convert to MESM-6 octal format.
+            //TODO
+            continue;
         case 'r':
             // Dump raw data.
             raw_flag++;
+            continue;
+        case 'X':
+            // Convert to Intel hex format.
+            //TODO
             continue;
         default:
             usage();
