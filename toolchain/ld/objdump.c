@@ -65,6 +65,8 @@ const char *scmd_madlen[64] = {
 const char **long_name = lcmd_madlen, **short_name = scmd_madlen;
 int debug_flag;
 int raw_flag;
+int oct_flag;
+int hex_flag;
 const char *progname;
 
 static const char *text_to_utf[] = {
@@ -475,23 +477,31 @@ unsigned data_base(obj_image_t *obj)
     }
 }
 
-void disassemble(const char *fname)
+int read_obj(const char *fname, obj_image_t *obj)
 {
     FILE *fd;
-    obj_image_t obj = {0};
-    int i;
 
     fd = fopen(fname, "r");
     if (!fd) {
         fprintf(stderr, "%s: %s not found\n", progname, fname);
-        return;
+        return -1;
     }
-    if (obj_read_fd(fd, &obj) < 0) {
+    if (obj_read_fd(fd, obj) < 0) {
         fclose(fd);
         fprintf(stderr, "%s: %s not an object file\n", progname, fname);
-        return;
+        return -1;
     }
     fclose(fd);
+    return 0;
+}
+
+void disassemble(const char *fname)
+{
+    obj_image_t obj = {0};
+    int i;
+
+    if (read_obj(fname, &obj) < 0)
+        return;
 
     if (raw_flag) {
         // Dump raw data.
@@ -727,6 +737,88 @@ void disassemble(const char *fname)
     }
 }
 
+int gen_hex(const char *input_name, const char *output_name)
+{
+    obj_image_t obj = {0};
+
+    if (read_obj(input_name, &obj) < 0)
+        return -1;
+
+    if (obj.text_base == 0 || obj.entry == 0) {
+        fprintf(stderr, "%s: %s: Cannot convert relocatable file\n",
+            progname, input_name);
+        return -1;
+    }
+
+    //TODO: generate hex output
+
+    return 0;
+}
+
+void print_cmd(FILE *fp, int h)
+{
+    if (h & (1 << 19))
+        fprintf(fp, "%02o %02o %05o",
+            (h >> 20) & 017, (h >> 15) & 037, h & 077777);
+    else
+        fprintf(fp, "%02o %03o %04o",
+            (h >> 20) & 017, (h >> 12) & 0177, h & 07777);
+}
+
+int gen_octal(const char *input_name, const char *output_name)
+{
+    obj_image_t obj = {0};
+    FILE *fd;
+    unsigned i, db;
+
+    if (read_obj(input_name, &obj) < 0)
+        return -1;
+
+    if (obj.text_base == 0 || obj.entry == 0) {
+        fprintf(stderr, "%s: %s: Cannot convert relocatable file\n",
+            progname, input_name);
+        return -1;
+    }
+
+    if (output_name) {
+        fd = fopen(output_name, "w");
+        if (!fd) {
+            fprintf(stderr, "%s: %s: Cannot create\n", progname, output_name);
+            return -1;
+        }
+    } else {
+        fd = stdout;
+    }
+
+    // Generate code.
+    for (i = 0; i < obj.cmd_len; i++) {
+        uint64_t word = obj.word[i + obj.cmd_off];
+
+        fprintf(fd, "i %05o ", i + obj.text_base);
+        print_cmd(fd, word >> 24);
+        fprintf(fd, " ");
+        print_cmd(fd, word & 077777777);
+        fprintf(fd, "\n");
+    }
+
+    // Generate data.
+    db = data_base(&obj);
+    for (i = 0; i < obj.const_len; i++) {
+        uint64_t word = obj.word[i + obj.cmd_off + obj.cmd_len];
+
+        fprintf(fd, "d %05o %04o %04o %04o %04o\n",
+            i + db,
+            (unsigned)(word >> 36) & 07777,
+            (unsigned)(word >> 24) & 07777,
+            (unsigned)(word >> 12) & 07777,
+            (unsigned)word & 07777);
+    }
+
+    if (output_name)
+        fclose(fd);
+    return 0;
+}
+
 void usage()
 {
     printf("BESM6 Disassembler\n");
@@ -766,7 +858,7 @@ int main(int argc, char **argv)
             continue;
         case 'O':
             // Convert to MESM-6 octal format.
-            //TODO
+            oct_flag++;
             continue;
         case 'r':
             // Dump raw data.
@@ -774,7 +866,7 @@ int main(int argc, char **argv)
             continue;
         case 'X':
             // Convert to Intel hex format.
-            //TODO
+            hex_flag++;
             continue;
         default:
             usage();
@@ -785,6 +877,14 @@ int main(int argc, char **argv)
     argv += optind;
     if (argc < 1)
         usage();
+
+    if (oct_flag) {
+        return gen_octal(argv[0], argv[1]);
+    }
+
+    if (hex_flag) {
+        return gen_hex(argv[0], argv[1]);
+    }
 
     while (argc-- > 0) {
         disassemble(*argv++);

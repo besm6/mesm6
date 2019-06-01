@@ -31,7 +31,8 @@ libpas.a:       $(OBJ) $(OBJ_DUBNA)
 		@rm -f $@
 		ar cr $@ $(OBJ) $(OBJ_DUBNA)
 
-tests:          hello.out hello-sep.out besm6pat1.out besm6pat2.out besm6pat3.out pascompl.out
+tests:          hello.out hello-sep.out besm6pat1.out besm6pat2.out \
+                besm6pat3.out pascompl.out hello.oct hello-sep.oct
 		../ld/size hello.obj hello.out hello-sep.out
 		../ld/size pascompl.obj pascompl.out
 		../ld/size besm6pat1.obj besm6pat1.out
@@ -43,6 +44,12 @@ hello.out:      hello.obj libpas.a
 
 hello-sep.out:  hello.obj libpas.a
 		../ld/ld -D1 hello.obj libpas.a -o hello-sep.out
+
+hello.oct:      hello.out
+		besm6-objdump -O $< > $@
+
+hello-sep.oct:  hello-sep.out
+		besm6-objdump -O $< > $@
 
 pascompl.out:   pascompl.obj libpas.a
 		../ld/ld pascompl.obj libpas.a -o $@
