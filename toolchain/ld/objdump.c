@@ -814,6 +814,11 @@ int gen_octal(const char *input_name, const char *output_name)
             (unsigned)word & 07777);
     }
 
+    // Add entry address.
+    if (obj.entry != 1) {
+        fprintf(fd, "e %05o\n", obj.entry);
+    }
+
     if (output_name)
         fclose(fd);
     return 0;
