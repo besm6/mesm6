@@ -9021,7 +9021,7 @@ struct initTables {
                "\000\041\042\043\044\045\046\047" // 100-107 (@ - G)
                "\050\051\052\053\054\055\056\057" // 110-117 (H - O)
                "\060\061\062\063\064\065\066\067" // 120-127 (P - W)
-               "\070\071\072\000\000\000\000\000" // 130-137 (X Y Z [ \ ] ^ _)
+               "\070\071\072\000\000\000\000\017" // 130-137 (X Y Z [ \ ] ^ _)
                "\000\041\042\043\044\045\046\047" // 140-147 (` - g)
                "\050\051\052\053\054\055\056\057" // 150-157 (h - o)
                "\060\061\062\063\064\065\066\067" // 160-167 (p - w)
@@ -9358,9 +9358,10 @@ int main(int argc, char **argv)
     }
 
     charSymTabBase['\''] = CHARCONST;
-    charSymTabBase['_'] = REALCONST;
+    charSymTabBase['_'] = IDENT;
     charSymTabBase['<'] = LTSY;
     charSymTabBase['>'] = GTSY;
+    chrClassTabBase['_'] = ALNUM;
     chrClassTabBase['+'] = PLUSOP;
     chrClassTabBase['-'] = MINUSOP;
     chrClassTabBase['*'] = MUL;
