@@ -1,0 +1,16 @@
+c
+c Read word by address.
+c Usage:
+c      14 ,vtm, address
+c         ,ita, 14
+c      13 ,vjm, peek    . result on accumulator
+c
+c From Pascal:
+c   function peek(addr: integer): integer; fortran;
+c   word = peek(77755B);
+c
+ peek:      ,name,
+            ,ati , 14
+        14  ,xta ,
+        13  ,uj  ,
+            ,end ,

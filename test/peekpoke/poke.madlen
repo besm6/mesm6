@@ -1,0 +1,17 @@
+c
+c Write word to a given address.
+c Usage:
+c         ,xts, word
+c      14 ,vtm, address
+c         ,its, 14
+c      13 ,vjm, poke
+c
+c From Pascal:
+c   procedure poke(val: integer; addr: integer); fortran;
+c   poke(word, 77756B);
+c
+ poke:      ,name,
+            ,sti , 14
+        14  ,stx ,
+        13  ,uj  ,
+            ,end ,
