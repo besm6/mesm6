@@ -8,9 +8,10 @@ OPTS   += +trace=output.trace
 all:    $(TEST).oct
 
 $(TEST).oct: $(TEST).obj
+	../../toolchain/ld/objdump $(TEST).obj > $(TEST).obj.dis
 	../../toolchain/ld/ld -D1 $(TEST).obj -lpas -o $(TEST).exe
 	../../toolchain/ld/objdump -O $(TEST).exe > $@
-	../../toolchain/ld/objdump $(TEST).exe > $(TEST).dis
+	../../toolchain/ld/objdump $(TEST).exe > $(TEST).exe.dis
 
 clean:
 	rm -f *.b6 *.lst *.dump *.punch *.obj *.exe *.dis transcript

@@ -454,9 +454,19 @@ unsigned relocate_address(obj_image_t *obj, unsigned addr)
         // Transient data section.
         return addr + offset_bss;
     }
-    fatal("Module %s: relocatable address %05o out of range",
-        text_to_utf(obj->word[obj->table_off]), addr);
-    return 0;
+    if (addr > obj->cmd_len + obj->const_len + obj->bss_len) {
+        fatal("Module %s: relocatable address %05o out of range",
+            text_to_utf(obj->word[obj->table_off]), addr);
+    }
+
+    // The address is right at the end of BSS section.
+    // Treat it as BSS, if BSS section is non-empty,
+    // otherwise as data symbol.
+    if (obj->bss_len > 0) {
+        return addr + offset_bss;
+    } else {
+        return addr + offset_data;
+    }
 }
 
 //
