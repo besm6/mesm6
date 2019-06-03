@@ -407,7 +407,11 @@ const char *getaddr(obj_image_t *obj, unsigned addr, int long_flag)
 {
     static char buf[16];
 
-//if (1) snprintf(buf, sizeof(buf), "<%o>", addr); else
+    if (obj->entry != 0) {
+        // No symbol references in non-relocatable files.
+        long_flag = -1;
+    }
+
     if (addr < 8) {
         snprintf(buf, sizeof(buf), "%u", addr);
     } else if ((long_flag == 2) && (addr & 04000)) {

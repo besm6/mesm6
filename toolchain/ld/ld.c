@@ -1573,8 +1573,9 @@ unsigned sym_eval_tdata(unsigned index)
                 addr -= data_size;
         } else {
             // Separate address space.
-            if (addr >= data_base + data_size)
-                addr -= data_size;
+            if (addr >= data_base + data_size) {
+                addr -= offset_bss - offset_data;
+            }
         }
         return addr;
 
