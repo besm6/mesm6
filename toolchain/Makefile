@@ -2,7 +2,9 @@
 # Cross-assembler for MESM-6
 #
 SUBDIR		= as ld
-DESTDIR		= /usr/local
+SUBDIR		+= pascompl libpas
+#DESTDIR		= /usr/local
+DESTDIR		= $(HOME)/.local/bin
 
 all:
 		for i in ${SUBDIR}; do $(MAKE) DESTDIR=$(DESTDIR) -C $$i; done
