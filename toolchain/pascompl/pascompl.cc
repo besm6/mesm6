@@ -8884,33 +8884,33 @@ struct initTables {
     int64_t idx, jdx;
 
     void initInsnTemplates() {
-        Insn l3var1z;
-        Operator l3var2z;
+        Insn insn;
+        Operator op;
 
-        for (l3var1z = ATX; l3var1z <= JADDM; succ(l3var1z))
-            InsnTemp[l3var1z] = l3var1z * 010000;
+        for (insn = ATX; insn <= JADDM; succ(insn))
+            InsnTemp[insn] = insn * 010000;
         InsnTemp[ELFUN] = 0500000;
         jdx = KUTC;
-        for (l3var1z = UTC; l3var1z <= VJM; succ(l3var1z)) {
-            InsnTemp[l3var1z] = jdx;
+        for (insn = UTC; insn <= VJM; succ(insn)) {
+            InsnTemp[insn] = jdx;
             jdx = (jdx + 0100000);
         }
         for (idx=1; idx <= 15; ++idx)
             indexreg[idx] = idx * frameRegTemplate;
         jumpType = InsnTemp[UJ];
-        for (l3var2z = MUL; l3var2z<=ASSIGNOP; succ(l3var2z)) {
-            opFlags[l3var2z] = opfCOMM;
-            opToInsn[l3var2z] = 0;
-            if (Bits(MUL, RDIVOP, PLUSOP, MINUSOP).has(l3var2z)) {
-                opToMode[l3var2z] = 3;
-            } else if (Bits(IDIVOP, IMODOP).has(l3var2z)) {
-                opToMode[l3var2z] = 2;
-            } else if (Bits(IMULOP, INTPLUS, INTMINUS, badop27).has(l3var2z)) {
-                opToMode[l3var2z] = 1;
-            } else if (Bits(IDIVROP, badop30, badop31).has(l3var2z)) {
-                opToMode[l3var2z] = 4;
+        for (op = MUL; op<=ASSIGNOP; succ(op)) {
+            opFlags[op] = opfCOMM;
+            opToInsn[op] = 0;
+            if (Bits(MUL, RDIVOP, PLUSOP, MINUSOP).has(op)) {
+                opToMode[op] = 3;
+            } else if (Bits(IDIVOP, IMODOP).has(op)) {
+                opToMode[op] = 2;
+            } else if (Bits(IMULOP, INTPLUS, INTMINUS, badop27).has(op)) {
+                opToMode[op] = 1;
+            } else if (Bits(IDIVROP, badop30, badop31).has(op)) {
+                opToMode[op] = 4;
             } else {
-                opToMode[l3var2z] = 0;
+                opToMode[op] = 0;
             }
         }
         opToInsn[MUL] = InsnTemp[AMULX];
