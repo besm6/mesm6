@@ -29,6 +29,21 @@ start   start   '1'
         aex     =b'6417777777777677'    , -65!-
         u1a     fail
 *
+        xta     =e'1'                   , 1/2 exp1
+        a*x     =e'1'                   , 1/2 exp1
+        aex     =b'4104000000000000'    , 1/4 exp2
+        u1a     fail
+*
+        xta     =e'1'                   , 1/2 exp1
+        a*x     =e'-1'                  , -1 exp0
+        aex     =b'4070000000000000'    , -1/2 exp1
+        u1a     fail
+*
+        xta     =e'-1'                  , -1 exp0
+        a*x     =e'-1'                  , -1 exp0 -- BUG!
+        aex     =b'4050000000000000'    , 1/2 exp1
+        u1a     fail
+*
         ntr     0
         xta     =e'1'
         a*x     =e'-1'
