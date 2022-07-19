@@ -21,13 +21,13 @@ start   start   '1'
 *
         xta     =e'-1.0'                , -1 * exp0
         a/x     =e'1.0'                 , 1/2 * exp1
-        aex     =b'4020000000000001'    , -1 * exp0 +1
-        u1a     fail
+        aex     =b'4020000000000000'    , -1 * exp0 -- BUG!
+        u1a     fail                    , actually 4020000000000001
 *
         xta     =e'-1.0'                , -1 * exp0
         a/x     =e'-1.0'                , -1 * exp0
-        aex     =b'4017777777777777'    , bug? expected 4050xxx
-        u1a     fail
+        aex     =b'4050000000000000'    , 1/2 * exp1 -- BUG!
+        u1a     fail                    , actually 4017777777777777
 *
 pass    стоп    '12345'(6)
 fail    стоп    '76543'(2)

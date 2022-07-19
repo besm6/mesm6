@@ -271,12 +271,7 @@ always @(posedge clk) begin
                     {`FULLMANT, rmr[39:0]} <= amant * bmant;
                     `FULLEXP <= (a[47:41] + b[47:41] - 64);
                     rounded <= 1'b0;
-                    if (do_norm)
-                        state <= STATE_NORM_AFTER;
-                    else if (do_round)
-                        state <= STATE_ROUND;
-                    else
-                        done <= 1;
+                    state <= STATE_NORM_AFTER;
                 end
 
             `ALU_FDIV: begin
