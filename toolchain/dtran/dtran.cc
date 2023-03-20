@@ -51,8 +51,8 @@ typedef enum {
 
 struct opcode {
     const char *name;
-    uint opcode;
-    uint mask;
+    unsigned opcode;
+    unsigned mask;
     opcode_e type;
 } op[] = {
   /* name,	pattern,  mask,	    opcode type */
@@ -163,22 +163,22 @@ static const char * text_to_utf[] = {
 };
 
 struct Dtran {
-    uint head_len;
-    uint sym_len;
-    uint debug_len;
-    uint data_len;
-    uint set_len;
-    uint long_len;
-    uint cmd_len;
-    uint bss_len;
-    uint const_len;
-    uint head_off;
-    uint cmd_off;
-    uint table_off;
-    uint debug_off;
-    uint long_off;
-    uint comment_off;
-    uint basereg, baseaddr, baseop;
+    unsigned head_len;
+    unsigned sym_len;
+    unsigned debug_len;
+    unsigned data_len;
+    unsigned set_len;
+    unsigned long_len;
+    unsigned cmd_len;
+    unsigned bss_len;
+    unsigned const_len;
+    unsigned head_off;
+    unsigned cmd_off;
+    unsigned table_off;
+    unsigned debug_off;
+    unsigned long_off;
+    unsigned comment_off;
+    unsigned basereg, baseaddr, baseop;
     bool nolabels, noequs, nooctal;
 
     void fill_lengths() {
@@ -262,13 +262,13 @@ mklabels(uint32 memaddr, uint32 opcode, bool litconst) {
     int arg1 = (opcode & 07777) + (opcode & 0x040000 ? 070000 : 0);
     int arg2 = opcode & 077777;
     int struc = opcode & 02000000;
-    uint reg = opcode >> 20;
+    unsigned reg = opcode >> 20;
     if (basereg && basereg == reg) {
         if (baseaddr == ~0u &&
             (opcode & 03740000) == 02440000) {
             // Setting base reg by a relative address or a symbol
             if ((opcode & 074000) == 074000) {
-                uint sympos = opcode & 03777;
+                unsigned sympos = opcode & 03777;
                 if (memory[table_off + sympos] >> 15 != 0410) {
                     fprintf(stderr, "@%05o Base register set to non-relative address\n", memaddr);
                     exit(1);
@@ -295,7 +295,7 @@ mklabels(uint32 memaddr, uint32 opcode, bool litconst) {
                     "@%05o Base register used with a symbol (%04o)\n", memaddr, arg1);
             exit(1);
         } else {
-            uint off = baseaddr + arg1;
+            unsigned off = baseaddr + arg1;
             if (off >= labels.size()) {
                 fprintf(stderr, "@%05o Base offset %05o too large\n", memaddr, arg1);
                 exit(1);
@@ -307,7 +307,7 @@ mklabels(uint32 memaddr, uint32 opcode, bool litconst) {
         // nothing
     } else if (struc && arg2 >= 040000 &&
                (arg2 & 037777) < labels.size()) {
-        uint off = arg2 & 037777;
+        unsigned off = arg2 & 037777;
         if (labels[off].empty())
             labels[off] = off < 010000 ?
                                 strprintf("*%04oB", off) :
@@ -320,7 +320,7 @@ prinsn (uint32 memaddr, uint32 opcode)
 {
     int i;
 
-    uint reg = opcode >> 20;
+    unsigned reg = opcode >> 20;
     int arg1 = (opcode & 07777) + (opcode & 0x040000 ? 070000 : 0);
     int arg2 = opcode & 077777;
     int struc = opcode & 02000000;
@@ -338,7 +338,7 @@ prinsn (uint32 memaddr, uint32 opcode)
     if (struc && arg2 >= 074000) {
         operand = strprintf("%s", symtab[arg2 & 03777].c_str());
     } else if (struc && arg2 >= 040000 && (arg2 & 037777) < labels.size()) {
-        uint off = arg2 & 037777;
+        unsigned off = arg2 & 037777;
         if (labels[off].empty())
             labels[off] = off < 010000 ?
                                 strprintf("*%04oB", off) :
@@ -349,7 +349,7 @@ prinsn (uint32 memaddr, uint32 opcode)
     } else if (!struc && arg1 >= 070000) {
         operand = "dunno";
     } else {
-        if (uint val = struc ? arg2 : arg1) {
+        if (unsigned val = struc ? arg2 : arg1) {
             if (type == OPCODE_REG1 || val < 8)
                 operand = strprintf("%d", val);
             else if (type == OPCODE_IMM64) {
@@ -381,7 +381,7 @@ std::string get_literal(uint32 addr) {
     uint64 val = memory[addr + cmd_off];
     std::string ret;
     if ((val >> 24) == 064000000) {
-        uint d = val & 077777777;
+        unsigned d = val & 077777777;
         if (d > 10000)
             ret = strprintf("%08oB", d);
         else
@@ -414,7 +414,7 @@ std::string quoteiso(std::string str)
 }
 
 void prconst (uint32 addr, uint32 len, bool litconst) {
-    for (uint cur = addr; cur < addr + len; ++cur) {
+    for (unsigned cur = addr; cur < addr + len; ++cur) {
         uint64 val = memory[cur + cmd_off];
         if (litconst) {
             printf(" /%d:", cur-cmd_len);
@@ -424,7 +424,7 @@ void prconst (uint32 addr, uint32 len, bool litconst) {
             printf(" %s:", labels[cur].c_str());
         }
         if ((val >> 24) == 064000000) {
-            uint d = val & 077777777;
+            unsigned d = val & 077777777;
             if (d > 200000)
                 printf(",INT,%08oB\n", d);
             else
@@ -440,30 +440,25 @@ void prconst (uint32 addr, uint32 len, bool litconst) {
 }
 
 void prsets() {
-    for (uint cur = table_off - set_len; cur < table_off; ++cur) {
+    for (unsigned cur = table_off - set_len; cur < table_off; ++cur) {
         uint64 word = memory[cur];
-        uint len = word >> 36;
-        uint from = (word >> 24) & 03777;
-        uint cnt = (word >> 12) & 07777;
-        uint to = word & 03777;
+        unsigned len = word >> 36;
+        unsigned from = (word >> 24) & 03777;
+        unsigned cnt = (word >> 12) & 07777;
+        unsigned to = word & 03777;
         std::string src = symtab[from];
         if (len == 1 && src[0] == '*') {
             char * end;
-            uint off = strtol(src.c_str()+1, &end, 8);
+            strtol(src.c_str()+1, &end, 8);
             do {
                 switch (*end) {
                 case '\0': break;
                 case '+':
-                    if (isdigit(end[1]))
-                        off += atoi(end+1);
-                    else
-                        off = ~0;
                     break;
                 case 'B':
                     ++end;
                     continue;
                 default:
-                    off = ~0;
                     break;
                 }
                 break;
@@ -479,14 +474,14 @@ void prdata() {
      * Print data initializations in the form of assignments
      * if the source reference allows it.
      */
-    for (uint cur = table_off - set_len; cur < table_off; ++cur) {
+    for (unsigned cur = table_off - set_len; cur < table_off; ++cur) {
         uint64 word = memory[cur];
-        uint len = word >> 36;
-        uint from = (word >> 24) & 03777;
-        uint cnt = (word >> 12) & 07777;
-        uint to = word & 03777;
+        unsigned len = word >> 36;
+        unsigned from = (word >> 24) & 03777;
+        unsigned cnt = (word >> 12) & 07777;
+        unsigned to = word & 03777;
         std::string src = symtab[from];
-        uint off = ~0;
+        unsigned off = ~0;
 
         if (src[0] == '*') {
             char * end;
@@ -511,13 +506,13 @@ void prdata() {
             } while (1);
         }
         if (off != ~0u) {
-            for (uint tocnt = 0; tocnt < cnt; ++tocnt) {
-                for (uint fromcnt = 0; fromcnt < len; ++fromcnt) {
+            for (unsigned tocnt = 0; tocnt < cnt; ++tocnt) {
+                for (unsigned fromcnt = 0; fromcnt < len; ++fromcnt) {
                     printf(" ,XTA,%s\n", get_literal(off+fromcnt).c_str());
                     std::string temp;
                     size_t plus = symtab[to].find('+');
                     if (plus != std::string::npos && (tocnt || fromcnt)) {
-                        uint was = atoi(symtab[to].c_str() + plus + 1);
+                        unsigned was = atoi(symtab[to].c_str() + plus + 1);
                         temp = strprintf("%.*s+%d", plus, symtab[to].c_str(),
                                          was+ tocnt*len+fromcnt);
                     } else if (tocnt || fromcnt) {
@@ -583,7 +578,7 @@ prtext (bool litconst)
     }
 }
 
-Dtran(const char * fname, uint b, bool n, bool e, bool o) :
+Dtran(const char * fname, unsigned b, bool n, bool e, bool o) :
         basereg(b), baseaddr(~0u), nolabels(n), noequs(e), nooctal(o) {
 
     unsigned int addr = 0;
@@ -595,7 +590,7 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
         exit(1);
     }
     stat (fname, &st);
-    uint codelen = st.st_size / 6;
+    unsigned codelen = st.st_size / 6;
 
     memory[addr++] = freadw (textfd);
     if (memory[0] == BESM6_MAGIC) {
@@ -625,7 +620,7 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
         puts(text_to_utf[ch & 077]);
     }
 
-    std::string get_utf8(uint unic) {
+    std::string get_utf8(unsigned unic) {
         std::string ret;
         if (unic < 0x80) {
             ret = char(unic);
@@ -652,27 +647,27 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
 
     std::string get_text_word(uint64 word) {
         std::string ret;
-        for (uint i = 42; i <= 42; i-=6) {
+        for (unsigned i = 42; i <= 42; i-=6) {
             ret += get_text_char(word >> i);
         }
         return ret;
     }
     std::string get_iso_word(uint64 word) {
         std::string ret;
-        for (uint i = 40; i <= 40; i-=8) {
+        for (unsigned i = 40; i <= 40; i-=8) {
             ret += get_iso_char(word >> i);
         }
         return ret;
     }
     std::string get_bytes(uint64 word) {
         std::string ret;
-        for (uint i = 40; i <= 40; i-=8) {
+        for (unsigned i = 40; i <= 40; i-=8) {
             ret += strprintf("%03o ", int(word >> i) & 0377);
         }
         return ret;
     }
     void print_text_word(uint64 word) {
-        for (uint i = 42; i <= 42; i-=6) {
+        for (unsigned i = 42; i <= 42; i-=6) {
             print_text_char(word >> i);
         }
     }
@@ -683,8 +678,8 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
         // and no unused codes or Cyrillics.
         int seen0 = 0, seen_char = 0;
         bool last0 = false;
-        for (uint i = 42; i <= 42; i-=6) {
-            uint val = (word >> i) & 077;
+        for (unsigned i = 42; i <= 42; i-=6) {
+            unsigned val = (word >> i) & 077;
             switch (val) {
             case 001 ... 011:
             case 013 ... 016:
@@ -708,15 +703,15 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
     }
 
     bool is_likely_iso (uint64 word) {
-        for (uint i = 0; i < 48; i += 8) {
-            uint val = (word >> i) & 0377;
+        for (unsigned i = 0; i < 48; i += 8) {
+            unsigned val = (word >> i) & 0377;
             if (val < 040 || val >= 0177)
                 return false;
         }
         return true;
     }
 
-    std::string gak(uint i) {
+    std::string gak(unsigned i) {
         std::string ret("G");
         ret += 'A'+i/128;
         ret += 'K'+i/8%16;
@@ -728,17 +723,17 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
     std::vector<std::string> symtab;
     std::vector<std::string> labels;
 
-    void dump_sym(uint i, uint offset) {
+    void dump_sym(unsigned i, unsigned offset) {
         uint64 word = memory[i+offset];
         if ((word >> 15) == 0400) {
-            uint val = word & 077777;
+            unsigned val = word & 077777;
             // printf("C %5o: absolute %05o\n", i, (uint)word & 077777);
             if (val > 0100000-100)
                 symtab[i] = strprintf("-%d", 0100000-val);
             else
                 symtab[i] = strprintf(nooctal ? "%d" : "%oB", val);
         } else if ((word >> 15) == 0410) {
-            uint off = word & 077777;
+            unsigned off = word & 077777;
             // printf("C %5o: local offset %05o\n", i, off);
             symtab[i] = off < 010000 ?
                               strprintf("*%04oB", off)
@@ -750,7 +745,7 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
                 symtab[i] = get_text_word(word & 07777777700000000LL);
             } else if ((word & 00000400020000000LL) == 00000400020000000LL) {
                 // Long ID
-                uint loff = (word >> 24) & 03777;
+                unsigned loff = (word >> 24) & 03777;
                 symtab[i] = get_text_word(memory[table_off + loff]);
             }
             if ((word & 057777777) == 043000000) {
@@ -760,8 +755,8 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
                        (uint)word & 0777777);
             } else if (((word >> 24) & 077774000) == 04000 &&
                        (word & 077777777) < 0100000) {
-                uint sym = (word >> 24) & 03777;
-                uint off = word & 077777;
+                unsigned sym = (word >> 24) & 03777;
+                unsigned off = word & 077777;
                 int ioff = off >= 040000 ? -off : off;
                 if (noequs) {
                     symtab[i] = strprintf("%s%+d",
@@ -779,7 +774,7 @@ Dtran(const char * fname, uint b, bool n, bool e, bool o) :
 
     void dump_symtab() {
         printf("C Symbol table offset is %o\n", table_off);
-        for (uint i = head_len; i < head_len + sym_len; ++i) {
+        for (unsigned i = head_len; i < head_len + sym_len; ++i) {
             dump_sym(i, table_off);
         }
     }

@@ -339,7 +339,7 @@ void * besm6_alloc(size_t s)
     s = (s + 7) & ~7;
     s /= sizeof(int64_t);
     if (avail + s > 32768) {
-        fprintf(stderr, "Out of memory: avail = %ld, wants %lu words\n", avail, s);
+        fprintf(stderr, "Out of memory: avail = %ld, wants %lu words\n", (long)avail, s);
         throw std::bad_alloc();
     }
     avail += s;
@@ -355,7 +355,7 @@ struct BESM6Obj {
         return besm6_alloc(s);
     }
 
-    void operator delete(void *); // deliberately undefined
+    void operator delete(void *) { throw std::bad_alloc(); }
 };
 
 template<class T> void setup(T * &p)
@@ -387,7 +387,7 @@ void * ptr(int64_t x)
 {
     if (x == 074000) return NULL;
     if (x < 0 || x >= avail) {
-        fprintf(stderr, "Cannot convert %ld to a pointer, avail = %ld\n", x, avail);
+        fprintf(stderr, "Cannot convert %ld to a pointer, avail = %ld\n", (long)x, (long)avail);
         exit(1);
     }
     return heap + x;
@@ -778,7 +778,7 @@ struct IdentRec : public BESM6Obj {
             ret = toAscii(id);
             if (verbose) {
                 if (0 <= asprintf(&strp, "(routine) procno: %ld value: %ld argl: %ld predef: %ld level: %ld pos: %ld flags: %lx",
-                                  procno_, value_, ord(argList_), ord(preDefLink_), level_, pos_, flags_.val)) {
+                                  (long)procno_, (long)value_, (long)ord(argList_), (long)ord(preDefLink_), (long)level_, (long)pos_, (long)flags_.val)) {
                     ret += strp;
                     free(strp);
                 } else perror("asprintf");
@@ -1203,17 +1203,17 @@ void printErrMsg(int64_t errNo)
 {
     putchar(' ');
     if (errNo >= 200)
-        printf("Internal error %ld", errNo);
+        printf("Internal error %ld", (long)errNo);
     else {
         if (errNo > 88)
             printErrMsg(86);
         else if (errNo == 20)
             errNo = (SY == IDENT)*2 + 1;
         else if (16 <= errNo && errNo <= 18)
-            printf("%ld ", int64_t(curToken.i));
+            printf("%ld ", (long)int64_t(curToken.i));
         printf("%s ", pasmitxt(errNo));
         if (errNo == 17)
-            printf("%ld", int97z);
+            printf("%ld", (long)int97z);
         else if (errNo == 22)
             printf("%6s", stmtName.c_str());
     }
@@ -1223,7 +1223,8 @@ void printErrMsg(int64_t errNo)
 
 void printTextWord(int64_t val)
 {
-    const char *s = toAscii(val).c_str();
+    std::string str = toAscii(val);
+    const char *s = str.c_str();
     while (*s == ' ')
         s++;
     fputs(s, stdout);
@@ -1729,8 +1730,8 @@ void endOfLine()
 
     listMode = PASINFOR.listMode;
     if ((listMode != 0) or (errsInLine != 0)) {
-        printf(" %05lo%5ld%3ld%c", (lineStartOffset + PASINFOR.startOffset),
-               lineCnt, lineNesting, commentModeCH);
+        printf(" %05llo%5ld%3ld%c", (lineStartOffset + PASINFOR.startOffset),
+               (long)lineCnt, (long)lineNesting, commentModeCH);
         startPos = 12;
         if (optSflags.m.has(S4)
             and (maxLineLen == 72)
@@ -2453,7 +2454,7 @@ void error(int64_t errNo)
         errMapBase[errsInLine] = linePos;
         errsInLine = errsInLine + 1;
         prevErrPos = linePos;
-        printf("Error %ld:", errNo);
+        printf("Error %ld:", (long)errNo);
         printErrMsg(errNo);
         if (60 < totalErrors) {
             putchar('\n');
@@ -3439,7 +3440,7 @@ struct genFullExpr {
     genFullExpr(ExprPtr exprToGen_);
     ~genFullExpr() { super.pop_back(); }
 
-    ExprPtr & exprToGen;
+    ExprPtr exprToGen;
     bool arg1Const, arg2Const;
     InsnList * otherIns;
     Word arg1Val, arg2Val;
@@ -4389,7 +4390,7 @@ genFullExpr::genFullExpr(ExprPtr exprToGen_)
 L7567:
     if (verbose) {
         if (l) {
-            fprintf(stderr, "%ld: %s\n", lineCnt, exprToGen->p().c_str());
+            fprintf(stderr, "%ld: %s\n", (long)lineCnt, exprToGen->p().c_str());
         }
     }
     curOP = exprToGen->op;
@@ -5176,12 +5177,12 @@ L11622:
                 printf("PACKED");
             printf(" FIELD ");
             printTextWord(curField->id);
-            printf(".OFFSET=%05loB", curField->offset);
+            printf(".OFFSET=%05loB", (long)curField->offset);
             if (curField->pckfield()) {
-                printf(".<<=SHIFT=%2ld. WIDTH=%2ld BITS", curField->shift(),
-                       curField->width());
+                printf(".<<=SHIFT=%2ld. WIDTH=%2ld BITS", (long)curField->shift(),
+                       (long)curField->width());
             } else {
-                printf(".WORDS=%ld", selType->size);
+                printf(".WORDS=%ld", (long)selType->size);
             }
             putchar('\n');
         }
@@ -6588,7 +6589,7 @@ void reportStmtType(int64_t)
 {
     int64_t &startLine = Statement::super.back()->startLine;
 
-    printf(" STATEMENT %s IN %ld LINE\n", stmtName.c_str(), startLine);
+    printf(" STATEMENT %s IN %ld LINE\n", stmtName.c_str(), (long)startLine);
 }
 
 bool structBranch(bool isGoto)
@@ -8574,7 +8575,7 @@ L22421:
                             error(78); /* errPredefinedAsPointer */
                             printf(": ");
                             printTextWord(l2var12z);
-                            printf(" in line %ld\n", curIdRec->offset);
+                            printf(" in line %ld\n", (long)curIdRec->offset);
                         }
                         l2typ14z->cast<PtrT>().pbase = l2typ13z->cast<PtrT>().pbase;
                     } else {
@@ -8601,7 +8602,7 @@ L22421:
                 error(79); /* errNotFullyDefined */
                 printf(": ");
                 printTextWord(l2var12z);
-                printf(" in line %ld\n", curIdRec->offset);
+                printf(" in line %ld\n", (long)curIdRec->offset);
                 typelist = typelist->next;
             }
         } /* TYPESY -> 22612 */
@@ -8671,8 +8672,8 @@ L22421:
                     if (PASINFOR.listMode == 3) {
                         printf("%25s", "VARIABLE ");
                         printTextWord(workidr->id);
-                        printf(" OFFSET (%ld) %05loB. WORDS=%05loB\n", curProcNesting,
-                                localSize, jj);
+                        printf(" OFFSET (%ld) %05loB. WORDS=%05loB\n", (long)curProcNesting,
+                               (long)localSize, (long)jj);
                     }
                     localSize = localSize + jj;
                     curExternFile = NULL;
@@ -8867,7 +8868,7 @@ L23301:
     defineRoutine();
     while (numLabList != l2var16z) {
         if (not numLabList->defined) {
-            printf(" %ld:", int64_t(numLabList->id.i));
+            printf(" %ld:", (long)int64_t(numLabList->id.i));
             l2bool8z = false;
         }
         numLabList = numLabList->next;
@@ -9014,7 +9015,7 @@ struct initTables {
         initArrays();
         initInsnTemplates();
         initSets();
-        memcpy(&koi2text['*'],
+        memcpy(&koi2text[(unsigned)'*'],
                "\012\036\000\035\000\017" // 052-057 (* + , - . /)
                "\020\021\022\023\024\025\026\027" // 060-067 (0 - 7)
                "\030\031\000\000\000\000\000\000" // 070-077 (8 9 : ; < = > ?)
@@ -9107,9 +9108,9 @@ void finalize()
     for (cnt = 1; cnt <= longSymCnt; ++cnt)
         CHILD.push_back(longSyms[cnt]);
     if (allowCompat) {
-        printf("%6ld LINES STRUCTURE ", lineCnt - 1);
+        printf("%6ld LINES STRUCTURE ", (long)lineCnt - 1);
         for (idx=1; idx <=10; ++idx)
-            printf("%ld ", sizes[idx]);
+            printf("%ld ", (long)sizes[idx]);
         putchar('\n');
     }
     entryPtTable[entryPtCnt] = 0;
@@ -9357,41 +9358,41 @@ int main(int argc, char **argv)
         chrClassTabBase[i+'a'] = ALNUM;
     }
 
-    charSymTabBase['\''] = CHARCONST;
-    charSymTabBase['_'] = IDENT;
-    charSymTabBase['<'] = LTSY;
-    charSymTabBase['>'] = GTSY;
-    chrClassTabBase['_'] = ALNUM;
-    chrClassTabBase['+'] = PLUSOP;
-    chrClassTabBase['-'] = MINUSOP;
-    chrClassTabBase['*'] = MUL;
-    chrClassTabBase['/'] = RDIVOP;
-    chrClassTabBase['='] = EQOP;
-    chrClassTabBase['&'] = AMPERS;
-    chrClassTabBase['>'] = GTOP;
-    chrClassTabBase['<'] = LTOP;
-    chrClassTabBase['#'] = NEOP;
-    chrClassTabBase['='] = EQOP;
-    charSymTabBase['+'] = ADDOP;
-    charSymTabBase['-'] = ADDOP;
-    charSymTabBase['*'] = MULOP;
-    charSymTabBase['/'] = MULOP;
-    charSymTabBase['&'] = MULOP;
-    charSymTabBase[','] = COMMA;
-    charSymTabBase['.'] = PERIOD;
-    charSymTabBase['@'] = ARROW;
-    charSymTabBase['^'] = ARROW;
-    charSymTabBase['('] = LPAREN;
-    charSymTabBase[')'] = RPAREN;
-    charSymTabBase[';'] = SEMICOLON;
-    charSymTabBase['['] = LBRACK;
-    charSymTabBase[']'] = RBRACK;
-    charSymTabBase['#'] = RELOP;
-    charSymTabBase['='] = RELOP;
-    charSymTabBase[':'] = COLON;
-    charSymTabBase['~'] = NOTSY;
-    charSymTabBase['{'] = LBRACE;
-    charSymTabBase['}'] = RBRACE;
+    charSymTabBase[(unsigned)'\''] = CHARCONST;
+    charSymTabBase[(unsigned)'_'] = IDENT;
+    charSymTabBase[(unsigned)'<'] = LTSY;
+    charSymTabBase[(unsigned)'>'] = GTSY;
+    chrClassTabBase[(unsigned)'_'] = ALNUM;
+    chrClassTabBase[(unsigned)'+'] = PLUSOP;
+    chrClassTabBase[(unsigned)'-'] = MINUSOP;
+    chrClassTabBase[(unsigned)'*'] = MUL;
+    chrClassTabBase[(unsigned)'/'] = RDIVOP;
+    chrClassTabBase[(unsigned)'='] = EQOP;
+    chrClassTabBase[(unsigned)'&'] = AMPERS;
+    chrClassTabBase[(unsigned)'>'] = GTOP;
+    chrClassTabBase[(unsigned)'<'] = LTOP;
+    chrClassTabBase[(unsigned)'#'] = NEOP;
+    chrClassTabBase[(unsigned)'='] = EQOP;
+    charSymTabBase[(unsigned)'+'] = ADDOP;
+    charSymTabBase[(unsigned)'-'] = ADDOP;
+    charSymTabBase[(unsigned)'*'] = MULOP;
+    charSymTabBase[(unsigned)'/'] = MULOP;
+    charSymTabBase[(unsigned)'&'] = MULOP;
+    charSymTabBase[(unsigned)','] = COMMA;
+    charSymTabBase[(unsigned)'.'] = PERIOD;
+    charSymTabBase[(unsigned)'@'] = ARROW;
+    charSymTabBase[(unsigned)'^'] = ARROW;
+    charSymTabBase[(unsigned)'('] = LPAREN;
+    charSymTabBase[(unsigned)')'] = RPAREN;
+    charSymTabBase[(unsigned)';'] = SEMICOLON;
+    charSymTabBase[(unsigned)'['] = LBRACK;
+    charSymTabBase[(unsigned)']'] = RBRACK;
+    charSymTabBase[(unsigned)'#'] = RELOP;
+    charSymTabBase[(unsigned)'='] = RELOP;
+    charSymTabBase[(unsigned)':'] = COLON;
+    charSymTabBase[(unsigned)'~'] = NOTSY;
+    charSymTabBase[(unsigned)'{'] = LBRACE;
+    charSymTabBase[(unsigned)'}'] = RBRACE;
 
     iAddOpMap[PLUSOP] = INTPLUS;
     iAddOpMap[MINUSOP] = INTMINUS;
@@ -9422,7 +9423,7 @@ int main(int argc, char **argv)
         if (foo == 9999) goto L9999;
     }
     if (errors) {
-L9999:  printf(" IN %ld LINES %ld ERRORS\n", lineCnt-1, totalErrors);
+L9999:  printf(" IN %ld LINES %ld ERRORS\n", (long)lineCnt-1, (long)totalErrors);
         exit(1);
     } else {
         finalize();
