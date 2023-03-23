@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 #
 # Compile and run a Madlen program, using dispak simulator.
@@ -14,11 +14,11 @@ import sys, os, string, subprocess
 # Parse command line.
 #
 if len(sys.argv) != 2:
-    print "Usage: pas-run.py filename.madlen"
+    print("Usage: pas-run.py filename.madlen")
     sys.exit(1)
 input_name = sys.argv[1]
 basename = os.path.splitext(input_name)[0]
-#print "basename =", basename
+#print("basename =", basename)
 
 #
 # Open input file.
@@ -26,7 +26,7 @@ basename = os.path.splitext(input_name)[0]
 try:
     asm_file = open(input_name)
 except:
-    print "%s: Cannot open input file" % input_name
+    print("%s: Cannot open input file" % input_name)
     sys.exit(1)
 
 #
@@ -57,5 +57,5 @@ task_file.close()
 # Run dispak simulator.
 #
 if subprocess.call(["dispak", task_name]) != 0:
-    print "%s: dispak failed" % task_name
+    print("%s: dispak failed" % task_name)
     sys.exit(1)

@@ -1730,7 +1730,7 @@ void endOfLine()
 
     listMode = PASINFOR.listMode;
     if ((listMode != 0) or (errsInLine != 0)) {
-        printf(" %05llo%5ld%3ld%c", (lineStartOffset + PASINFOR.startOffset),
+        printf(" %05llo%5ld%3ld%c", (unsigned long long)(lineStartOffset + PASINFOR.startOffset),
                (long)lineCnt, (long)lineNesting, commentModeCH);
         startPos = 12;
         if (optSflags.m.has(S4)
@@ -6970,7 +6970,7 @@ struct ParseData {
     } /* allocDataRef */
 
     void P16432(int64_t l5arg1z) {
-        DATAREC l5var1z;
+        DATAREC l5var1z{};
 
         l5var1z.assn(0, allocDataRef(l4var4z.i));
         if (FcstCnt == l4var3z.i) {

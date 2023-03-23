@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 #
 # Compile Madlen assembler source into object file.
@@ -17,11 +17,11 @@ import sys, os, string, subprocess, struct
 # Parse command line.
 #
 if len(sys.argv) < 2:
-    print "Usage: madlen-to-obj.py filename.madlen"
+    print("Usage: madlen-to-obj.py filename.madlen")
     sys.exit(1)
 input_name = sys.argv[1]
 basename = os.path.splitext(os.path.basename(input_name))[0]
-#print "basename =", basename
+#print("basename =", basename)
 
 #
 # Open input file.
@@ -29,7 +29,7 @@ basename = os.path.splitext(os.path.basename(input_name))[0]
 try:
     input_file = open(input_name)
 except:
-    print "%s: Cannot open input file" % input_name
+    print("%s: Cannot open input file" % input_name)
     sys.exit(1)
 
 #
@@ -48,7 +48,8 @@ eeв1а3
 *assem
 """ % basename)
 for line in input_file.readlines():
-    task_file.write(line.rstrip() + "\n")
+    task_file.write(line.rstrip())
+    task_file.write("\n")
 task_file.write("""*end file
 ``````
 еконец
@@ -64,10 +65,10 @@ dispak = subprocess.Popen('dispak -l --punch=%s.punch %s.b6' % (basename, basena
 lst_file = open(basename + ".lst", "w")
 nerrors = -1
 for line in dispak.stdout.readlines():
+    line = line.decode('utf-8')
     lst_file.write(line.rstrip() + "\n")
 
     # Find status: number of errors.
-    line = line.decode('utf-8')
     if len(line) == 52:
         # *assem: old Madlen version
         if line[23:45] == u"ЧИCЛO OШИБ. OПEPATOPOB":
@@ -77,8 +78,8 @@ for line in dispak.stdout.readlines():
         if line[25:47] == u"ЧИCЛO OШИБ. OПEPATOPOB":
             nerrors = int(line[49:51])
 
-        #print len(line), line[25:47]
-        #print "nerrors =", nerrors
+        #print(len(line), line[25:47])
+        #print("nerrors =", nerrors)
 
     if len(line) == 117:
         # *assem: old Madlen version
@@ -89,23 +90,23 @@ for line in dispak.stdout.readlines():
         if line[90:112] == u"ЧИСЛО ОШИБ. ОПЕРАТОРОВ":
             nerrors = int(line[114:116])
 
-        #print len(line), line[90:112]
-        #print "nerrors =", nerrors
+        #print(len(line), line[90:112])
+        #print("nerrors =", nerrors)
 
 lst_file.close()
 
 retval = dispak.wait()
-#print "retval =", retval
+#print("retval =", retval)
 if retval == 127:
-    print "dispak: Command not found"
+    print("dispak: Command not found")
     lst_file.close()
     os.remove(basename + ".lst")
     sys.exit(1)
 if retval != 0:
-    print "dispak: Failed to invoke Madlen assembler"
+    print("dispak: Failed to invoke Madlen assembler")
     sys.exit(1)
 if nerrors != 0:
-    print "dispak: Madlen errors detected: see %s.lst for details" % basename
+    print("dispak: Madlen errors detected: see %s.lst for details" % basename)
     sys.exit(1)
 
 #
@@ -114,7 +115,7 @@ if nerrors != 0:
 try:
     punch_file = open(basename + ".punch")
 except:
-    print "%s.punch: Cannot open punch file" % basename
+    print("%s.punch: Cannot open punch file" % basename)
     sys.exit(1)
 
 #
@@ -131,8 +132,8 @@ def get12bits(card, x):
 #
 # Generate obj file.
 #
-obj_file = open(basename + ".obj", "w")
-obj_file.write("BESM6\0")
+obj_file = open(basename + ".obj", "wb")
+obj_file.write(b"BESM6\0")
 for cardno in range(1024):
     card = {}
     card[0] = punch_file.readline()
@@ -141,9 +142,9 @@ for cardno in range(1024):
     for i in range(1,13):
         card[i] = punch_file.readline()
     if not card[12]:
-        print "%s: Bad file format" % input_name
+        print("%s: Bad file format" % input_name)
         sys.exit(1)
-    #print card[0],
+    #print(card[0], end='')
     if cardno == 0:
         # Skip first card.
         continue
@@ -153,7 +154,7 @@ for cardno in range(1024):
         b = get12bits(card, x+1)
         c = get12bits(card, x+2)
         d = get12bits(card, x+3)
-        #print "%04o %04o %04o %04o" % (a, b, c, d)
+        #print("%04o %04o %04o %04o" % (a, b, c, d))
 
         f = d & 0xff
         e = (d >> 8) | (c << 4 & 0xff)
@@ -161,7 +162,7 @@ for cardno in range(1024):
         c = b & 0xff
         b = (b >> 8) | (a << 4 & 0xff)
         a = a >> 4
-        #print "%02x %02x %02x %02x %02x %02x" % (a, b, c, d, e, f)
+        #print("%02x %02x %02x %02x %02x %02x" % (a, b, c, d, e, f))
         obj_file.write(struct.pack("BBBBBB", a, b, c, d, e, f))
 
     if card[0][3] == 'O':
@@ -170,4 +171,4 @@ for cardno in range(1024):
 
 obj_file.close()
 
-print "File %s succesfully compiled into %s.obj" % (input_name, basename)
+print("File %s succesfully compiled into %s.obj" % (input_name, basename))

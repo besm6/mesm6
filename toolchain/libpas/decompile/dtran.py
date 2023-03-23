@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 #
 # De-translate an object module into Madlen assembler.
@@ -14,11 +14,11 @@ import sys, os, string, subprocess
 # Parse command line.
 #
 if len(sys.argv) != 2:
-    print "Usage: dtran.py progname"
+    print("Usage: dtran.py progname")
     sys.exit(1)
 progname = sys.argv[1]
 basename = progname.replace('/', '_')
-#print "progname =", progname
+#print("progname =", progname)
 
 #
 # Read input file and generate a task file.
@@ -49,17 +49,17 @@ dispak = subprocess.Popen('dispak -l %s.b6' % (basename),
 
 lst_file = open(basename + ".lst", "w")
 for line in dispak.stdout.readlines():
-    line = line.rstrip()
-    lst_file.write(line + "\n")
+    line = line.decode('utf-8')
+    lst_file.write(line.rstrip() + "\n")
 lst_file.close()
 
 retval = dispak.wait()
-#print "retval =", retval
+#print("retval =", retval)
 if retval == 127:
-    print "dispak: Command not found"
+    print("dispak: Command not found")
     lst_file.close()
     os.remove(basename + ".lst")
     sys.exit(1)
 if retval != 0:
-    print "dispak: Failed to invoke DTRAN"
+    print("dispak: Failed to invoke DTRAN")
     sys.exit(1)

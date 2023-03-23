@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 #
 # Translate Pascal source into assembler (Madlen).
@@ -16,18 +16,18 @@ import sys, os, string, subprocess
 # Parse command line.
 #
 if len(sys.argv) != 2:
-    print "Usage: pas-run.py filename.pas"
+    print("Usage: pas-run.py filename.pas")
     sys.exit(1)
 input_name = sys.argv[1]
 basename = os.path.splitext(input_name)[0]
-#print "basename =", basename
+#print("basename =", basename)
 
 #
 # Translate to object file
 #
 obj_name = basename + ".obj"
 if subprocess.call(["besm6-pascompl", input_name, obj_name]) != 0:
-    print "%s: pascompl failed" % input_name
+    print("%s: pascompl failed" % input_name)
     sys.exit(1)
 
 #
@@ -36,7 +36,7 @@ if subprocess.call(["besm6-pascompl", input_name, obj_name]) != 0:
 asm_name = basename + ".madlen"
 asm_file = open(asm_name, "w")
 if subprocess.call(["besm6-dtran", "-e", obj_name], stdout=asm_file) != 0:
-    print "%s: dtran failed" % obj_name
+    print("%s: dtran failed" % obj_name)
     sys.exit(1)
 asm_file.close()
 
@@ -46,7 +46,7 @@ asm_file.close()
 try:
     asm_file = open(asm_name)
 except:
-    print "%s: Cannot open input file" % asm_name
+    print("%s: Cannot open input file" % asm_name)
     sys.exit(1)
 
 #
@@ -77,5 +77,5 @@ task_file.close()
 # Run dispak simulator.
 #
 if subprocess.call(["dispak", task_name]) != 0:
-    print "%s: dispak failed" % task_name
+    print("%s: dispak failed" % task_name)
     sys.exit(1)

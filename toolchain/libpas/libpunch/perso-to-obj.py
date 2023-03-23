@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 #
 # Extract object file from library.
@@ -16,13 +16,13 @@ import sys, os, string, subprocess, struct
 # Parse command line.
 #
 if len(sys.argv) != 4:
-    print "Usage: perso-to-obj.py filename location progname"
+    print("Usage: perso-to-obj.py filename location progname")
     sys.exit(1)
 input_name = sys.argv[1]
 location = sys.argv[2]
 progname = sys.argv[3]
 basename = os.path.splitext(os.path.basename(input_name))[0]
-#print "basename =", basename
+#print("basename =", basename)
 
 #
 # Read input file and generate a task file.
@@ -56,18 +56,18 @@ for line in dispak.stdout.readlines():
     line = line.decode('utf-8')
     if line[:30] == u"ТНIS NАМЕ IS АВSЕNТ IN САТАLОG":
         nerrors += 1
-        #print "nerrors =", nerrors
+        #print("nerrors =", nerrors)
 
 retval = dispak.wait()
-#print "retval =", retval
+#print("retval =", retval)
 if retval == 127:
-    print "dispak: Command not found"
+    print("dispak: Command not found")
     sys.exit(1)
 if retval != 0:
-    print "dispak: Failed to invoke Libpunch utility"
+    print("dispak: Failed to invoke Libpunch utility")
     sys.exit(1)
 if nerrors != 0:
-    print "dispak: Libpunch errors detected! Try 'dispak %s.b6'" % basename
+    print("dispak: Libpunch errors detected! Try 'dispak %s.b6'" % basename)
     sys.exit(1)
 
 #
@@ -76,7 +76,7 @@ if nerrors != 0:
 try:
     punch_file = open(basename + ".punch")
 except:
-    print "%s.punch: Cannot open punch file" % basename
+    print("%s.punch: Cannot open punch file" % basename)
     sys.exit(1)
 
 #
@@ -93,8 +93,8 @@ def get12bits(card, x):
 #
 # Generate obj file.
 #
-obj_file = open(basename + ".obj", "w")
-obj_file.write("BESM6\0")
+obj_file = open(basename + ".obj", "wb")
+obj_file.write(b"BESM6\0")
 for cardno in range(1024):
     card = {}
     card[0] = punch_file.readline()
@@ -103,9 +103,9 @@ for cardno in range(1024):
     for i in range(1,13):
         card[i] = punch_file.readline()
     if not card[12]:
-        print "%s.obj: Bad file format" % basename
+        print("%s.obj: Bad file format" % basename)
         sys.exit(1)
-    #print card[0],
+    #print(card[0], end='')
     if cardno == 0:
         # Skip first card.
         continue
@@ -115,7 +115,7 @@ for cardno in range(1024):
         b = get12bits(card, x+1)
         c = get12bits(card, x+2)
         d = get12bits(card, x+3)
-        #print "%04o %04o %04o %04o" % (a, b, c, d)
+        #print("%04o %04o %04o %04o" % (a, b, c, d))
 
         f = d & 0xff
         e = (d >> 8) | (c << 4 & 0xff)
@@ -123,7 +123,7 @@ for cardno in range(1024):
         c = b & 0xff
         b = (b >> 8) | (a << 4 & 0xff)
         a = a >> 4
-        #print "%02x %02x %02x %02x %02x %02x" % (a, b, c, d, e, f)
+        #print("%02x %02x %02x %02x %02x %02x" % (a, b, c, d, e, f))
         obj_file.write(struct.pack("BBBBBB", a, b, c, d, e, f))
 
     if card[0][3] == 'O':
@@ -132,4 +132,4 @@ for cardno in range(1024):
 
 obj_file.close()
 
-print "File %s succesfully extracted into %s.obj" % (basename, basename)
+print("File %s succesfully extracted into %s.obj" % (basename, basename))
