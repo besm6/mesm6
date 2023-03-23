@@ -4,3 +4,4 @@ objdump
 size
 strip
 test-ld/test1
+test-ld/test2

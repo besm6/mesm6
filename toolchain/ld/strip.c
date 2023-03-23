@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     signal(SIGINT, SIG_IGN);
     signal(SIGQUIT, SIG_IGN);
     for (;;) {
-        switch (getopt(argc, argv, "-")) {
+        switch (getopt_long(argc, argv, "-", NULL, NULL)) {
         case EOF:
             break;
         case 1:

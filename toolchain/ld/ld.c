@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <archive.h>
 #include <archive_entry.h>
+#include <getopt.h>
 #include "stdobj.h"
 
 #define MAXSYMBOLS      2000    // max number of symbols
@@ -1224,7 +1225,7 @@ void pass1(int argc, char **argv)
 {
     for (;;) {
         inputname = 0;
-        switch (getopt(argc, argv, "-dD:e:l:o:rstT:u:")) {
+        switch (getopt_long(argc, argv, "-dD:e:l:o:rstT:u:", NULL, NULL)) {
         case EOF:
             break;
         case 1:
@@ -2031,7 +2032,9 @@ void pass3()
     aout.debug_off = aout.long_off + aout.long_len;
 
     // Set module name.
-    aout.word[aout.table_off] = obj_head->word[obj_head->table_off];
+    if (obj_head) {
+        aout.word[aout.table_off] = obj_head->word[obj_head->table_off];
+    }
 
     // Copy symbol table and name table.
     if (!s_flag) {

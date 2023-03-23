@@ -99,7 +99,7 @@ int main(int argc, char **argv)
     if (argc == 1)
         usage(0);
     for (;;) {
-        switch (getopt(argc, argv, "-dox")) {
+        switch (getopt_long(argc, argv, "-dox", NULL, NULL)) {
         case EOF:
             break;
         case 1:
