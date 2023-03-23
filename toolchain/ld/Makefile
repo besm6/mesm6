@@ -5,9 +5,9 @@
 #       sudo apt install libarchive-dev
 #
 DESTDIR = /usr/local/bin
-CFLAGS  = -O -g -Werror -Wall
+CFLAGS  = -O -g -Werror -Wall $(shell pkg-config --cflags libarchive)
 LDFLAGS =
-LIBS    = -larchive
+LIBS    = $(shell pkg-config --libs libarchive)
 
 ld      = besm6-ld
 strip   = besm6-strip

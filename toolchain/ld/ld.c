@@ -1892,7 +1892,7 @@ unsigned copy_debug(uint64_t *to, uint64_t *from, unsigned nwords)
 void pass3()
 {
     int text_origin, data_origin, bss_origin;
-    int tdata_origin, set_origin, debug_size = 0;
+    int debug_size = 0;
     obj_image_t *obj;
     uint64_t *aout_datap, *aout_tdatap, *aout_setp;
 
@@ -1902,8 +1902,6 @@ void pass3()
     text_origin = text_base;
     data_origin = (data_base == 0) ? (text_origin + text_size) : data_base;
     bss_origin = data_origin + data_size;
-    tdata_origin = bss_origin;
-    set_origin = tdata_origin + tdata_size;
 
     aout_datap  = &aout.word[11 + text_size];
     aout_tdatap = &aout.word[11 + text_size + data_size];
@@ -1975,8 +1973,6 @@ void pass3()
         text_origin += obj->cmd_len;
         data_origin += obj->const_len;
         bss_origin += obj->bss_len;
-        tdata_origin += obj->data_len;
-        set_origin += obj->set_len;
 
         aout_datap  += obj->const_len;
         aout_tdatap += obj->data_len;

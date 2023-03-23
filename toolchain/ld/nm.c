@@ -276,7 +276,7 @@ void nm(const char *fname, int narg)
             type = (tname == T_BDATA)       ? 'D' :
                    (tname == T_EDATA)       ? 'D' :
                    (tname == T_END)         ? 'B' :
-                   in_data(sp->f.n_addr, 1) ? 'D' : 'B';
+                   in_data(sp->f.n_addr, 1) ? 'D' :
                    in_bss(sp->f.n_addr, 1)  ? 'B' : '?';
             break;
 
