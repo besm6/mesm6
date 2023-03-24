@@ -6970,7 +6970,7 @@ struct ParseData {
     } /* allocDataRef */
 
     void P16432(int64_t l5arg1z) {
-        DATAREC l5var1z{};
+        DATAREC l5var1z = {};
 
         l5var1z.assn(0, allocDataRef(l4var4z.i));
         if (FcstCnt == l4var3z.i) {
