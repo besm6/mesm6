@@ -222,19 +222,19 @@ struct Dtran {
         long_off = table_off + head_len + sym_len;
         debug_off = long_off + long_len;
         comment_off = debug_off + debug_len;
-        printf(" %s:,NAME, NEW DTRAN\n",
+        printf(" %-8s:  , NAME, NEW DTRAN\n",
                get_text_word(memory[table_off-0]).c_str());
-        printf("C Commands: %o\n", cmd_len);
-        printf("C Constants: %o\n", const_len);
-        printf("C BSS: %o\n", bss_len);
-        printf("C Memory size: %o\n", cmd_len+const_len+bss_len);
-        printf("C Header: %o\n", head_len);
-        printf("C Symbols: %o\n", sym_len);
-        printf("C Long symbols: %o\n", long_len);
-        printf("C Debug: %o\n", debug_len);
-        printf("C Data: %o + set: %o\n", data_len, set_len);
-        printf("C Actual length of the object file is %o\n",
-               comment_off);
+        printf("C Commands        :%6o\n", cmd_len);
+        printf("C Constants       :%6o\n", const_len);
+        printf("C BSS             :%6o\n", bss_len);
+        printf("C Memory size     :%6o\n", cmd_len+const_len+bss_len);
+        printf("C Header          :%6o\n", head_len);
+        printf("C Symbols         :%6o\n", sym_len);
+        printf("C Long symbols    :%6o\n", long_len);
+        printf("C Debug           :%6o\n", debug_len);
+        printf("C Data            :%6o\n", data_len);
+        printf("C  +set           :%6o\n", set_len);
+        printf("C Object file len :%6o\n", comment_off);
         if (nolabels) {
             printf(" /:,BSS,\n");
         }
@@ -373,8 +373,8 @@ prinsn (uint32 memaddr, uint32 opcode)
         if (end - operand.c_str() > 4)
             operand = strprintf(nooctal ? "/+%d" : "/+%oB", off);
     }
-    if (reg) printf("%d,", reg); else printf(",");
-    printf("%s,%s\n", opname.c_str(), operand.c_str());
+    if (reg) printf("%2d,", reg); else printf("  ,");
+    printf(" %-3s ,%s\n", opname.c_str(), operand.c_str());
 }
 
 std::string get_literal(uint32 addr) {
@@ -417,24 +417,24 @@ void prconst (uint32 addr, uint32 len, bool litconst) {
     for (unsigned cur = addr; cur < addr + len; ++cur) {
         uint64 val = memory[cur + cmd_off];
         if (litconst) {
-            printf(" /%d:", cur-cmd_len);
+            printf(" /%-8d:", cur-cmd_len);
         } else if (labels[cur].empty()) {
-            printf(" ");
+            printf("\t    ");
         } else {
-            printf(" %s:", labels[cur].c_str());
+            printf(" %-8s:  ", labels[cur].c_str());
         }
         if ((val >> 24) == 064000000) {
             unsigned d = val & 077777777;
             if (d > 200000)
-                printf(",INT,%08oB\n", d);
+                printf(", INT ,%08oB\n", d);
             else
-                printf(",INT,%d\n", d);
+                printf(", INT ,%d\n", d);
         } else if (is_likely_iso(val)) {
-            printf(",ISO, 6H%s . %s\n", quoteiso(get_iso_word(val)).c_str(), get_bytes(val).c_str());
+            printf(", ISO ,6H%s . %s\n", quoteiso(get_iso_word(val)).c_str(), get_bytes(val).c_str());
         } else if (is_likely_text(val)) {
-            printf(",TEXT, 8H%s\n", get_text_word(val).c_str());
+            printf(", TEXT,8H%s\n", get_text_word(val).c_str());
         } else {
-            printf(",LOG,%llo\n", val);
+            printf(", LOG ,%llo\n", val);
         }
     }
 }
@@ -447,6 +447,7 @@ void prsets() {
         unsigned cnt = (word >> 12) & 07777;
         unsigned to = word & 03777;
         std::string src = symtab[from];
+#if 0
         if (len == 1 && src[0] == '*') {
             char * end;
             strtol(src.c_str()+1, &end, 8);
@@ -464,6 +465,7 @@ void prsets() {
                 break;
             } while (1);
         }
+#endif /* 0 */
         printf(" %d,SET,%s\n", len, src.c_str());
         printf(" %d,   ,%s\n", cnt, symtab[to].c_str());
     }
@@ -547,18 +549,18 @@ prtext (bool litconst)
         mklabels(cur, opcode & 0xffffff, litconst);
     }
     if (nolabels) {
-        puts(" /:,BSS,");
+        printf("\t :  ,BSS,");
     }
     for (; addr < limit; ++addr) {
         uint64 opcode;
         if (!labels[addr].empty()) {
             if (nolabels) {
-                printf(" :");
+                printf("\t :");
             } else {
-                printf(" %s:", labels[addr].c_str());
+                printf(" %-8s:", labels[addr].c_str());
             }
         } else
-            putchar(' ');
+            printf("\t  ");
         opcode = memory[addr + cmd_off];
         prinsn (addr, opcode >> 24);
         // Do not print the non-insn part of a word
@@ -572,7 +574,7 @@ prtext (bool litconst)
                 labels[addr+1] = " ";
             }
         } else {
-            putchar(' ');
+            printf("\t  ");
             prinsn (addr, opcode);
         }
     }
@@ -749,9 +751,9 @@ Dtran(const char * fname, unsigned b, bool n, bool e, bool o) :
                 symtab[i] = get_text_word(memory[table_off + loff]);
             }
             if ((word & 057777777) == 043000000) {
-                printf(" %s:,SUBP,\n", symtab[i].c_str());
+                printf(" %-8s:  , SUBP,\n", symtab[i].c_str());
             } else if ((word & 057000000) == 047000000) {
-                printf(" %s:,LC,%d\n", symtab[i].c_str(),
+                printf(" %-8s:  , LC  ,%d\n", symtab[i].c_str(),
                        (uint)word & 0777777);
             } else if (((word >> 24) & 077774000) == 04000 &&
                        (word & 077777777) < 0100000) {
@@ -763,7 +765,7 @@ Dtran(const char * fname, unsigned b, bool n, bool e, bool o) :
                                           symtab[sym].c_str(), ioff);
                 } else {
                     symtab[i] = gak(i);
-                    printf(" %s:,EQU,%s%+d\n", symtab[i].c_str(),
+                    printf(" %-8s:  , EQU ,%s%+d\n", symtab[i].c_str(),
                            symtab[sym].c_str(), ioff);
                 }
             } else  {
@@ -773,7 +775,7 @@ Dtran(const char * fname, unsigned b, bool n, bool e, bool o) :
     }
 
     void dump_symtab() {
-        printf("C Symbol table offset is %o\n", table_off);
+	printf("C Sym.tab. offset :%6o\n", table_off);
         for (unsigned i = head_len; i < head_len + sym_len; ++i) {
             dump_sym(i, table_off);
         }
@@ -849,7 +851,7 @@ main (int argc, char **argv)
     dtr.prtext(litconst);
     dtr.prconst(dtr.cmd_len, dtr.const_len, litconst);
     if (dtr.data_len) {
-        printf(" ,DATA,\n");
+        printf("\t    ,DATA,\n");
         if (litconst) {
             dtr.prdata();
         } else {
@@ -857,6 +859,6 @@ main (int argc, char **argv)
             dtr.prsets();
         }
     }
-    printf(" ,END,\n");
+    printf("\t    , END ,\n");
     return 0;
 }
