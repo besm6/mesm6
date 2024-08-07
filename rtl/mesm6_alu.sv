@@ -228,7 +228,7 @@ always @(posedge clk) begin
                         `FULLEXP <= b[47:41];
                         railexp <= a[47:41];
                     end
-                    rmr[39:0] <= 40'b0;
+                    rmr[47:0] <= 40'b0;
                     state <= STATE_NORM_BEFORE;
                     sticky <= 1'b0;
                 end
@@ -270,6 +270,7 @@ always @(posedge clk) begin
                     // A*X: multiply in one cycle, then normalize.
                     {`FULLMANT, rmr[39:0]} <= amant * bmant;
                     `FULLEXP <= (a[47:41] + b[47:41] - 64);
+                    rmr[47:40] <= 8'b0;
                     rounded <= 1'b0;
                     state <= STATE_NORM_AFTER;
                 end
