@@ -10,6 +10,11 @@ start   start   '1'
         uza     fail                    , |64| - |65| = -1
         aex     minus1                  , целое -1 без порядка
         u1a     fail
+*
+        xta     =b'4160000000000000'
+        amx     =b'6400000000000000'
+        aex     =b'6400000000000010'
+        u1a     fail
 *-------------------------
         xta     minus1
         amx     minus1

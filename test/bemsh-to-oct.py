@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 #
 # Compile BEMSH assembler source into binary.
@@ -17,11 +17,11 @@ import sys, os, string, subprocess
 # Parse command line.
 #
 if len(sys.argv) < 2:
-    print "Usage: bemsh-to-oct.py filename.bemsh [instr-map]"
+    print("Usage: bemsh-to-oct.py filename.bemsh [instr-map]")
     sys.exit(1)
 input_name = sys.argv[1]
 basename = os.path.splitext(input_name)[0]
-#print "basename =", basename
+#print("basename =", basename)
 
 if len(sys.argv) >= 3:
     # Get user defined list of ranges for instruction space.
@@ -29,7 +29,7 @@ if len(sys.argv) >= 3:
     instr_map = list(eval(sys.argv[2]))
 else:
     # Default map: instructions 1-1777, data 2000-77777.
-    instr_map = [1, 01777]
+    instr_map = [1, 0o1777]
 
 #
 # Open input file.
@@ -37,7 +37,7 @@ else:
 try:
     input_file = open(input_name)
 except:
-    print "%s: Cannot open input file" % input_name
+    print("%s: Cannot open input file" % input_name)
     sys.exit(1)
 
 #
@@ -83,31 +83,32 @@ task_file.close()
 dispak = subprocess.Popen('dispak --drum-dump=%s.dump %s.b6' % (basename, basename),
     shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-lst_file = open(basename + ".lst", "w")
+lst_file = open(basename + ".lst", "wb")
 nerrors = -1
 for line in dispak.stdout.readlines():
-    lst_file.write(line.rstrip() + "\n")
+    lst_file.write(line.rstrip())
+    lst_file.write(b"\n")
 
     # Find status: number of errors.
-    n = line.find("=")
+    n = line.find(b"=")
     if n > 0:
         if line[:n] == "ЧИСЛО ОШИБОК":
             nerrors = int(line[n+1:n+5])
-            #print "nerrors =", nerrors
+            #print("nerrors =", nerrors)
 lst_file.close()
 
 retval = dispak.wait()
-#print "retval =", retval
+#print("retval =", retval)
 if retval == 127:
-    print "dispak: Command not found"
+    print("dispak: Command not found")
     lst_file.close()
     os.remove(basename + ".lst")
     sys.exit(1)
 if retval != 0:
-    print "dispak: Failed to invoke BEMSH assembler"
+    print("dispak: Failed to invoke BEMSH assembler")
     sys.exit(1)
 if nerrors != 0:
-    print "dispak: BEMSH errors detected: see %s.lst for details" % basename
+    print("dispak: BEMSH errors detected: see %s.lst for details" % basename)
     sys.exit(1)
 
 #
@@ -126,7 +127,7 @@ def instruction_space(addr):
 try:
     dump_file = open(basename + ".dump")
 except:
-    print "%s.dump: Cannot open dump file" % basename
+    print("%s.dump: Cannot open dump file" % basename)
     sys.exit(1)
 
 #
@@ -134,7 +135,7 @@ except:
 #
 oct_file = open(basename + ".oct", "w")
 for line in dump_file.readlines():
-    #print line,
+    #print(line, end='')
     n = line.find(" ")
     if n > 0:
         cmd = line[:n]
@@ -143,7 +144,7 @@ for line in dump_file.readlines():
             # к 02 24 00000, 01 31 00002 ; с 1240 0000 0710 0002 ; 00001
             word = line.split()
             addr = int(word[14], 8)
-            #print addr, word
+            #print(addr, word)
             if instruction_space(addr):
                 # Addresses 0...01777: instructions
                 oct_file.write("i %05o %s %s %s %s %s %s\n" %
@@ -154,4 +155,4 @@ for line in dump_file.readlines():
                     (addr, word[9], word[10], word[11], word[12]))
 oct_file.close()
 
-print "File %s succesfully compiled into %s.oct" % (input_name, basename)
+print("File %s succesfully compiled into %s.oct" % (input_name, basename))
